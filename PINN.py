@@ -11,9 +11,9 @@ class PINN(tf.keras.Model):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
     # characteristic parameters of the problem
-    self.sites = {"D":{"omegaD": -3, "chiD": 1}, "A":{"omegaA": 3, "chiA": -0.6}, "coupling_lambda": 0.001, "N":12}
+    self.sites = {"D":{"omegaD": -3, "chiD": 2}, "A":{"omegaA": 3, "chiA": -2}, "coupling_lambda": 0.001, "N":4}
     self.mylosses = []
-    
+
   def An(self, i, xA, xD):
     f1 = self.sites["A"]["omegaA"] + 0.5 * xA * (2 * self.sites["N"] - 2 * i - 1) - self.sites["D"]["omegaD"] - 0.5 * xD * (2 * i + 1)
     return -tf.divide(tf.sqrt(float((i + 1) * (self.sites["N"] - i))),f1)
@@ -61,8 +61,10 @@ class PINN(tf.keras.Model):
     
 
   def pred_plot(self, xA, xD):
-    xA_min,xD_min = self.sites["A"]["chiA"]-1, self.sites["D"]["chiD"]-2
-    xA_max,xD_max = self.sites["A"]["chiA"]+1.5, self.sites["D"]["chiD"]+1
+    middleIndexA = (len(xA) - 1)//2
+    middleIndexD = (len(xD) - 1)//2
+    xA_min,xD_min = xA[middleIndexA]-2, xD[middleIndexD]-2
+    xA_max,xD_max = xA[middleIndexA]+2, xD[middleIndexD]+2
 
     xA_grid = np.linspace(xA_min, xA_max, 1000)
     xD_grid = np.linspace(xD_min, xD_max, 1000)
@@ -72,7 +74,7 @@ class PINN(tf.keras.Model):
     probs = self.loss(xA_plot, xD_plot)
     # create a surface plot with the rainbow color scheme
     figure, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(12,12))
-    plot = ax.contour3D(X=xA_plot, Y=xD_plot, Z=probs, levels=50, cmap='rainbow')
+    plot = ax.plot_surface(xA_plot, xD_plot, probs, cmap='rainbow')
     ax.set_xlabel("xA", fontsize=20)
     ax.set_ylabel("xD", fontsize=20)
     ax.set_zlabel("$P_{D}$", fontsize=20)
@@ -102,7 +104,7 @@ class PINN(tf.keras.Model):
   def train(self):
     tol = 1E-8
     max_iter = 1000
-    opt = tf.keras.optimizers.Adagrad(learning_rate=0.1)
+    opt = tf.keras.optimizers.Adam(learning_rate=0.01)
     xA = tf.Variable(initial_value=self.sites["A"]["chiA"], trainable=True, dtype=tf.float32)
     xD = tf.Variable(initial_value=self.sites["D"]["chiD"], trainable=True, dtype=tf.float32)
     xA_best = tf.Variable(initial_value=0, dtype=tf.float32)
