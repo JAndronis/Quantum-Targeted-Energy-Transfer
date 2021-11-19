@@ -7,7 +7,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.layers import Dense
 
-class PINN(tf.keras.Model):
+class optimizerLearner_pertubation(tf.keras.Model):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
     # characteristic parameters of the problem
