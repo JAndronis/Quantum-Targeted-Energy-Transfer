@@ -13,7 +13,7 @@ class PINN(tf.keras.Model):
     # characteristic parameters of the problem
     self.sites = {"D":{"omegaD": -3, "chiD": 1}, "A":{"omegaA": 3, "chiA": -0.6}, "coupling_lambda": 0.001, "N":12}
     self.mylosses = []
-
+    
   def An(self, i, xA, xD):
     f1 = self.sites["A"]["omegaA"] + 0.5 * xA * (2 * self.sites["N"] - 2 * i - 1) - self.sites["D"]["omegaD"] - 0.5 * xD * (2 * i + 1)
     return -tf.divide(tf.sqrt(float((i + 1) * (self.sites["N"] - i))),f1)
