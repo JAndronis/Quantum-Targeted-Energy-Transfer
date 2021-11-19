@@ -29,7 +29,7 @@ class Opt_PertTheory(tf.keras.Model):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
     # characteristic parameters of the problem
-    self.sites = {"D":{"omegaD": -3, "chiD": 2}, "A":{"omegaA": 3, "chiA": -2}, "coupling_lambda": 0.001, "N":4}
+    self.sites = {"D":{"omegaD": -3, "chiD": 4}, "A":{"omegaA": 3, "chiA": -2}, "coupling_lambda": 0.001, "N":4}
     self.mylosses = []
 
   def An(self, i, xA, xD):
