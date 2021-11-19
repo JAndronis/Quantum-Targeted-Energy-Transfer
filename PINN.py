@@ -25,7 +25,7 @@ def save_fig(fig_id, tight_layout=True, fig_extension="jpg", resolution=300):
     plt.savefig(path, format=fig_extension, dpi=resolution)
 
 #%%
-class optimizerLearner_pertubation(tf.keras.Model):
+class Opt_PertTheory(tf.keras.Model):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
     # characteristic parameters of the problem
@@ -172,8 +172,9 @@ np.random.seed(42)
 
 import gym
 
-class reinforcment_test(tf.keras.Model):
+class RL_Test(tf.keras.Model):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
-
+    # self.
+    # self.dense1 = Dense(5, activation="elu", input_shape=[n_inputs])
 # %%
