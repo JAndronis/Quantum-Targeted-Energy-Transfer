@@ -34,32 +34,7 @@ class PINN(tf.keras.Model):
     # n == N
     PD = self.Fn(N, xA, xD)**4*(1+self.sites["coupling_lambda"]**2*self.Bn(N, xA, xD)**2+self.sites["coupling_lambda"]**4*self.Dhelp(N, xA, xD)**2)
     return PD
-
-  def loss_plot(self):
-    xA_min,xD_min = -3, -3
-    xA_max,xD_max = 3, 3
-
-    xA_grid = np.linspace(xA_min, xA_max, 1000)
-    xD_grid = np.linspace(xD_min, xD_max, 1000)
-
-    xA_plot, xD_plot = np.meshgrid(xA_grid, xD_grid)
-
-    probs = self.loss(xA_plot, xD_plot)
-    # create a surface plot with the rainbow color scheme
-    figure, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(12,12))
-    plot = ax.contour3D(X=xA_plot, Y=xD_plot, Z=probs, levels=50, cmap='rainbow')
-    ax.set_xlabel("xA", fontsize=20)
-    ax.set_ylabel("xD", fontsize=20)
-    ax.set_zlabel("$P_{D}$", fontsize=20)
-    figure.colorbar(plot, shrink=0.5)
-    # show the plot
-    plt.show()
-
-    figure2, ax2 = plt.subplots(figsize=(12,12))
-    # plot the predictions of the optimizer
-    plot2 = ax2.contourf(xA_plot, xD_plot, probs, levels=50, cmap='rainbow')
     
-
   def pred_plot(self, xA, xD):
     middleIndexA = (len(xA) - 1)//2
     middleIndexD = (len(xD) - 1)//2
