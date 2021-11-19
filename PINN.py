@@ -1,16 +1,11 @@
 #%%
 import numpy as np
 import matplotlib.pyplot as plt
-from numpy.lib.function_base import rot90
-import sys
 import time
-import math
 
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.layers import Dense
-from tensorflow.python.ops.gen_array_ops import size
-from tensorflow.python.ops.gen_math_ops import angle
 
 class PINN(tf.keras.Model):
   def __init__(self, **kwargs):
