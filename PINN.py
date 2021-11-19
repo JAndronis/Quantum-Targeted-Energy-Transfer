@@ -170,6 +170,8 @@ keras.backend.clear_session()
 tf.random.set_seed(42)
 np.random.seed(42)
 
+import gym
+
 class reinforcment_test(tf.keras.Model):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
