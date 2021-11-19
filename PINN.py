@@ -24,7 +24,7 @@ def save_fig(fig_id, tight_layout=True, fig_extension="png", resolution=300):
         plt.tight_layout()
     plt.savefig(path, format=fig_extension, dpi=resolution)
 
-
+#%%
 class optimizerLearner_pertubation(tf.keras.Model):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
