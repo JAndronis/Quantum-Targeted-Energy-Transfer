@@ -1,11 +1,29 @@
 #%%
+import sys
+assert sys.version_info >= (3, 5)
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import time
 
 import tensorflow as tf
+assert tf.__version__ >= "2.0"
 from tensorflow import keras
 from tensorflow.keras.layers import Dense
+
+
+# Where to save the figures
+PROJECT_ROOT_DIR = "."
+IMAGES_PATH = os.path.join(PROJECT_ROOT_DIR, "images")
+os.makedirs(IMAGES_PATH, exist_ok=True)
+
+def save_fig(fig_id, tight_layout=True, fig_extension="png", resolution=300):
+    path = os.path.join(IMAGES_PATH, fig_id + "." + fig_extension)
+    print("Saving figure", fig_id)
+    if tight_layout:
+        plt.tight_layout()
+    plt.savefig(path, format=fig_extension, dpi=resolution)
+
 
 class optimizerLearner_pertubation(tf.keras.Model):
   def __init__(self, **kwargs):
@@ -55,6 +73,7 @@ class optimizerLearner_pertubation(tf.keras.Model):
     ax.set_zlabel("$P_{D}$", fontsize=20)
     figure.colorbar(plot, shrink=0.5)
     # show the plot
+    save_fig("pertubation_theory_loss")
     plt.show()
 
     x = np.array(xA)
@@ -74,6 +93,7 @@ class optimizerLearner_pertubation(tf.keras.Model):
     ax2.set_ylabel("xD", fontsize=20)
     figure2.colorbar(plot2)
     ax2.legend(prop={'size': 15})
+    save_fig("pertubation_theory_loss_contour")
     plt.show()
 
   def train(self):
@@ -146,3 +166,10 @@ class optimizerLearner_pertubation(tf.keras.Model):
     return xA_best.numpy(), xD_best.numpy()
 
 # %%
+keras.backend.clear_session()
+tf.random.set_seed(42)
+np.random.seed(42)
+
+class reinforcment_test(tf.keras.Model):
+  def __init__(self, **kwargs):
+    super().__init__(**kwargs)
