@@ -177,4 +177,18 @@ class RL_Test(tf.keras.Model):
     super().__init__(**kwargs)
     # self.
     # self.dense1 = Dense(5, activation="elu", input_shape=[n_inputs])
+
+  def loss(self, xA, xD):
+    return tf.math.tanh(xA**2 + xD**2)
+
+  def plot(self):
+    xa = tf.linspace(-2, 2, 100)
+    xd = tf.linspace(-2, 2, 100)
+
+    XA, XD = tf.meshgrid(xa, xd)
+    Z = self.loss(XA, XD)
+
+    figure, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(12,12))
+    ax.plot_surface(XA, XD, Z, cmap='rainbow')
+    plt.show()
 # %%
