@@ -170,7 +170,7 @@ keras.backend.clear_session()
 tf.random.set_seed(42)
 np.random.seed(42)
 
-import gym
+# import gym
 
 class RL_Test(tf.keras.Model):
   def __init__(self, **kwargs):
