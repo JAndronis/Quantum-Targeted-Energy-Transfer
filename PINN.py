@@ -1,4 +1,3 @@
-#%%
 import sys
 from typing import Type
 assert sys.version_info >= (3, 5)
@@ -64,7 +63,6 @@ def construct_Hamiltonians(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N):
 
   return H
 
-#%%
 class Opt_PertTheory(tf.keras.Model):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
@@ -205,7 +203,6 @@ class Opt_PertTheory(tf.keras.Model):
     # return xA_best.numpy(), xD_best.numpy(), best_loss, a_data, d_data
     return xA_best.numpy(), xD_best.numpy()
 
-# %%
 keras.backend.clear_session()
 tf.random.set_seed(42)
 np.random.seed(42)
