@@ -289,12 +289,6 @@ def _mp_avg_N_calc(t, max_N, eigvals, coeff_c, coeff_b):
     sum_j += sum_k*j
   return sum_j
 
-# def _mp_avg_N_calc_i(t, eigvals, coeff_c, coeff_b, j):
-#   return sum(coeff_c*coeff_b[j,:]*np.exp(-1j*eigvals*t))
-
-# def _mp_avg_N_calc_k(t, eigvals, coeff_c, coeff_b, j, sum_i):
-#   return sum(coeff_c.conj()*coeff_b[j,:].conj()*np.exp(1j*eigvals*t)*sum_i)
-
 def mp_execute(chiA,chiD, data_dir, max_N):
   problemHamiltonian = construct_Hamiltonians(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N)
   eigenvalues, eigenvectors = np.linalg.eigh(problemHamiltonian)
