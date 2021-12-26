@@ -1,16 +1,20 @@
-#%%
 import sys
+from typing import Type
 assert sys.version_info >= (3, 5)
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import itertools
+import multiprocessing as mp
+import pandas as pd
+from functools import partial
+import warnings
 
 import tensorflow as tf
 assert tf.__version__ >= "2.0"
 from tensorflow import keras
 from tensorflow.keras.layers import Dense
-
 
 # Where to save the figures
 PROJECT_ROOT_DIR = "."
@@ -24,7 +28,41 @@ def save_fig(fig_id, tight_layout=True, fig_extension="jpg", resolution=300):
         plt.tight_layout()
     plt.savefig(path, format=fig_extension, dpi=resolution)
 
-#%%
+def write_data(data, destination, name_of_file):
+    df = pd.DataFrame(data = data)
+    _destination = os.path.join(destination, name_of_file)
+    np.savetxt(_destination, df)
+
+def read_2D_data(name_of_file):
+    X,Y = [],[]
+    for line in open(name_of_file, 'r'):
+        lines = [i for i in line.split()]
+        X.append(float(lines[0]))
+        Y.append(float(lines[1]))
+    return X,Y
+
+def read_1D_data(name_of_file):
+    data = []
+    for line in open(name_of_file, 'r'):
+        lines = [i for i in line.split()]
+        data.append(float(lines[0]))
+    return data
+
+def construct_Hamiltonians(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N):
+  H = np.zeros((max_N + 1, max_N + 1), dtype=float)
+  
+  # i bosons at the donor
+  for i in range(max_N + 1):
+    for j in range(max_N + 1):
+      # First term from interaction
+      if i == j - 1: H[i][j] = -coupling_lambda * np.sqrt((i + 1) * (max_N - i))
+      # Second term from interaction
+      if i == j + 1: H[i][j] = -coupling_lambda * np.sqrt(i * (max_N - i + 1))
+        # Term coming from the two independent Hamiltonians
+      if i == j: H[i][j] = omegaD * i + 0.5 * chiD * i ** 2 + omegaA * (max_N - i) + 0.5 * chiA * (max_N - i) ** 2
+
+  return H
+
 class Opt_PertTheory(tf.keras.Model):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
@@ -165,7 +203,6 @@ class Opt_PertTheory(tf.keras.Model):
     # return xA_best.numpy(), xD_best.numpy(), best_loss, a_data, d_data
     return xA_best.numpy(), xD_best.numpy()
 
-# %%
 keras.backend.clear_session()
 tf.random.set_seed(42)
 np.random.seed(42)
@@ -191,4 +228,128 @@ class RL_Test(tf.keras.Model):
     figure, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(12,12))
     ax.plot_surface(XA, XD, Z, cmap='rainbow')
     plt.show()
-# %%
+
+def mp_bosons_at_donor_analytical(max_t, max_N, eigvecs, eigvals, initial_state):
+  '''
+  Function that calculates the average number of bosons in the dimer system.
+  The calculation is done based on the equation (25) in our report.
+
+  INPUTS:
+    max_t == int(), The maximum time of the experiment.
+    max_N == int(), The number of bosons on the donor site.
+    eigvecs == np.array(),
+               shape == (max_N+1, max_N+1),
+               The eigenvectors of the hamiltonian of the system as columns in a numpy array.
+    eigvals == np.array(),
+               shape == max_N+1,
+               The eigenvalues of the hamiltonian of the system.
+    initial_state == np.array(),
+                     shape == max_N+1,
+                     An initial state for the system defined as the normalised version of:
+                     np.exp(-(max_N-n)**2) where n is the n-th boson at the donor site.
+
+  OUTPUTS:
+    avg_N == list(),
+             len() == max_t
+             The average number of bosons at the donor.
+  '''
+  coeff_c = np.zeros(max_N+1, dtype=float)
+  for i in range(max_N+1): 
+    coeff_c[i] = np.vdot(eigvecs[:,i], initial_state)
+
+  coeff_b = eigvecs
+
+  avg_N = np.zeros(max_t+1, dtype=float)
+  _time = range(0, max_t+1)
+
+  while True:
+    query = input("Run with multiprocessing? [y/n] ")
+    fl_1 = query[0].lower() 
+    if query == '' or not fl_1 in ['y','n']: 
+        print('Please answer with yes or no')
+    else: break
+
+  if fl_1 == 'y': 
+    p = mp.Pool()
+    _mp_avg_N_calc_partial = partial(_mp_avg_N_calc, max_N=max_N, eigvals=eigvals, coeff_c=coeff_c, coeff_b=coeff_b)
+    avg_N = p.map(_mp_avg_N_calc_partial, _time)
+
+  if fl_1 == 'n':
+    for t in _time:
+      avg_N[t] = _mp_avg_N_calc(t, max_N, eigvals, coeff_c, coeff_b)
+
+  return avg_N
+
+def _mp_avg_N_calc(t, max_N, eigvals, coeff_c, coeff_b):
+  sum_j = 0
+  for j in range(max_N+1):
+    sum_i = sum(coeff_c*coeff_b[j,:]*np.exp(-1j*eigvals*t))
+    sum_k = sum(coeff_c.conj()*coeff_b[j,:].conj()*np.exp(1j*eigvals*t)*sum_i)
+    sum_j += sum_k*j
+  return sum_j
+
+def mp_execute(chiA,chiD, data_dir, max_N):
+  problemHamiltonian = construct_Hamiltonians(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N)
+  eigenvalues, eigenvectors = np.linalg.eigh(problemHamiltonian)
+
+  initial_state = np.zeros(max_N+1,dtype=float)
+  for n in range(max_N+1): initial_state[n] = np.exp(-(max_N-n)**2)
+  initial_state = initial_state / np.linalg.norm(initial_state)
+
+  t_max = 2000
+
+  avg_ND_analytical = mp_bosons_at_donor_analytical(max_t=t_max, 
+                                                    max_N=max_N, 
+                                                    eigvecs=eigenvectors,
+                                                    eigvals=eigenvalues,
+                                                    initial_state=initial_state)
+
+  title_file = f'ND_analytical-λ={coupling_lambda}-χA={chiA}-χD={chiD}.txt'
+  write_data(avg_ND_analytical, destination=data_dir, name_of_file=title_file)
+
+if __name__ == "__main__":
+  warnings.filterwarnings('ignore', category=np.ComplexWarning)
+
+  max_N = 12
+  omegaA, omegaD = 3, -3
+  chiA, chiD = -0.5, 0.5
+  coupling_lambda = 0.001
+
+  cwd = os.getcwd()
+  new_data = f"{cwd}/new_data"
+  try:
+    os.mkdir(new_data)
+  except OSError as error:
+    print(error)
+    while True:
+        query = input("Directory exists, replace it? [y/n] ")
+        fl_1 = query[0].lower() 
+        if query == '' or not fl_1 in ['y','n']: 
+            print('Please answer with yes or no')
+        else: break
+    if fl_1 == 'n': sys.exit(0)
+
+  dir_name = f"coupling-{coupling_lambda}"
+  data_dest = os.path.join(new_data, dir_name)
+  print("Writing values in:", data_dest)
+  try:
+    os.mkdir(data_dest)
+  except OSError as error:
+    print(error)
+    while True:
+        query = input("Directory exists, replace it? [y/n] ")
+        fl_2 = query[0].lower() 
+        if query == '' or not fl_2 in ['y','n']: 
+            print('Please answer with yes or no')
+        else: break
+    if fl_2 == 'n': sys.exit(0)
+
+  t1 = time.time()
+  mp_execute(chiA, chiD, data_dest, max_N=max_N)
+  t2 = time.time()
+  dt = t2-t1
+  print(f"Code took:{dt:.3f}secs to run")
+
+  df = pd.read_csv(os.path.join(data_dest, os.listdir(data_dest)[0]))
+  df.plot()
+  save_fig("average_number_of_bosons")
