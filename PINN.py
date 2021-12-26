@@ -47,24 +47,20 @@ def read_1D_data(name_of_file):
         data.append(float(lines[0]))
     return data
 
-def construct_Hamiltonians(chiA,chiD):
-  H,H_uncoupling = np.zeros((N + 1, N + 1), dtype=float),np.zeros((N + 1, N + 1), dtype=float)
+def construct_Hamiltonians(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N):
+  H = np.zeros((max_N + 1, max_N + 1), dtype=float)
   
-  # Step 1a) Complete problem
   # i bosons at the donor
-  for i in range(N + 1):
-    for j in range(N + 1):
+  for i in range(max_N + 1):
+    for j in range(max_N + 1):
       # First term from interaction
-      if i == j - 1: H[i][j] = -coupling_lambda * np.sqrt((i + 1) * (N - i))
+      if i == j - 1: H[i][j] = -coupling_lambda * np.sqrt((i + 1) * (max_N - i))
       # Second term from interaction
-      if i == j + 1:H[i][j] = -coupling_lambda * np.sqrt(i * (N - i + 1))
+      if i == j + 1: H[i][j] = -coupling_lambda * np.sqrt(i * (max_N - i + 1))
         # Term coming from the two independent Hamiltonians
-      if i == j: H[i][j] = omegaD * i + 0.5 * chiD * i ** 2 + omegaA * (N - i) + 0.5 * chiA * (N - i) ** 2
+      if i == j: H[i][j] = omegaD * i + 0.5 * chiD * i ** 2 + omegaA * (max_N - i) + 0.5 * chiA * (max_N - i) ** 2
 
-  # Step 1b) Uncoupling problem
-  np.fill_diagonal(H_uncoupling,np.diagonal(H))
-
-  return H,H_uncoupling
+  return H
 
 #%%
 class Opt_PertTheory(tf.keras.Model):
@@ -233,71 +229,93 @@ class RL_Test(tf.keras.Model):
     figure, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(12,12))
     ax.plot_surface(XA, XD, Z, cmap='rainbow')
     plt.show()
-# %%
-def bosons_at_donor_analytical(max_t,eigvecs,eigvals,initial_state):
-  coeff_c = np.zeros(N+1,dtype=float)
-  for i in range(N+1): 
-    coeff_c[i] = np.vdot(eigvecs[:,i], initial_state)
-
-  j_vectors = np.identity(N+1)
-
-  coeff_b = np.zeros(eigvecs.shape)
-  for j in range(N+1):
-    for i in range(N+1):
-      coeff_b[j,i] = np.vdot(j_vectors[:, j], eigvecs[:, i])
-
-  avg_N = np.zeros(max_t+1,dtype=float)
-  t = 0
-
-  while True and t <= max_t:
-    sum_m = 0
-    for m in range(N+1):
-      sum_i = 0
-      for i in range(N+1):
-        sum_i += coeff_c[i]*coeff_b[m,i]*np.exp(-1j*eigvals[i]*t)
-
-      sum_k = 0
-      for k in range(N+1):
-        sum_k += coeff_c[k].conj()*coeff_b[m,k].conj()*np.exp(1j*eigvals[k]*t)*sum_i
-    
-      sum_m += sum_k*m
-    #print("\rt={}".format(t), end = "")
-    avg_N[t] = sum_m
-    t += 1
-
-  return avg_N
 
 def mp_bosons_at_donor_analytical(max_t, max_N, eigvecs, eigvals, initial_state):
-  coeff_c = np.zeros(max_N+1,dtype=float)
+  '''
+  Function that calculates the average number of bosons in the dimer system.
+  The calculation is done based on the equation (25) in our report.
+
+  INPUTS:
+    max_t == int(), The maximum time of the experiment.
+    max_N == int(), The number of bosons on the donor site.
+    eigvecs == np.array(),
+               shape == (max_N+1, max_N+1),
+               The eigenvectors of the hamiltonian of the system as columns in a numpy array.
+    eigvals == np.array(),
+               shape == max_N+1,
+               The eigenvalues of the hamiltonian of the system.
+    initial_state == np.array(),
+                     shape == max_N+1,
+                     An initial state for the system defined as the normalised version of:
+                     np.exp(-(max_N-n)**2) where n is the n-th boson at the donor site.
+
+  OUTPUTS:
+    avg_N == list(),
+             len() == max_t
+             The average number of bosons at the donor.
+  '''
+  coeff_c = np.zeros(max_N+1,dtype=complex)
   for i in range(max_N+1): 
     coeff_c[i] = np.vdot(eigvecs[:,i], initial_state)
 
   coeff_b = eigvecs
 
-  avg_N = np.zeros(max_t+1,dtype=float)
+  avg_N = np.zeros(max_t+1,dtype=complex)
   _time = range(0, max_t+1)
 
-  for t in _time:
-    avg_N[t] = _mp_avg_N_calc_m(t, max_N, eigvals, coeff_c, coeff_b)
+  while True:
+    query = input("Run with multiprocessing? [y/n] ")
+    fl_1 = query[0].lower() 
+    if query == '' or not fl_1 in ['y','n']: 
+        print('Please answer with yes or no')
+    else: break
+
+  if fl_1 == 'y': 
+    p = mp.Pool()
+    _mp_avg_N_calc_partial = partial(_mp_avg_N_calc, max_N=max_N, eigvals=eigvals, coeff_c=coeff_c, coeff_b=coeff_b)
+    avg_N = p.map(_mp_avg_N_calc_partial, _time)
+
+  if fl_1 == 'n':
+    for t in _time:
+      avg_N[t] = _mp_avg_N_calc(t, max_N, eigvals, coeff_c, coeff_b)
 
   return avg_N
 
-def _mp_avg_N_calc_m(t, max_N, eigvals, coeff_c, coeff_b):
+def _mp_avg_N_calc(t, max_N, eigvals, coeff_c, coeff_b):
   sum_j = 0
   for j in range(max_N+1):
-    sum_i = _mp_avg_N_calc_i(t, max_N, eigvals, coeff_c, coeff_b, j)
-    sum_k = _mp_avg_N_calc_k(t, max_N, eigvals, coeff_c, coeff_b, j, sum_i)
+    sum_i = sum(coeff_c*coeff_b[j,:]*np.exp(-1j*eigvals*t))
+    sum_k = sum(coeff_c.conj()*coeff_b[j,:].conj()*np.exp(1j*eigvals*t)*sum_i)
     sum_j += sum_k*j
   return sum_j
 
-def _mp_avg_N_calc_i(t, max_N, eigvals, coeff_c, coeff_b, j, q):
-  return sum(coeff_c[i]*coeff_b[j,i]*np.exp(-1j*eigvals[i]*t) for i in range(max_N+1))
+# def _mp_avg_N_calc_i(t, eigvals, coeff_c, coeff_b, j):
+#   return sum(coeff_c*coeff_b[j,:]*np.exp(-1j*eigvals*t))
 
-def _mp_avg_N_calc_k(t, max_N, eigvals, coeff_c, coeff_b, j, sum_i, q):
-  return sum(coeff_c[k].conj()*coeff_b[j,k].conj()*np.exp(1j*eigvals[k]*t)*sum_i for k in range(max_N+1))
+# def _mp_avg_N_calc_k(t, eigvals, coeff_c, coeff_b, j, sum_i):
+#   return sum(coeff_c.conj()*coeff_b[j,:].conj()*np.exp(1j*eigvals*t)*sum_i)
+
+def mp_execute(chiA,chiD, data_dir, max_N):
+  problemHamiltonian = construct_Hamiltonians(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N)
+  eigenvalues, eigenvectors = np.linalg.eigh(problemHamiltonian)
+
+  initial_state = np.zeros(max_N+1,dtype=float)
+  for n in range(max_N+1): initial_state[n] = np.exp(-(max_N-n)**2)
+  initial_state = initial_state / np.linalg.norm(initial_state)
+
+  t_max = 2000
+
+  avg_ND_analytical = mp_bosons_at_donor_analytical(max_t=t_max, 
+                                                    max_N=max_N, 
+                                                    eigvecs=eigenvectors,
+                                                    eigvals=eigenvalues,
+                                                    initial_state=initial_state)
+
+  title_file = f'ND_analytical-λ={coupling_lambda}-χA={chiA}-χD={chiD}.txt'
+  write_data(avg_ND_analytical, destination=data_dir, name_of_file=title_file)
 
 if __name__ == "__main__":
-  N = 12
+  max_N = 12
   omegaA,omegaD = 3,-3
   chiA,chiD = -0.5,0.5
   coupling_lambda = 0.001
@@ -309,7 +327,7 @@ if __name__ == "__main__":
   except OSError as error:
     print(error)
     while True:
-        query = input("Directory exists, replace it? [y/n]")
+        query = input("Directory exists, replace it? [y/n] ")
         fl_1 = query[0].lower() 
         if query == '' or not fl_1 in ['y','n']: 
             print('Please answer with yes or no')
@@ -324,40 +342,19 @@ if __name__ == "__main__":
   except OSError as error:
     print(error)
     while True:
-        query = input("Directory exists, replace it? [y/n]")
+        query = input("Directory exists, replace it? [y/n] ")
         fl_2 = query[0].lower() 
         if query == '' or not fl_2 in ['y','n']: 
             print('Please answer with yes or no')
         else: break
     if fl_2 == 'n': sys.exit(0)
 
-  def mp_execute(chiA,chiD, data_dir):
-    # ----------- Step 1: Construct the Hamiltonian matrices of the problem -----------
-    H, H_uncoupling  = construct_Hamiltonians(chiA,chiD)
-
-    # ----------- Step 2: Solve the eigenvalue problem -----------
-    eigenvalues, eigenvectors = np.linalg.eigh(H)
-    #Diagonal matrix. Easy to compute eigenvalues
-    # eigenvalues_uncoupling, eigenvectors_uncoupling = linalg.eigh(H_uncoupling)
-
-    #----------- Step 3: Initial state ----------- 
-    initial_state = np.zeros(N+1,dtype=float)
-    for n in range(N+1): initial_state[n] = np.exp(-(N-n)**2)
-    initial_state = initial_state / np.linalg.norm(initial_state)
-    t_max = 2000
-    t_span = np.linspace(0,t_max,t_max+1)
-    avg_ND_analytical = mp_bosons_at_donor_analytical(max_t=t_max, max_N=N, eigvecs=eigenvectors,eigvals=eigenvalues,initial_state=initial_state)
-    # print(f'\nExecution time ={round(time.time() - start_time,4)} seconds')
-    title_file = f'ND_analytical-λ={coupling_lambda}-χA={chiA}-χD={chiD}.txt'
-    write_data(avg_ND_analytical, destination=data_dir, name_of_file=title_file)
-
   t1 = time.time()
-  mp_execute(chiA, chiD, data_dest)
+  mp_execute(chiA, chiD, data_dest, max_N=max_N)
   t2 = time.time()
   dt = t2-t1
-  print(f"Code took:{dt}secs to run")
+  print(f"Code took:{dt:.3f}secs to run")
 
   df = pd.read_csv(os.path.join(data_dest, os.listdir(data_dest)[0]))
   df.plot()
   save_fig("average_number_of_bosons")
-# %%
