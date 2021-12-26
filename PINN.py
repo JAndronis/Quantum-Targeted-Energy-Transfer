@@ -348,7 +348,7 @@ if __name__ == "__main__":
   mp_execute(chiA, chiD, data_dest, max_N=max_N)
   t2 = time.time()
   dt = t2-t1
-  print(f"Code took:{dt:.3f}secs to run")
+  print(f"Code took: {dt:.3f}secs to run")
 
   df = pd.read_csv(os.path.join(data_dest, os.listdir(data_dest)[0]))
   df.plot()
