@@ -267,42 +267,34 @@ def bosons_at_donor_analytical(max_t,eigvecs,eigvals,initial_state):
 
   return avg_N
 
-def mp_bosons_at_donor_analytical(max_t,eigvecs,eigvals,initial_state):
-  coeff_c = np.zeros(N+1,dtype=float)
-  for i in range(N+1): 
+def mp_bosons_at_donor_analytical(max_t, max_N, eigvecs, eigvals, initial_state):
+  coeff_c = np.zeros(max_N+1,dtype=float)
+  for i in range(max_N+1): 
     coeff_c[i] = np.vdot(eigvecs[:,i], initial_state)
 
-  j_vectors = np.identity(N+1)
-
-  coeff_b = np.zeros(eigvecs.shape)
-  for j in range(N+1):
-    for i in range(N+1):
-      coeff_b[j,i] = np.vdot(j_vectors[:, j], eigvecs[:, i])
+  coeff_b = eigvecs
 
   avg_N = np.zeros(max_t+1,dtype=float)
-  exp_time = range(0, max_t+1)
+  _time = range(0, max_t+1)
 
-  # for t in exp_time:
-  #   with mp.Pool(4) as pool:
-      
-  
-  # print(zip(eigvals, time, coeff_c, coeff_b))
-
-  for t in exp_time:
-    sum_m = _mp_avg_N_calc_m(eigvals, t, coeff_c, coeff_b, N)
-    #print("\rt={}".format(t), end = "")
-    avg_N[t] = sum_m
+  for t in _time:
+    avg_N[t] = _mp_avg_N_calc_m(t, max_N, eigvals, coeff_c, coeff_b)
 
   return avg_N
 
-def _mp_avg_N_calc_m(eigvals, t, coeff_c, coeff_b, N):
+def _mp_avg_N_calc_m(t, max_N, eigvals, coeff_c, coeff_b):
   sum_j = 0
-  for j in range(N+1):
-    sum_i = sum(coeff_c[i]*coeff_b[j,i]*np.exp(-1j*eigvals[i]*t) for i in range(N+1))
-    sum_k = sum(coeff_c[k].conj()*coeff_b[j,k].conj()*np.exp(1j*eigvals[k]*t)*sum_i for k in range(N+1))
+  for j in range(max_N+1):
+    sum_i = _mp_avg_N_calc_i(t, max_N, eigvals, coeff_c, coeff_b, j)
+    sum_k = _mp_avg_N_calc_k(t, max_N, eigvals, coeff_c, coeff_b, j, sum_i)
     sum_j += sum_k*j
   return sum_j
 
+def _mp_avg_N_calc_i(t, max_N, eigvals, coeff_c, coeff_b, j, q):
+  return sum(coeff_c[i]*coeff_b[j,i]*np.exp(-1j*eigvals[i]*t) for i in range(max_N+1))
+
+def _mp_avg_N_calc_k(t, max_N, eigvals, coeff_c, coeff_b, j, sum_i, q):
+  return sum(coeff_c[k].conj()*coeff_b[j,k].conj()*np.exp(1j*eigvals[k]*t)*sum_i for k in range(max_N+1))
 
 if __name__ == "__main__":
   N = 12
@@ -354,7 +346,7 @@ if __name__ == "__main__":
     initial_state = initial_state / np.linalg.norm(initial_state)
     t_max = 2000
     t_span = np.linspace(0,t_max,t_max+1)
-    avg_ND_analytical = mp_bosons_at_donor_analytical(max_t=t_max,eigvecs=eigenvectors,eigvals=eigenvalues,initial_state=initial_state)
+    avg_ND_analytical = mp_bosons_at_donor_analytical(max_t=t_max, max_N=N, eigvecs=eigenvectors,eigvals=eigenvalues,initial_state=initial_state)
     # print(f'\nExecution time ={round(time.time() - start_time,4)} seconds')
     title_file = f'ND_analytical-λ={coupling_lambda}-χA={chiA}-χD={chiD}.txt'
     write_data(avg_ND_analytical, destination=data_dir, name_of_file=title_file)
