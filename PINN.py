@@ -1,5 +1,6 @@
 #%%
 import sys
+from typing import Type
 assert sys.version_info >= (3, 5)
 import os
 import numpy as np
@@ -9,6 +10,7 @@ import itertools
 import multiprocessing as mp
 import pandas as pd
 from functools import partial
+import warnings
 
 import tensorflow as tf
 assert tf.__version__ >= "2.0"
@@ -254,13 +256,13 @@ def mp_bosons_at_donor_analytical(max_t, max_N, eigvecs, eigvals, initial_state)
              len() == max_t
              The average number of bosons at the donor.
   '''
-  coeff_c = np.zeros(max_N+1,dtype=complex)
+  coeff_c = np.zeros(max_N+1, dtype=float)
   for i in range(max_N+1): 
     coeff_c[i] = np.vdot(eigvecs[:,i], initial_state)
 
   coeff_b = eigvecs
 
-  avg_N = np.zeros(max_t+1,dtype=complex)
+  avg_N = np.zeros(max_t+1, dtype=float)
   _time = range(0, max_t+1)
 
   while True:
@@ -309,9 +311,11 @@ def mp_execute(chiA,chiD, data_dir, max_N):
   write_data(avg_ND_analytical, destination=data_dir, name_of_file=title_file)
 
 if __name__ == "__main__":
+  warnings.filterwarnings('ignore', category=np.ComplexWarning)
+
   max_N = 12
-  omegaA,omegaD = 3,-3
-  chiA,chiD = -0.5,0.5
+  omegaA, omegaD = 3, -3
+  chiA, chiD = -0.5, 0.5
   coupling_lambda = 0.001
 
   cwd = os.getcwd()
