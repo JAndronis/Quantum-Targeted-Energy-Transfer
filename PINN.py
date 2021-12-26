@@ -368,3 +368,4 @@ for chiA in xA:
     count_it +=1
     print("\rCombination {} out of {}: (chiA,chiD) = ({},{})".format(count_it,len(xA)*len(xD),round(chiA,4),round(chiD,4)), end = " ")
     mp_execute(chiA, chiD, data_dest, max_N=max_N)
+print()
