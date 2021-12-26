@@ -11,3 +11,5 @@ settings.json
 
 # Built Visual Studio Code Extensions
 *.vsix
+
+new_data/*

@@ -317,9 +317,11 @@ if __name__ == "__main__":
   warnings.filterwarnings('ignore', category=np.ComplexWarning)
 
   max_N = 12
-  omegaA, omegaD = 3, -3
-  chiA, chiD = -0.5, 0.5
-  coupling_lambda = 0.001
+  omegaA, omegaD = 2, -3
+  # chiA, chiD = -0.5, 0.5
+  coupling_lambda = 1
+  xA = np.linspace(-4, 4, 100)
+  xD = np.linspace(-4, 4, 100)
 
   cwd = os.getcwd()
   new_data = f"{cwd}/new_data"
@@ -350,12 +352,19 @@ if __name__ == "__main__":
         else: break
     if fl_2 == 'n': sys.exit(0)
 
-  t1 = time.time()
-  mp_execute(chiA, chiD, data_dest, max_N=max_N)
-  t2 = time.time()
-  dt = t2-t1
-  print(f"Code took: {dt:.3f}secs to run")
+  # t1 = time.time()
+  # mp_execute(chiA, chiD, data_dest, max_N=max_N)
+  # t2 = time.time()
+  # dt = t2-t1
+  # print(f"Code took: {dt:.3f}secs to run")
 
-  df = pd.read_csv(os.path.join(data_dest, os.listdir(data_dest)[0]))
-  df.plot()
-  save_fig("average_number_of_bosons")
+  # df = pd.read_csv(os.path.join(data_dest, os.listdir(data_dest)[0]))
+  # df.plot()
+  # save_fig("average_number_of_bosons")
+
+count_it=0
+for chiA in xA:
+  for chiD in xD:
+    count_it +=1
+    print("\rCombination {} out of {}: (chiA,chiD) = ({},{})".format(count_it,len(xA)*len(xD),round(chiA,4),round(chiD,4)), end = " ")
+    mp_execute(chiA, chiD, data_dest, max_N=max_N)
