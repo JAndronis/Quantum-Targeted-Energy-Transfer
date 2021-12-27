@@ -1,8 +1,9 @@
 import sys
 from typing import Type
-assert sys.version_info >= (3, 5)
+assert sys.version_info >= (3,6)
 import os
 import numpy as np
+from numpy import diff
 import matplotlib.pyplot as plt
 import time
 import itertools
@@ -259,24 +260,30 @@ def mp_bosons_at_donor_analytical(max_t, max_N, eigvecs, eigvals, initial_state)
 
   coeff_b = eigvecs
 
-  avg_N = np.zeros(max_t+1, dtype=float)
+  avg_N = []
   _time = range(0, max_t+1)
+  avg_min = max_N
 
-  while True:
-    query = input("Run with multiprocessing? [y/n] ")
-    fl_1 = query[0].lower() 
-    if query == '' or not fl_1 in ['y','n']: 
-        print('Please answer with yes or no')
-    else: break
+  # while True:
+  #   query = input("Run with multiprocessing? [y/n] ")
+  #   fl_1 = query[0].lower() 
+  #   if query == '' or not fl_1 in ['y','n']: 
+  #       print('Please answer with yes or no')
+  #   else: break
 
-  if fl_1 == 'y': 
-    p = mp.Pool()
-    _mp_avg_N_calc_partial = partial(_mp_avg_N_calc, max_N=max_N, eigvals=eigvals, coeff_c=coeff_c, coeff_b=coeff_b)
-    avg_N = p.map(_mp_avg_N_calc_partial, _time)
+  # if fl_1 == 'y': 
+  #   p = mp.Pool()
+  #   _mp_avg_N_calc_partial = partial(_mp_avg_N_calc, max_N=max_N, eigvals=eigvals, coeff_c=coeff_c, coeff_b=coeff_b)
+  #   avg_N = p.map(_mp_avg_N_calc_partial, _time)
+  #   return avg_N
 
-  if fl_1 == 'n':
-    for t in _time:
-      avg_N[t] = _mp_avg_N_calc(t, max_N, eigvals, coeff_c, coeff_b)
+  # if fl_1 == 'n':
+  for t in _time:
+    avg_N.append(np.real(_mp_avg_N_calc(t, max_N, eigvals, coeff_c, coeff_b)))
+    if avg_N[t] < avg_min: 
+      avg_min = avg_N[t]
+    else:
+      break
 
   return avg_N
 
@@ -302,8 +309,7 @@ def mp_execute(chiA,chiD, data_dir, max_N):
                                                     max_N=max_N, 
                                                     eigvecs=eigenvectors,
                                                     eigvals=eigenvalues,
-                                                    initial_state=initial_state)
-
+                                                    initial_state=initial_state)                                                  
   title_file = f'ND_analytical-λ={coupling_lambda}-χA={chiA}-χD={chiD}.txt'
   write_data(avg_ND_analytical, destination=data_dir, name_of_file=title_file)
 
@@ -314,6 +320,8 @@ if __name__ == "__main__":
   omegaA, omegaD = 3, -3
   chiA, chiD = -0.5, 0.5
   coupling_lambda = 0.001
+  # xA = np.linspace(-4, 4, 100)
+  # xD = np.linspace(-4, 4, 100)
 
   cwd = os.getcwd()
   new_data = f"{cwd}/new_data"
@@ -348,8 +356,16 @@ if __name__ == "__main__":
   mp_execute(chiA, chiD, data_dest, max_N=max_N)
   t2 = time.time()
   dt = t2-t1
-  print(f"Code took:{dt:.3f}secs to run")
+  print(f"Code took: {dt:.3f}secs to run")
 
   df = pd.read_csv(os.path.join(data_dest, os.listdir(data_dest)[0]))
   df.plot()
   save_fig("average_number_of_bosons")
+
+# count_it=0
+# for chiA in xA:
+#   for chiD in xD:
+#     count_it +=1
+#     print("\rCombination {} out of {}: (chiA,chiD) = ({},{})".format(count_it,len(xA)*len(xD),round(chiA,4),round(chiD,4)), end = " ")
+#     mp_execute(chiA, chiD, data_dest, max_N=max_N)
+print()

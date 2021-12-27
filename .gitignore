@@ -1,4 +1,4 @@
-test.ipynb
+.ipynb_checkpoints 
 
 .vscode/
 settings.json
@@ -9,3 +9,7 @@ settings.json
 
 # Built Visual Studio Code Extensions
 *.vsix
+
+tests/*
+
+new_data/*
