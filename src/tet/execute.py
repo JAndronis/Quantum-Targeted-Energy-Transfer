@@ -1,7 +1,7 @@
 import numpy as np
 from tet import Hamiltonian, writeData, AvgBosons
 
-def execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, data_dir):
+def execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, max_t, data_dir):
     problemHamiltonian = Hamiltonian.Hamiltonian(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N).createHamiltonian()
     eigenvalues, eigenvectors = np.linalg.eigh(problemHamiltonian)
 
@@ -9,9 +9,7 @@ def execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, data_dir):
     for n in range(max_N+1): initial_state[n] = np.exp(-(max_N-n)**2)
     initial_state = initial_state / np.linalg.norm(initial_state)
 
-    t_max = 2000
-
-    avg_ND_analytical = AvgBosons.AvgBosons(max_t=t_max,
+    avg_ND_analytical = AvgBosons.AvgBosons(max_t=max_t,
                                             max_N=max_N, 
                                             eigvecs=eigenvectors,
                                             eigvals=eigenvalues,
