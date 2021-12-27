@@ -1,5 +1,4 @@
 import numpy as np
-import sys
 
 class Hamiltonian:
     def __init__(self, chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, coupled=True):
@@ -50,7 +49,7 @@ class Hamiltonian:
 
     def createHamiltonians(self):
         '''
-        Creates the hamiltonian of the dimer system
+        Creates both the hamiltonians of the coupled and uncoupled system
         INPUTS:
             chiA: int(), the nonlinearity parameter of the acceptor,
             chiD: int(), the nonlinearity parameter of the donor,
@@ -61,24 +60,9 @@ class Hamiltonian:
             coupled: boolean(), variable determining if the function will return the coupled
                                 or uncoupled hamiltonian
         OUTPUTS:
-            H: np.array(), shape == ((max_N + 1, max_N + 1)), the hamiltonian of the system
+            tupple():
+                H: np.array(), shape == ((max_N + 1, max_N + 1)), the hamiltonian of the coupled system
+                H_uncoupled: np.array(), shape == ((max_N + 1, max_N + 1)), the hamiltonian of the uncoupled system
         '''
 
-        H, H_uncoupled = np.zeros((self.max_N + 1, self.max_N + 1), dtype=float), np.zeros((self.max_N + 1, self.max_N + 1), dtype=float)
-
-        # i bosons at the donor
-        for i in range(self.max_N + 1):
-            for j in range(self.max_N + 1):
-                # First term from interaction
-                if i == j - 1: H[i][j] = -self.coupling_lambda * np.sqrt((i + 1) * (self.max_N - i))
-                # Second term from interaction
-                if i == j + 1: H[i][j] = -self.coupling_lambda * np.sqrt(i * (self.max_N - i + 1))
-                # Term coming from the two independent Hamiltonians
-                if i == j: H[i][j] = self.omegaD * i + 0.5 * self.chiD * i ** 2 + self.omegaA * (self.max_N - i) + 0.5 * self.chiA * (self.max_N - i) ** 2
-
-        for i in range(self.max_N + 1):
-            for j in range(self.max_N + 1):
-                # Term coming from the two independent Hamiltonians
-                if i == j: H[i][j] = self.omegaD * i + 0.5 * self.chiD * i ** 2 + self.omegaA * (self.max_N - i) + 0.5 * self.chiA * (self.max_N - i) ** 2
-        
-        return H, H_uncoupled
+        return self.createHamiltonian(self, coupled=True), self.createHamiltonian(self, coupled=False)
