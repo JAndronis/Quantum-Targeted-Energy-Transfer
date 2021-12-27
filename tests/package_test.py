@@ -1,15 +1,10 @@
 import sys
-from typing import Type
 assert sys.version_info >= (3,6)
 import os
 import numpy as np
-from numpy import diff
 import matplotlib.pyplot as plt
 import time
-import itertools
-import multiprocessing as mp
 import pandas as pd
-from functools import partial
 import warnings
 
 from tet import execute, saveFig
