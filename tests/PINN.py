@@ -1,3 +1,4 @@
+import shutil
 import sys
 from typing import Type
 assert sys.version_info >= (3,6)
@@ -316,6 +317,14 @@ def mp_execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, data_dir):
 if __name__ == "__main__":
   warnings.filterwarnings('ignore', category=np.ComplexWarning)
 
+  while True:
+    query = input("Start run? [y/n] ")
+    fl_0 = query[0].lower() 
+    if query == '' or not fl_0 in ['y','n']: 
+        print('Please answer with yes or no')
+    else: break
+    if fl_0 == 'n': sys.exit(0)
+
   max_N = 12
   omegaA, omegaD = 3, -3
   chiA, chiD = -0.5, 0.5
@@ -368,4 +377,4 @@ if __name__ == "__main__":
 #     count_it +=1
 #     print("\rCombination {} out of {}: (chiA,chiD) = ({},{})".format(count_it,len(xA)*len(xD),round(chiA,4),round(chiD,4)), end = " ")
 #     mp_execute(chiA, chiD, data_dest, max_N=max_N)
-print()
+  shutil.make_archive(base_name=data_dest, format='zip')
