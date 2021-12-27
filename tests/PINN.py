@@ -348,18 +348,17 @@ if __name__ == "__main__":
 
   dir_name = f"coupling-{coupling_lambda}"
   data_dest = os.path.join(new_data, dir_name)
-  print("Writing values in:", data_dest)
   try:
     os.mkdir(data_dest)
   except OSError as error:
     print(error)
     while True:
         query = input("Directory exists, replace it? [y/n] ")
-        fl_2 = query[0].lower() 
-        if query == '' or not fl_2 in ['y','n']: 
+        fl_1 = query[0].lower() 
+        if query == '' or not fl_1 in ['y','n']: 
             print('Please answer with yes or no')
         else: break
-    if fl_2 == 'n': sys.exit(0)
+    if fl_1 == 'n': sys.exit(0)
 
   t1 = time.time()
   mp_execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, data_dest)
@@ -367,9 +366,9 @@ if __name__ == "__main__":
   dt = t2-t1
   print(f"Code took: {dt:.3f}secs to run")
 
-  df = pd.read_csv(os.path.join(data_dest, os.listdir(data_dest)[0]))
-  df.plot()
-  save_fig("average_number_of_bosons")
+  # df = pd.read_csv(os.path.join(data_dest, os.listdir(data_dest)[0]))
+  # df.plot()
+  # save_fig("average_number_of_bosons")
 
 # count_it=0
 # for chiA in xA:
@@ -377,4 +376,5 @@ if __name__ == "__main__":
 #     count_it +=1
 #     print("\rCombination {} out of {}: (chiA,chiD) = ({},{})".format(count_it,len(xA)*len(xD),round(chiA,4),round(chiD,4)), end = " ")
 #     mp_execute(chiA, chiD, data_dest, max_N=max_N)
-  shutil.make_archive(base_name=data_dest, format='zip')
+  shutil.make_archive(base_name=f"{data_dest}-zipped", format='zip')
+  shutil.rmtree(path=data_dest)

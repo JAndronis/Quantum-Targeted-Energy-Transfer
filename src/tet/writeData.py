@@ -9,4 +9,5 @@ def writeData(data, destination, name_of_file, zip_files=False):
     np.savetxt(_destination, df)
     
     if zip_files:
-        shutil.make_archive(base_name=destination, format='zip')
+        shutil.make_archive(base_name=f"{destination}-zipped", format='zip')
+        shutil.rmtree(path=destination)

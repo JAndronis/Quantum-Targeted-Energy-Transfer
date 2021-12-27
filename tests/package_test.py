@@ -37,18 +37,6 @@ if __name__ == "__main__":
 
     dir_name = f"coupling-{coupling_lambda}"
     data_dest = os.path.join(new_data, dir_name)
-    print("Writing values in:", data_dest)
-    try:
-        os.mkdir(data_dest)
-    except OSError as error:
-        print(error)
-        while True:
-            query = input("Directory exists, replace it? [y/n] ")
-            fl_2 = query[0].lower() 
-            if query == '' or not fl_2 in ['y','n']: 
-                print('Please answer with yes or no')
-            else: break
-        if fl_2 == 'n': sys.exit(0)
 
     t1 = time.time()
     execute.execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, data_dest)
