@@ -1,7 +1,7 @@
 import numpy as np
 from tet import Hamiltonian, writeData, AvgBosons
 
-def execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, max_t, data_dir):
+def execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, max_t, data_dir, zip_files=False):
     problemHamiltonian = Hamiltonian.Hamiltonian(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N).createHamiltonian()
     eigenvalues, eigenvectors = np.linalg.eigh(problemHamiltonian)
 
@@ -13,6 +13,7 @@ def execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, max_t, data_dir)
                                             max_N=max_N, 
                                             eigvecs=eigenvectors,
                                             eigvals=eigenvalues,
-                                            initial_state=initial_state).computeAverage()                                              
+                                            initial_state=initial_state,
+                                            zip_files=False).computeAverage()                                              
     title_file = f'ND_analytical-λ={coupling_lambda}-t_max={max_t}-χA={chiA}-χD={chiD}.txt'
     writeData.writeData(avg_ND_analytical, destination=data_dir, name_of_file=title_file)
