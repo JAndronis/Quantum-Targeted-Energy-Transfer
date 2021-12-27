@@ -1,0 +1,10 @@
+LICENSE
+README.md
+pyproject.toml
+setup.cfg
+src/tet/__init__.py
+src/tet/hamiltonian.py
+src/tet_JAndronis.egg-info/PKG-INFO
+src/tet_JAndronis.egg-info/SOURCES.txt
+src/tet_JAndronis.egg-info/dependency_links.txt
+src/tet_JAndronis.egg-info/top_level.txt
