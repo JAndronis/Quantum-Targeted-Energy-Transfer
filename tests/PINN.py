@@ -1,6 +1,6 @@
 import sys
 from typing import Type
-assert sys.version_info >= (3, 5)
+assert sys.version_info >= (3,6)
 import os
 import numpy as np
 from numpy import diff
