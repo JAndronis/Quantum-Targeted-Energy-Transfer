@@ -50,7 +50,7 @@ if __name__ == "__main__":
         if fl_1 == 'n': sys.exit(0)
 
     t1 = time.time()
-    execute.execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, data_dest)
+    execute.execute(chiA=chiA, chiD=chiD, coupling_lambda=coupling_lambda, omegaA=omegaA, omegaD=omegaD, max_N=max_N, max_t=2000, data_dir=data_dest, zip_files=True)
     t2 = time.time()
     dt = t2-t1
     print(f"Code took: {dt:.3f}secs to run")
