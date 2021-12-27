@@ -64,4 +64,3 @@ if __name__ == "__main__":
     df = pd.read_csv(os.path.join(data_dest, os.listdir(data_dest)[0]))
     df.plot()
     saveFig.saveFig("average_number_of_bosons")
-    print()
