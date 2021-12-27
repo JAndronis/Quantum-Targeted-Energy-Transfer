@@ -30,10 +30,14 @@ def save_fig(fig_id, tight_layout=True, fig_extension="jpg", resolution=300):
         plt.tight_layout()
     plt.savefig(path, format=fig_extension, dpi=resolution)
 
-def write_data(data, destination, name_of_file):
-    df = pd.DataFrame(data = data)
-    _destination = os.path.join(destination, name_of_file)
-    np.savetxt(_destination, df)
+def writeData(data, destination, name_of_file, zip_files=False):
+  df = pd.DataFrame(data = data)
+  _destination = os.path.join(destination, name_of_file)
+  np.savetxt(_destination, df)
+  
+  if zip_files:
+      shutil.make_archive(base_name=f"{destination}-zipped", format='zip')
+      shutil.rmtree(path=destination)
 
 def read_2D_data(name_of_file):
     X,Y = [],[]
@@ -312,7 +316,7 @@ def mp_execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, data_dir):
                                                     eigvals=eigenvalues,
                                                     initial_state=initial_state)                                                  
   title_file = f'ND_analytical-λ={coupling_lambda}-χA={chiA}-χD={chiD}.txt'
-  write_data(avg_ND_analytical, destination=data_dir, name_of_file=title_file)
+  writeData(avg_ND_analytical, destination=data_dir, name_of_file=title_file, zip_files=True)
 
 if __name__ == "__main__":
   warnings.filterwarnings('ignore', category=np.ComplexWarning)
@@ -376,5 +380,3 @@ if __name__ == "__main__":
 #     count_it +=1
 #     print("\rCombination {} out of {}: (chiA,chiD) = ({},{})".format(count_it,len(xA)*len(xD),round(chiA,4),round(chiD,4)), end = " ")
 #     mp_execute(chiA, chiD, data_dest, max_N=max_N)
-  shutil.make_archive(base_name=f"{data_dest}-zipped", format='zip')
-  shutil.rmtree(path=data_dest)
