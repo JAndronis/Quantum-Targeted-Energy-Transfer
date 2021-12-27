@@ -49,11 +49,15 @@ if __name__ == "__main__":
             else: break
         if fl_1 == 'n': sys.exit(0)
 
+    zip_files = True
+
     t1 = time.time()
-    execute.execute(chiA=chiA, chiD=chiD, coupling_lambda=coupling_lambda, omegaA=omegaA, omegaD=omegaD, max_N=max_N, max_t=2000, data_dir=data_dest, zip_files=True)
+    execute.execute(chiA=chiA, chiD=chiD, coupling_lambda=coupling_lambda, omegaA=omegaA, omegaD=omegaD, max_N=max_N, max_t=2000, data_dir=data_dest, zip_files=zip_files)
     t2 = time.time()
     dt = t2-t1
     print(f"Code took: {dt:.3f}secs to run")
+
+    if zip_files: sys.exit(0)
 
     df = pd.read_csv(os.path.join(data_dest, os.listdir(data_dest)[0]))
     df.plot()
