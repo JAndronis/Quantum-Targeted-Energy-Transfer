@@ -295,7 +295,7 @@ def _mp_avg_N_calc(t, max_N, eigvals, coeff_c, coeff_b):
     sum_j += sum_k*j
   return sum_j
 
-def mp_execute(chiA,chiD, data_dir, max_N):
+def mp_execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, data_dir):
   problemHamiltonian = construct_Hamiltonians(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N)
   eigenvalues, eigenvectors = np.linalg.eigh(problemHamiltonian)
 
@@ -353,7 +353,7 @@ if __name__ == "__main__":
     if fl_2 == 'n': sys.exit(0)
 
   t1 = time.time()
-  mp_execute(chiA, chiD, data_dest, max_N=max_N)
+  mp_execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, data_dest)
   t2 = time.time()
   dt = t2-t1
   print(f"Code took: {dt:.3f}secs to run")
