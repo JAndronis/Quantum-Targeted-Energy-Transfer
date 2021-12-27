@@ -3,7 +3,10 @@ README.md
 pyproject.toml
 setup.cfg
 src/tet/__init__.py
+src/tet/avg_bosons.py
 src/tet/hamiltonian.py
+src/tet/save_fig.py
+src/tet/write_data.py
 src/tet_JAndronis.egg-info/PKG-INFO
 src/tet_JAndronis.egg-info/SOURCES.txt
 src/tet_JAndronis.egg-info/dependency_links.txt
