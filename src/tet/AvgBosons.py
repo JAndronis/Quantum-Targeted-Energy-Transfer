@@ -45,9 +45,6 @@ class AvgBosons:
 
         for t in _time:
             avg_N.append(np.real(self._computeAverageCalculation(coeff_c, coeff_b, t)))
-            # # If only used for xA, xD checks
-            # if avg_N[t] < avg_min: avg_min = avg_N[t]
-            # else: break
 
         return avg_N
 
