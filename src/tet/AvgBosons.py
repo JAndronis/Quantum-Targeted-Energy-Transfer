@@ -1,6 +1,6 @@
 import numpy as np
 
-class AvgBosonsD:
+class AvgBosons:
     def __init__(self, max_t, max_N, eigvecs, eigvals, initial_state):
         self.max_t = max_t
         self.max_N = max_N
