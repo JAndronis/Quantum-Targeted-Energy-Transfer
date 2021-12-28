@@ -1,4 +1,5 @@
 import numpy as np
+import shutil
 from tet import Hamiltonian, writeData, AvgBosons
 
 def execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, max_t, data_dir, zip_files=False):
@@ -15,4 +16,7 @@ def execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, max_t, data_dir,
                                             eigvals=eigenvalues,
                                             initial_state=initial_state).computeAverage()                                              
     title_file = f'ND_analytical-λ={coupling_lambda}-t_max={max_t}-χA={chiA}-χD={chiD}.txt'
-    writeData.writeData(data=avg_ND_analytical, destination=data_dir, name_of_file=title_file, zip_files=zip_files)
+    writeData.writeData(data=avg_ND_analytical, destination=data_dir, name_of_file=title_file)
+    if zip_files:
+        shutil.make_archive(base_name=f"{data_dir}-zipped", format='zip')
+        shutil.rmtree(path=data_dir)
