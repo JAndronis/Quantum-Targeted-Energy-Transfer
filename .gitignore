@@ -10,5 +10,5 @@ settings.json
 # Built Visual Studio Code Extensions
 *.vsix
 
-tests/new_data/*
+tests/data/*
 tests/images/*
