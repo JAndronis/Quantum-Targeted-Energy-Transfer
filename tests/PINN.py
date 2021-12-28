@@ -18,10 +18,6 @@ assert tf.__version__ >= "2.0"
 from tensorflow import keras
 from tensorflow.keras.layers import Dense
 
-# Where to save the figures
-PROJECT_ROOT_DIR = "."
-IMAGES_PATH = os.path.join(PROJECT_ROOT_DIR, "images")
-os.makedirs(IMAGES_PATH, exist_ok=True)
 
 def save_fig(fig_id, tight_layout=True, fig_extension="jpg", resolution=300):
     path = os.path.join(IMAGES_PATH, fig_id + "." + fig_extension)
@@ -361,8 +357,8 @@ if __name__ == "__main__":
   omegaA, omegaD = 2, -3
   # chiA, chiD = -0.5, 0.5
   coupling_lambda = 1
-  xA = np.linspace(-4, 4, 100)
-  xD = np.linspace(-4, 4, 100)
+  xA = np.linspace(-4, 4, 10)
+  xD = np.linspace(-4, 4, 10)
   t_max=50
 
   cwd = os.getcwd()
@@ -392,6 +388,12 @@ if __name__ == "__main__":
             print('Please answer with yes or no')
         else: break
     if fl_1 == 'n': sys.exit(0)
+
+  # Where to save the figures
+  PROJECT_ROOT_DIR = new_data
+  IMAGES_PATH = os.path.join(PROJECT_ROOT_DIR, "images")
+  os.makedirs(IMAGES_PATH, exist_ok=True)
+
 
   # t1 = time.time()
   # mp_execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, data_dest)

@@ -14,18 +14,18 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore', category=np.ComplexWarning)
 
     max_N = 12
-    omegaA, omegaD = 2, -3
+    omegaA, omegaD = 3, -3
     # chiA, chiD = -0.5, 0.5
     coupling_lambda = 1
-    t_max = 200
-    xA = np.linspace(-4, 4, 10)
-    xD = np.linspace(-4, 4, 10)
+    t_max = 2000
+    xA = np.linspace(-4, 4, 100)
+    xD = np.linspace(-4, 4, 100)
 
     cwd = os.getcwd()
-    new_data = f"{cwd}/new_data"
+    data = f"{cwd}/data"
 
     try:
-        os.mkdir(new_data)
+        os.mkdir(data)
     except OSError as error:
         print(error)
         while True:
@@ -37,7 +37,7 @@ if __name__ == "__main__":
         if fl_1 == 'n': sys.exit(0)
 
     first_dir = f"coupling-{coupling_lambda}"
-    first_dir_dest = os.path.join(new_data, first_dir)
+    first_dir_dest = os.path.join(data, first_dir)
     try:
         os.mkdir(first_dir_dest)
     except OSError as error:
@@ -90,7 +90,6 @@ if __name__ == "__main__":
 
     data_analytical = []
     mimimums_ND = np.zeros(shape=(len(xA),len(xD)) )
-    # t_span = np.linspace(0,t_max,t_max+1)
     plt.figure(figsize=(8,8))
     for i in range(len(xA)):
         for j in range(len(xD)):
@@ -105,4 +104,4 @@ if __name__ == "__main__":
     plt.colorbar()
     plt.title(f'tmax = {t_max}, points χA, χD = {len(xA), len(xD)}, λ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}')
     title_heatmap = f'heatmap_tmax{t_max}_pointsxA:{len(xA)}_pointsxD{len(xD)}_λ={coupling_lambda}.pdf'
-    saveFig.saveFig(title_heatmap)
+    saveFig.saveFig(title_heatmap, data_dest)
