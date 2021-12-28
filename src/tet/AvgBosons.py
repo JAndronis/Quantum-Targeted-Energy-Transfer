@@ -40,7 +40,6 @@ class AvgBosons:
 
         avg_N = []
         _time = range(0, self.max_t+1)
-        avg_min = self.max_N
 
         for t in _time:
             avg_N.append(np.real(self._computeAverageCalculation(t)))
