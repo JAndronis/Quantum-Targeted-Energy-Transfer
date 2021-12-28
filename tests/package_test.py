@@ -17,9 +17,9 @@ if __name__ == "__main__":
     omegaA, omegaD = 2, -3
     # chiA, chiD = -0.5, 0.5
     coupling_lambda = 1
-    t_max = 100
-    xA = np.linspace(-4, 4, 2)
-    xD = np.linspace(-4, 4, 2)
+    t_max = 200
+    xA = np.linspace(-4, 4, 100)
+    xD = np.linspace(-4, 4, 100)
 
     cwd = os.getcwd()
     new_data = f"{cwd}/new_data"
@@ -64,7 +64,6 @@ if __name__ == "__main__":
             else: break
         if fl_1 == 'n': sys.exit(0)
 
-    zip_files = True
     count_it = 0
 
     t1 = time.time()
@@ -72,12 +71,12 @@ if __name__ == "__main__":
         for chiD in xD:
             count_it +=1
             print("\rCombination {} out of {}: (chiA,chiD) = ({},{})".format(count_it,len(xA)*len(xD),round(chiA,4),round(chiD,4)), end = " ")
-            execute.execute(chiA=chiA, chiD=chiD, coupling_lambda=coupling_lambda, omegaA=omegaA, omegaD=omegaD, max_N=max_N, max_t=100, data_dir=data_dest, zip_files=zip_files)
+            execute.execute(chiA=chiA, chiD=chiD, coupling_lambda=coupling_lambda, omegaA=omegaA, omegaD=omegaD, max_N=max_N, max_t=100, data_dir=data_dest)
     t2 = time.time()
     dt = t2-t1
     print(f"Code took: {dt:.3f}secs to run")
 
-    if zip_files: sys.exit(0)
+    # if zip_files: sys.exit(0)
 
     data_analytical = []
     mimimums_ND = np.zeros(shape=(len(xA),len(xD)) )
@@ -97,3 +96,7 @@ if __name__ == "__main__":
     plt.title(f'tmax = {t_max}, points χA, χD = {len(xA), len(xD)}, λ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}')
     title_heatmap = f'heatmap_tmax{t_max}_pointsxA:{len(xA)}_pointsxD{len(xD)}_λ={coupling_lambda}.pdf'
     saveFig.saveFig(title_heatmap)
+
+    if True:
+        shutil.make_archive(base_name=f"{data_dest}-zipped", format='zip', root_dir=first_dir_dest)
+        shutil.rmtree(path=data_dest)
