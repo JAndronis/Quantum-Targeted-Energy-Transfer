@@ -8,7 +8,7 @@ import time
 import pandas as pd
 import warnings
 
-from tet import execute, saveFig, writeData
+from tet import execute, saveFig, data_process
 
 if __name__ == "__main__":
     warnings.filterwarnings('ignore', category=np.ComplexWarning)
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     dt = t2-t1
     print(f"Code took: {dt:.3f}secs to run")
 
-    writeData.compress(zip_files=zip_files, destination=data_dest)
+    data_process.compress(zip_files=zip_files, destination=data_dest)
     if zip_files: sys.exit(0)
 
     data_analytical = []
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     for i in range(len(xA)):
         for j in range(len(xD)):
             title_analytical = f'ND_analytical-λ={coupling_lambda}-t_max={t_max}-χA={xA[i]}-χD={xD[j]}.txt'
-            data_analytical_case = writeData.read_1D_data(destination=data_dest, name_of_file=title_analytical)
+            data_analytical_case = data_process.read_1D_data(destination=data_dest, name_of_file=title_analytical)
             mimimums_ND[i][j] = min(data_analytical_case)
             data_analytical.append([ data_analytical_case,xA[i],xD[j]])
 
