@@ -64,7 +64,7 @@ if __name__ == "__main__":
             else: break
         if fl_1 == 'n': sys.exit(0)
 
-    zip_files = True
+    zip_files = False
     count_it = 0
 
     t1 = time.time()
