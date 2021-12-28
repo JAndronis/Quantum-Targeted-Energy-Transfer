@@ -35,9 +35,9 @@ def writeData(data, destination, name_of_file, zip_files=False):
   _destination = os.path.join(destination, name_of_file)
   np.savetxt(_destination, df)
   
-  if zip_files:
-      shutil.make_archive(base_name=f"{destination}-zipped", format='zip')
-      shutil.rmtree(path=destination)
+  # if zip_files:
+  #     shutil.make_archive(base_name=f"{destination}-zipped", format='zip')
+  #     shutil.rmtree(path=destination)
 
 def read_2D_data(name_of_file):
     X,Y = [],[]
@@ -47,9 +47,10 @@ def read_2D_data(name_of_file):
         Y.append(float(lines[1]))
     return X,Y
 
-def read_1D_data(name_of_file):
+def read_1D_data(destination, name_of_file):
+    _destination = os.path.join(destination, name_of_file)
     data = []
-    for line in open(name_of_file, 'r'):
+    for line in open(_destination, 'r'):
         lines = [i for i in line.split()]
         data.append(float(lines[0]))
     return data
@@ -285,10 +286,6 @@ def mp_bosons_at_donor_analytical(max_t, max_N, eigvecs, eigvals, initial_state)
   # if fl_1 == 'n':
   for t in _time:
     avg_N.append(np.real(_mp_avg_N_calc(t, max_N, eigvals, coeff_c, coeff_b)))
-    if avg_N[t] < avg_min: 
-      avg_min = avg_N[t]
-    else:
-      break
 
   return avg_N
 
@@ -300,6 +297,37 @@ def _mp_avg_N_calc(t, max_N, eigvals, coeff_c, coeff_b):
     sum_j += sum_k*j
   return sum_j
 
+def bosons_at_donor_analytical(max_N, max_t,eigvecs,eigvals,initial_state):
+  coeff_c = np.zeros(max_N+1,dtype=float)
+  for i in range(max_N+1): 
+    coeff_c[i] = np.vdot(eigvecs[:,i], initial_state)
+
+  j_vectors = np.identity(max_N+1)
+
+  coeff_b = np.zeros(eigvecs.shape)
+  for j in range(max_N+1):
+    for i in range(max_N+1):
+      coeff_b[j,i] = np.vdot(j_vectors[:, j], eigvecs[:, i])
+
+  avg_N = np.zeros(max_t+1,dtype=float)
+  counter = 0
+  t = 0
+
+  while True and t <= max_t:
+    sum_m = 0
+    for m in range(max_N+1):
+      sum_i = sum(coeff_c*coeff_b[m,:]*np.exp(-1j*eigvals*t))
+      sum_k = sum(coeff_c.conj()*coeff_b[m,:].conj()*np.exp(-1j*eigvals*t)*sum_i)
+      sum_m += sum_k*m
+    #print("\rt={}".format(t), end = "")
+    avg_N[t] = sum_m
+    #if avg_N[counter] < 0.1: break
+    #counter += 1
+    t += 1
+
+  return avg_N
+
+
 def mp_execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, data_dir):
   problemHamiltonian = construct_Hamiltonians(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N)
   eigenvalues, eigenvectors = np.linalg.eigh(problemHamiltonian)
@@ -308,9 +336,9 @@ def mp_execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, data_dir):
   for n in range(max_N+1): initial_state[n] = np.exp(-(max_N-n)**2)
   initial_state = initial_state / np.linalg.norm(initial_state)
 
-  t_max = 2000
+  t_max = 100
 
-  avg_ND_analytical = mp_bosons_at_donor_analytical(max_t=t_max, 
+  avg_ND_analytical = bosons_at_donor_analytical(max_t=t_max, 
                                                     max_N=max_N, 
                                                     eigvecs=eigenvectors,
                                                     eigvals=eigenvalues,
@@ -330,11 +358,12 @@ if __name__ == "__main__":
     if fl_0 == 'n': sys.exit(0)
 
   max_N = 12
-  omegaA, omegaD = 3, -3
-  chiA, chiD = -0.5, 0.5
-  coupling_lambda = 0.001
-  # xA = np.linspace(-4, 4, 100)
-  # xD = np.linspace(-4, 4, 100)
+  omegaA, omegaD = 2, -3
+  # chiA, chiD = -0.5, 0.5
+  coupling_lambda = 1
+  xA = np.linspace(-4, 4, 100)
+  xD = np.linspace(-4, 4, 100)
+  t_max=50
 
   cwd = os.getcwd()
   new_data = f"{cwd}/new_data"
@@ -364,19 +393,40 @@ if __name__ == "__main__":
         else: break
     if fl_1 == 'n': sys.exit(0)
 
-  t1 = time.time()
-  mp_execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, data_dest)
-  t2 = time.time()
-  dt = t2-t1
-  print(f"Code took: {dt:.3f}secs to run")
+  # t1 = time.time()
+  # mp_execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, data_dest)
+  # t2 = time.time()
+  # dt = t2-t1
+  # print(f"Code took: {dt:.3f}secs to run")
 
   # df = pd.read_csv(os.path.join(data_dest, os.listdir(data_dest)[0]))
   # df.plot()
   # save_fig("average_number_of_bosons")
 
-# count_it=0
-# for chiA in xA:
-#   for chiD in xD:
-#     count_it +=1
-#     print("\rCombination {} out of {}: (chiA,chiD) = ({},{})".format(count_it,len(xA)*len(xD),round(chiA,4),round(chiD,4)), end = " ")
-#     mp_execute(chiA, chiD, data_dest, max_N=max_N)
+  count_it=0
+  for chiA in xA:
+    for chiD in xD:
+      # p = mp.Pool(4)
+      count_it +=1
+      print("\rCombination {} out of {}: (chiA,chiD) = ({},{})".format(count_it,len(xA)*len(xD),round(chiA,4),round(chiD,4)), end = " ")
+      mp_execute(chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, data_dest)
+
+  data_analytical = []
+  mimimums_ND = np.zeros(shape=(len(xA),len(xD)) )
+  t_span = np.linspace(0,t_max,t_max+1)
+  plt.figure(figsize=(8,8))
+  for i in range(len(xA)):
+      for j in range(len(xD)):
+          title_analytical = f'ND_analytical-λ={coupling_lambda}-χA={chiA}-χD={chiD}.txt'
+          data_analytical_case = read_1D_data(destination=data_dest, name_of_file=title_analytical)
+          mimimums_ND[i][j] = min(data_analytical_case)
+          data_analytical.append([ data_analytical_case,xA[i],xD[j] ])
+
+  plt.imshow(mimimums_ND,cmap = 'gnuplot',extent=[min(xD),max(xD),max(xA),min(xA)])
+  plt.xlabel('xD')
+  plt.ylabel('xA')
+  plt.colorbar()
+  plt.title(f'tmax = {t_max},points xA = {len(xA)},points xD = {len(xD)},λ={coupling_lambda}')
+  title_heatmap = f'heatmap_tmax{t_max}_pointsxA:{len(xA)}_pointsxD{len(xD)}_λ={coupling_lambda}.pdf'
+  save_fig(title_heatmap)
+  plt.show()
