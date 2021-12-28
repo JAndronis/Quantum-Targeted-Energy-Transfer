@@ -16,6 +16,15 @@ def read_1D_data(destination, name_of_file):
         data.append(float(lines[0]))
     return data
 
+def read_2D_data(destination, name_of_file):
+    _destination = os.path.join(destination, name_of_file)
+    X,Y = [],[]
+    for line in open(_destination, 'r'):
+        lines = [i for i in line.split()]
+        X.append(float(lines[0]))
+        Y.append(float(lines[1]))
+    return X,Y
+
 def compress(zip_files, destination):
     if not zip_files: return None
     if zip_files:
