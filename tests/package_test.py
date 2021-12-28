@@ -16,53 +16,26 @@ if __name__ == "__main__":
     max_N = 12
     omegaA, omegaD = 3, -3
     # chiA, chiD = -0.5, 0.5
-    coupling_lambda = 1
+    coupling_lambda = 0.001
     t_max = 2000
-    xA = np.linspace(-4, 4, 100)
-    xD = np.linspace(-4, 4, 100)
+    xA = np.linspace(-5, 5, 20)
+    xD = np.linspace(-5, 5, 20)
 
     cwd = os.getcwd()
     data = f"{cwd}/data"
 
-    try:
-        os.mkdir(data)
-    except OSError as error:
-        print(error)
-        while True:
-            query = input("Directory exists, replace it? [y/n] ")
-            fl_1 = query[0].lower() 
-            if query == '' or not fl_1 in ['y','n']: 
-                print('Please answer with yes or no')
-            else: break
-        if fl_1 == 'n': sys.exit(0)
+    coupling_dir = f"coupling-{coupling_lambda}"
+    coupling_dir_path = os.path.join(data, coupling_dir)
 
-    first_dir = f"coupling-{coupling_lambda}"
-    first_dir_dest = os.path.join(data, first_dir)
-    try:
-        os.mkdir(first_dir_dest)
-    except OSError as error:
-        print(error)
-        while True:
-            query = input("Directory exists, replace it? [y/n] ")
-            fl_1 = query[0].lower() 
-            if query == '' or not fl_1 in ['y','n']: 
-                print('Please answer with yes or no')
-            else: break
-        if fl_1 == 'n': sys.exit(0)
+    t_dir = f"tmax-{t_max}"
+    t_dir_path = os.path.join(coupling_dir_path, t_dir)
 
-    dir_name = f"tmax-{t_max}"
-    data_dest = os.path.join(first_dir_dest, dir_name)
-    try:
-        os.mkdir(data_dest)
-    except OSError as error:
-        print(error)
-        while True:
-            query = input("Directory exists, replace it? [y/n] ")
-            fl_1 = query[0].lower() 
-            if query == '' or not fl_1 in ['y','n']: 
-                print('Please answer with yes or no')
-            else: break
-        if fl_1 == 'n': sys.exit(0)
+    data_dest = os.path.join(t_dir_path, "data")
+
+    data_process.createDir(data)
+    data_process.createDir(coupling_dir_path)
+    data_process.createDir(t_dir_path)
+    data_process.createDir(data_dest)
 
     zip_files = False
     count_it = 0
@@ -104,4 +77,4 @@ if __name__ == "__main__":
     plt.colorbar()
     plt.title(f'tmax = {t_max}, points χA, χD = {len(xA), len(xD)}, λ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}')
     title_heatmap = f'heatmap_tmax{t_max}_pointsxA:{len(xA)}_pointsxD{len(xD)}_λ={coupling_lambda}.pdf'
-    saveFig.saveFig(title_heatmap, data_dest)
+    saveFig.saveFig(title_heatmap, t_dir_path)
