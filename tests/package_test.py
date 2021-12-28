@@ -14,12 +14,12 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore', category=np.ComplexWarning)
 
     max_N = 12
-    omegaA, omegaD = 3, -3
+    omegaA, omegaD = 2, -3
     # chiA, chiD = -0.5, 0.5
     coupling_lambda = 1
     t_max = 100
-    xA = np.linspace(-4, 4, 100)
-    xD = np.linspace(-4, 4, 100)
+    xA = np.linspace(-4, 4, 2)
+    xD = np.linspace(-4, 4, 2)
 
     cwd = os.getcwd()
     new_data = f"{cwd}/new_data"
@@ -36,8 +36,22 @@ if __name__ == "__main__":
             else: break
         if fl_1 == 'n': sys.exit(0)
 
-    dir_name = f"coupling-{coupling_lambda}"
-    data_dest = os.path.join(new_data, dir_name)
+    first_dir = f"coupling-{coupling_lambda}"
+    first_dir_dest = os.path.join(new_data, first_dir)
+    try:
+        os.mkdir(first_dir_dest)
+    except OSError as error:
+        print(error)
+        while True:
+            query = input("Directory exists, replace it? [y/n] ")
+            fl_1 = query[0].lower() 
+            if query == '' or not fl_1 in ['y','n']: 
+                print('Please answer with yes or no')
+            else: break
+        if fl_1 == 'n': sys.exit(0)
+
+    dir_name = f"tmax-{t_max}"
+    data_dest = os.path.join(first_dir_dest, dir_name)
     try:
         os.mkdir(data_dest)
     except OSError as error:
@@ -50,7 +64,7 @@ if __name__ == "__main__":
             else: break
         if fl_1 == 'n': sys.exit(0)
 
-    zip_files = False
+    zip_files = True
     count_it = 0
 
     t1 = time.time()
@@ -67,20 +81,19 @@ if __name__ == "__main__":
 
     data_analytical = []
     mimimums_ND = np.zeros(shape=(len(xA),len(xD)) )
-    t_span = np.linspace(0,t_max,t_max+1)
+    # t_span = np.linspace(0,t_max,t_max+1)
     plt.figure(figsize=(8,8))
     for i in range(len(xA)):
         for j in range(len(xD)):
-            title_analytical = f'ND_analytical-λ={coupling_lambda}-t_max={t_max}-χA={chiA}-χD={chiD}.txt'
+            title_analytical = f'ND_analytical-λ={coupling_lambda}-t_max={t_max}-χA={xA[i]}-χD={xD[j]}.txt'
             data_analytical_case = writeData.read_1D_data(destination=data_dest, name_of_file=title_analytical)
             mimimums_ND[i][j] = min(data_analytical_case)
-            data_analytical.append([ data_analytical_case,xA[i],xD[j] ])
+            data_analytical.append([ data_analytical_case,xA[i],xD[j]])
 
     plt.imshow(mimimums_ND,cmap = 'gnuplot',extent=[min(xD),max(xD),max(xA),min(xA)])
     plt.xlabel('xD')
     plt.ylabel('xA')
     plt.colorbar()
-    plt.title(f'tmax = {t_max},points xA = {len(xA)},points xD = {len(xD)},λ={coupling_lambda}')
+    plt.title(f'tmax = {t_max}, points χA, χD = {len(xA), len(xD)}, λ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}')
     title_heatmap = f'heatmap_tmax{t_max}_pointsxA:{len(xA)}_pointsxD{len(xD)}_λ={coupling_lambda}.pdf'
     saveFig.saveFig(title_heatmap)
-    plt.show()
