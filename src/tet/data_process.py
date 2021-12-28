@@ -45,4 +45,5 @@ def createDir(destination):
             else:
                 shutil.rmtree(destination)
                 os.makedirs(destination)
+                break
         if fl_1 == 'n': sys.exit(0)

@@ -18,8 +18,8 @@ if __name__ == "__main__":
     # chiA, chiD = -0.5, 0.5
     coupling_lambda = 0.001
     t_max = 2000
-    xA = np.linspace(-5, 5, 100)
-    xD = np.linspace(-5, 5, 100)
+    xA = np.linspace(-5, 5, 2)
+    xD = np.linspace(-5, 5, 2)
 
     cwd = os.getcwd()
     data = f"{cwd}/data"
