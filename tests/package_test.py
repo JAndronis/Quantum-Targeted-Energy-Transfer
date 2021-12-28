@@ -85,6 +85,7 @@ if __name__ == "__main__":
     dt = t2-t1
     print(f"Code took: {dt:.3f}secs to run")
 
+    writeData.compress(zip_files=zip_files, destination=data_dest)
     if zip_files: sys.exit(0)
 
     data_analytical = []
