@@ -42,5 +42,7 @@ def createDir(destination):
             fl_1 = query[0].lower() 
             if query == '' or not fl_1 in ['y','n']: 
                 print('Please answer with yes or no')
-            else: break
+            else:
+                shutil.rmtree(destination)
+                os.makedirs(destination)
         if fl_1 == 'n': sys.exit(0)
