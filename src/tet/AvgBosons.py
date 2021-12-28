@@ -7,6 +7,11 @@ class AvgBosons:
         self.eigvecs = eigvecs
         self.eigvals = eigvals
         self.initial_state = initial_state
+        self.coeff_c = np.zeros(self.max_N+1, dtype=float)
+        for i in range(self.max_N+1): 
+            self.coeff_c[i] = np.vdot(self.eigvecs[:,i], self.initial_state)
+
+        self.coeff_b = self.eigvecs
     
     def computeAverage(self):
         '''
@@ -33,25 +38,19 @@ class AvgBosons:
                     The average number of bosons at the donor.
         '''
 
-        coeff_c = np.zeros(self.max_N+1, dtype=float)
-        for i in range(self.max_N+1): 
-            coeff_c[i] = np.vdot(self.eigvecs[:,i], self.initial_state)
-
-        coeff_b = self.eigvecs
-
         avg_N = []
         _time = range(0, self.max_t+1)
         avg_min = self.max_N
 
         for t in _time:
-            avg_N.append(np.real(self._computeAverageCalculation(coeff_c, coeff_b, t)))
+            avg_N.append(np.real(self._computeAverageCalculation(self.coeff_c, self.coeff_b, t)))
 
         return avg_N
 
-    def _computeAverageCalculation(self, coeff_c, coeff_b, t):
+    def _computeAverageCalculation(self, t):
         sum_j = 0
         for j in range(self.max_N+1):
-            sum_i = sum(coeff_c*coeff_b[j,:]*np.exp(-1j*self.eigvals*t))
-            sum_k = sum(coeff_c.conj()*coeff_b[j,:].conj()*np.exp(1j*self.eigvals*t)*sum_i)
+            sum_i = sum(self.coeff_c*self.coeff_b[j,:]*np.exp(-1j*self.eigvals*t))
+            sum_k = sum(self.coeff_c.conj()*self.coeff_b[j,:].conj()*np.exp(1j*self.eigvals*t)*sum_i)
             sum_j += sum_k*j
         return sum_j
