@@ -16,10 +16,10 @@ if __name__ == "__main__":
     max_N = 12
     omegaA, omegaD = 3, -3
     # chiA, chiD = -0.5, 0.5
-    coupling_lambda = 0.001
+    coupling_lambda = 0.1
     t_max = 2000
-    xA = np.linspace(-5, 5, 2)
-    xD = np.linspace(-5, 5, 2)
+    xA = np.linspace(-5, 5, 10)
+    xD = np.linspace(-5, 5, 10)
 
     cwd = os.getcwd()
     data = f"{cwd}/data"
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     t_dir = f"tmax-{t_max}"
     t_dir_path = os.path.join(coupling_dir_path, t_dir)
 
-    data_dest = os.path.join(t_dir_path, "data")
+    data_dest = os.path.join(t_dir_path, "avg_N")
 
     data_process.createDir(data)
     data_process.createDir(coupling_dir_path)
@@ -52,8 +52,20 @@ if __name__ == "__main__":
                             omegaD=omegaD, 
                             max_N=max_N, 
                             max_t=t_max, 
-                            data_dir=data_dest, 
-                            zip_files=zip_files)
+                            data_dir=data_dest)
+    t2 = time.time()
+    dt = t2-t1
+    print(f"Code took: {dt:.3f}secs to run")
+
+    t1 = time.time()
+    execute.execute(chiA=xA, 
+                    chiD=xD, 
+                    coupling_lambda=coupling_lambda, 
+                    omegaA=omegaA, 
+                    omegaD=omegaD, 
+                    max_N=max_N, 
+                    max_t=t_max, 
+                    data_dir=data_dest)
     t2 = time.time()
     dt = t2-t1
     print(f"Code took: {dt:.3f}secs to run")
