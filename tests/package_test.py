@@ -1,5 +1,3 @@
-#%%
-import shutil
 import sys
 assert sys.version_info >= (3,6)
 import os
@@ -41,35 +39,35 @@ if __name__ == "__main__":
     zip_files = False
     count_it = 0
 
-    t1 = time.time()
-    for chiA in xA:
-        for chiD in xD:
-            count_it +=1
-            print("\rCombination {} out of {}: (chiA,chiD) = ({},{})".format(count_it,len(xA)*len(xD),round(chiA,4),round(chiD,4)), end = " ")
-            execute.execute(chiA=chiA,
-                            chiD=chiD, 
-                            coupling_lambda=coupling_lambda, 
-                            omegaA=omegaA, 
-                            omegaD=omegaD, 
-                            max_N=max_N, 
-                            max_t=t_max, 
-                            data_dir=data_dest)
-    t2 = time.time()
-    dt = t2-t1
-    print(f"Code took: {dt:.3f}secs to run")
-
     # t1 = time.time()
-    # execute.execute(chiA=xA, 
-    #                 chiD=xD, 
-    #                 coupling_lambda=coupling_lambda, 
-    #                 omegaA=omegaA, 
-    #                 omegaD=omegaD, 
-    #                 max_N=max_N, 
-    #                 max_t=t_max, 
-    #                 data_dir=data_dest)
+    # for chiA in xA:
+    #     for chiD in xD:
+    #         count_it +=1
+    #         print("\rCombination {} out of {}: (chiA,chiD) = ({},{})".format(count_it,len(xA)*len(xD),round(chiA,4),round(chiD,4)), end = " ")
+    #         execute.execute(chiA=chiA,
+    #                         chiD=chiD, 
+    #                         coupling_lambda=coupling_lambda, 
+    #                         omegaA=omegaA, 
+    #                         omegaD=omegaD, 
+    #                         max_N=max_N, 
+    #                         max_t=t_max, 
+    #                         data_dir=data_dest)
     # t2 = time.time()
     # dt = t2-t1
     # print(f"Code took: {dt:.3f}secs to run")
+
+    t1 = time.time()
+    execute.execute(chiA=xA, 
+                    chiD=xD, 
+                    coupling_lambda=coupling_lambda, 
+                    omegaA=omegaA, 
+                    omegaD=omegaD, 
+                    max_N=max_N, 
+                    max_t=t_max, 
+                    data_dir=data_dest)
+    t2 = time.time()
+    dt = t2-t1
+    print(f"Code took: {dt:.3f}secs to run")
 
     data_process.compress(zip_files=zip_files, destination=data_dest)
     if zip_files: sys.exit(0)
@@ -91,4 +89,3 @@ if __name__ == "__main__":
     plt.title(f'tmax = {t_max}, points χA, χD = {len(xA), len(xD)}, λ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}')
     title_heatmap = f'heatmap_tmax{t_max}_pointsxA:{len(xA)}_pointsxD{len(xD)}_λ={coupling_lambda}.pdf'
     saveFig.saveFig(title_heatmap, t_dir_path)
-# %%
