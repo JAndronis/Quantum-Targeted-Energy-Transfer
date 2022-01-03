@@ -63,7 +63,6 @@ if __name__ == "__main__":
                 max_N=max_N, 
                 max_t=t_max, 
                 data_dir=data_dest)
-    
     t2 = time.time()
     dt = t2-t1
     print(f"Code took: {dt:.3f}secs to run")
