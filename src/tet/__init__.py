@@ -1,10 +1,6 @@
-from . import AvgBosons
-from . import data_process
-from . import execute
-from . import Hamiltonian
-from . import saveFig
+__all__ = ['execute', 'saveFig', 'Hamiltonian']
 
-from execute import execute
-from Hamiltonian import Hamiltonian
-from AvgBosons import AvgBosons
-from saveFig import saveFig
+# Deprecated, only here for backwards compatibility
+from tet.execute import execute
+from tet.saveFig import saveFig
+from tet.Hamiltonian import Hamiltonian
