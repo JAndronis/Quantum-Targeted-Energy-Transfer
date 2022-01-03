@@ -45,9 +45,7 @@ class Execute:
                                                 eigvals=eigenvalues,
                                                 initial_state=self.initial_state).computeAverageComb()
         
-        if self.return_data:
-            return avg_ND_analytical
-
+        if self.return_data: return avg_ND_analytical
         else:
             counter_2 = 0
             for combination in product(self.chiA, self.chiD):
@@ -67,5 +65,8 @@ class Execute:
                                                 eigvecs=eigenvectors,
                                                 eigvals=eigenvalues,
                                                 initial_state=self.initial_state).computeAverage()                                              
-        title_file = f'ND_analytical-λ={self.coupling_lambda}-t_max={self.max_t}-χA={self.chiA}-χD={self.chiD}.txt'
-        data_process.writeData(data=avg_ND_analytical, destination=self.data_dir, name_of_file=title_file)
+        
+        if self.return_data: return avg_ND_analytical
+        else:
+            title_file = f'ND_analytical-λ={self.coupling_lambda}-t_max={self.max_t}-χA={self.chiA}-χD={self.chiD}.txt'
+            data_process.writeData(data=avg_ND_analytical, destination=self.data_dir, name_of_file=title_file)
