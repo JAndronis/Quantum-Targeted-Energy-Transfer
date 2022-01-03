@@ -20,27 +20,26 @@ def main():
     coupling_lambda = 0.001
     t_max = 2000
 
-    xA = np.linspace(-6, 6, 50)
-    xD = np.linspace(-6, 6, 50)
+    xA = np.linspace(-6, 6, 100)
+    xD = np.linspace(-6, 6, 100)
 
     return_query = True
 
-    if not return_query:
-        cwd = os.getcwd()
-        data = f"{cwd}/data"
+    cwd = os.getcwd()
+    data = f"{cwd}/data"
 
-        coupling_dir = f"coupling-{coupling_lambda}"
-        coupling_dir_path = os.path.join(data, coupling_dir)
+    coupling_dir = f"coupling-{coupling_lambda}"
+    coupling_dir_path = os.path.join(data, coupling_dir)
 
-        t_dir = f"tmax-{t_max}"
-        t_dir_path = os.path.join(coupling_dir_path, t_dir)
+    t_dir = f"tmax-{t_max}"
+    t_dir_path = os.path.join(coupling_dir_path, t_dir)
 
-        data_dest = os.path.join(t_dir_path, "avg_N")
+    data_dest = os.path.join(t_dir_path, "avg_N")
 
-        tet.data_process.createDir(data)
-        tet.data_process.createDir(coupling_dir_path)
-        tet.data_process.createDir(t_dir_path)
-        tet.data_process.createDir(data_dest)
+    tet.data_process.createDir(data)
+    tet.data_process.createDir(coupling_dir_path)
+    tet.data_process.createDir(t_dir_path)
+    tet.data_process.createDir(data_dest)
 
     test_data = tet.Execute(chiA=xA, 
                             chiD=xD, 
@@ -64,9 +63,10 @@ def main():
         test_z = test_z.reshape(len(xA), len(xD))
 
         figure, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(12,12))
-        plot = ax.plot_surface(XA, XD, test_z, cmap='gnuplot')
+        plot = ax.countour(XA, XD, test_z, cmap='gnuplot')
         ax.set_xlabel('xD')
         ax.set_ylabel('xA')
+        ax.set_title(f'tmax = {t_max}, points χA, χD = {len(xA), len(xD)}, λ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}')
         plt.show()
 
         plt.figure(figsize=(12,12))
@@ -74,6 +74,7 @@ def main():
         plt.xlabel('xD')
         plt.ylabel('xA')
         plt.colorbar()
+        plt.title(f'tmax = {t_max}, points χA, χD = {len(xA), len(xD)}, λ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}')
         plt.show()
 
 if __name__=="__main__":
