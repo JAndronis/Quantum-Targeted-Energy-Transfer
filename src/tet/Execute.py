@@ -1,7 +1,8 @@
 import numpy as np
 from itertools import product
-from tet import Hamiltonian, data_process, AvgBosons
-import pandas as pd
+from tet.Hamiltonian import Hamiltonian
+from tet.AvgBosons import AvgBosons
+from tet.data_process import writeData
 
 class Execute:
     def __init__(self, chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, max_t, data_dir, return_data=False):
@@ -34,16 +35,16 @@ class Execute:
         for combination in product(self.chiA, self.chiD):
             x = combination[0]
             y = combination[1]
-            H[counter] = Hamiltonian.Hamiltonian(x, y, self.coupling_lambda, self.omegaA, self.omegaD, self.max_N).createHamiltonian()
+            H[counter] = Hamiltonian(x, y, self.coupling_lambda, self.omegaA, self.omegaD, self.max_N).createHamiltonian()
             eigenvalues[counter], eigenvectors[counter] = np.linalg.eigh(H[counter])
             counter += 1
             param_id.append(combination)
             
-        avg_ND_analytical = AvgBosons.AvgBosons(max_t=self.max_t,
-                                                max_N=self.max_N,
-                                                eigvecs=eigenvectors,
-                                                eigvals=eigenvalues,
-                                                initial_state=self.initial_state).computeAverageComb()
+        avg_ND_analytical = AvgBosons(max_t=self.max_t,
+                                      max_N=self.max_N,
+                                      eigvecs=eigenvectors,
+                                      eigvals=eigenvalues,
+                                      initial_state=self.initial_state).computeAverageComb()
         
         if self.return_data: return avg_ND_analytical
         else:
@@ -53,20 +54,20 @@ class Execute:
                 j = combination[1]
                 title = f'ND_analytical-λ={self.coupling_lambda}-t_max={self.max_t}-χA={i}-χD={j}.txt'
                 _tmp_data = avg_ND_analytical[counter_2]
-                data_process.writeData(_tmp_data, self.data_dir, title)
+                writeData(_tmp_data, self.data_dir, title)
                 counter_2 += 1
     
     def executeOnce(self):
-        problemHamiltonian = Hamiltonian.Hamiltonian(self.chiA, self.chiD, self.coupling_lambda, self.omegaA, self.omegaD, self.max_N).createHamiltonian()
+        problemHamiltonian = Hamiltonian(self.chiA, self.chiD, self.coupling_lambda, self.omegaA, self.omegaD, self.max_N).createHamiltonian()
         eigenvalues, eigenvectors = np.linalg.eigh(problemHamiltonian)
 
-        avg_ND_analytical = AvgBosons.AvgBosons(max_t=self.max_t,
-                                                max_N=self.max_N, 
-                                                eigvecs=eigenvectors,
-                                                eigvals=eigenvalues,
-                                                initial_state=self.initial_state).computeAverage()                                              
+        avg_ND_analytical = AvgBosons(max_t=self.max_t,
+                                      max_N=self.max_N, 
+                                      eigvecs=eigenvectors,
+                                      eigvals=eigenvalues,
+                                      initial_state=self.initial_state).computeAverage()                                              
         
         if self.return_data: return avg_ND_analytical
         else:
             title_file = f'ND_analytical-λ={self.coupling_lambda}-t_max={self.max_t}-χA={self.chiA}-χD={self.chiD}.txt'
-            data_process.writeData(data=avg_ND_analytical, destination=self.data_dir, name_of_file=title_file)
+            writeData(data=avg_ND_analytical, destination=self.data_dir, name_of_file=title_file)
