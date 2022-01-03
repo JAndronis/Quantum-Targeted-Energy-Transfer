@@ -9,6 +9,21 @@ import warnings
 
 from tet import execute, saveFig, data_process
 
+def printd(text, delay=.5):
+    print(end=text)
+    n_dots = 0
+
+    while True:
+        if n_dots == 3:
+            print(end='\b\b\b', flush=True)
+            print(end='   ',    flush=True)
+            print(end='\b\b\b', flush=True)
+            n_dots = 0
+        else:
+            print(end='.', flush=True)
+            n_dots += 1
+        time.sleep(delay)
+
 if __name__ == "__main__":
     warnings.filterwarnings('ignore', category=np.ComplexWarning)
 
@@ -17,8 +32,8 @@ if __name__ == "__main__":
     # chiA, chiD = -0.5, 0.5
     coupling_lambda = 1
     t_max = 2000
-    xA = np.linspace(-5, 5, 100)
-    xD = np.linspace(-5, 5, 100)
+    xA = np.linspace(-5, 5, 10)
+    xD = np.linspace(-5, 5, 10)
 
     cwd = os.getcwd()
     data = f"{cwd}/data"
@@ -65,6 +80,7 @@ if __name__ == "__main__":
                     max_N=max_N, 
                     max_t=t_max, 
                     data_dir=data_dest)
+    
     t2 = time.time()
     dt = t2-t1
     print(f"Code took: {dt:.3f}secs to run")
