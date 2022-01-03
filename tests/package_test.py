@@ -7,7 +7,7 @@ import time
 import pandas as pd
 import warnings
 
-from tet import execute, saveFig, data_process
+import tet
 
 def printd(text, delay=.5):
     print(end=text)
@@ -46,46 +46,29 @@ if __name__ == "__main__":
 
     data_dest = os.path.join(t_dir_path, "avg_N")
 
-    data_process.createDir(data)
-    data_process.createDir(coupling_dir_path)
-    data_process.createDir(t_dir_path)
-    data_process.createDir(data_dest)
+    tet.data_process.createDir(data)
+    tet.data_process.createDir(coupling_dir_path)
+    tet.data_process.createDir(t_dir_path)
+    tet.data_process.createDir(data_dest)
 
     zip_files = False
     count_it = 0
 
-    # t1 = time.time()
-    # for chiA in xA:
-    #     for chiD in xD:
-    #         count_it +=1
-    #         print("\rCombination {} out of {}: (chiA,chiD) = ({},{})".format(count_it,len(xA)*len(xD),round(chiA,4),round(chiD,4)), end = " ")
-    #         execute.execute(chiA=chiA,
-    #                         chiD=chiD, 
-    #                         coupling_lambda=coupling_lambda, 
-    #                         omegaA=omegaA, 
-    #                         omegaD=omegaD, 
-    #                         max_N=max_N, 
-    #                         max_t=t_max, 
-    #                         data_dir=data_dest)
-    # t2 = time.time()
-    # dt = t2-t1
-    # print(f"Code took: {dt:.3f}secs to run")
-
     t1 = time.time()
-    execute.execute(chiA=xA, 
-                    chiD=xD, 
-                    coupling_lambda=coupling_lambda, 
-                    omegaA=omegaA, 
-                    omegaD=omegaD, 
-                    max_N=max_N, 
-                    max_t=t_max, 
-                    data_dir=data_dest)
+    tet.execute(chiA=xA, 
+                chiD=xD, 
+                coupling_lambda=coupling_lambda, 
+                omegaA=omegaA, 
+                omegaD=omegaD, 
+                max_N=max_N, 
+                max_t=t_max, 
+                data_dir=data_dest)
     
     t2 = time.time()
     dt = t2-t1
     print(f"Code took: {dt:.3f}secs to run")
 
-    data_process.compress(zip_files=zip_files, destination=data_dest)
+    tet.data_process.compress(zip_files=zip_files, destination=data_dest)
     if zip_files: sys.exit(0)
 
     data_analytical = []
@@ -94,7 +77,7 @@ if __name__ == "__main__":
     for i in range(len(xA)):
         for j in range(len(xD)):
             title_analytical = f'ND_analytical-λ={coupling_lambda}-t_max={t_max}-χA={xA[i]}-χD={xD[j]}.txt'
-            data_analytical_case = data_process.read_1D_data(destination=data_dest, name_of_file=title_analytical)
+            data_analytical_case = tet.data_process.read_1D_data(destination=data_dest, name_of_file=title_analytical)
             mimimums_ND[i][j] = min(data_analytical_case)
             data_analytical.append([ data_analytical_case,xA[i],xD[j]])
 
@@ -104,4 +87,4 @@ if __name__ == "__main__":
     plt.colorbar()
     plt.title(f'tmax = {t_max}, points χA, χD = {len(xA), len(xD)}, λ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}')
     title_heatmap = f'heatmap_tmax{t_max}_pointsxA:{len(xA)}_pointsxD{len(xD)}_λ={coupling_lambda}.pdf'
-    saveFig.saveFig(title_heatmap, t_dir_path)
+    tet.saveFig(title_heatmap, t_dir_path)

@@ -7,3 +7,4 @@ from . import saveFig
 from execute import execute
 from Hamiltonian import Hamiltonian
 from AvgBosons import AvgBosons
+from saveFig import saveFig
