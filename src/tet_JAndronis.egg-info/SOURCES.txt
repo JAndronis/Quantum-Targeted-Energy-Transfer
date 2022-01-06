@@ -1,0 +1,15 @@
+LICENSE
+README.md
+pyproject.toml
+setup.cfg
+src/tet/AvgBosons.py
+src/tet/Execute.py
+src/tet/Hamiltonian.py
+src/tet/__init__.py
+src/tet/data_process.py
+src/tet/saveFig.py
+src/tet_JAndronis.egg-info/PKG-INFO
+src/tet_JAndronis.egg-info/SOURCES.txt
+src/tet_JAndronis.egg-info/dependency_links.txt
+src/tet_JAndronis.egg-info/requires.txt
+src/tet_JAndronis.egg-info/top_level.txt

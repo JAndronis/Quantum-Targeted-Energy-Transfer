@@ -1,4 +1,3 @@
-#%%
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,7 +17,7 @@ def main():
     omegaA, omegaD = 3, -3
     chiA, chiD = -0.5, 0.5
     coupling_lambda = 0.001
-    t_max = 2000
+    t_max = 200
 
     xA = np.linspace(-6, 6, 10)
     xD = np.linspace(-6, 6, 10)
@@ -36,8 +35,8 @@ def main():
 
     data_dest = os.path.join(t_dir_path, "avg_N")
 
-    tet.data_process.createDir(data)
-    tet.data_process.createDir(coupling_dir_path)
+    tet.data_process.createDir(data, replace=False)
+    tet.data_process.createDir(coupling_dir_path, replace=False)
     tet.data_process.createDir(t_dir_path)
     tet.data_process.createDir(data_dest)
 
@@ -61,24 +60,22 @@ def main():
             test_z[i[0]] = min(i[1])
             counter += 1
         test_z = test_z.reshape(len(xA), len(xD))
-        print(test_z)
 
         figure, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(12,12))
         plot = ax.plot_surface(XA, XD, test_z, cmap='gnuplot')
         ax.set_xlabel('xD')
         ax.set_ylabel('xA')
-        ax.set_title(f'tmax = {t_max}, points χA, χD = {len(xA), len(xD)}, λ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}')
-        plt.show()
+        titl = f'tmax = {t_max}, points χA, χD = {len(xA), len(xD)}, λ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}'
+        ax.set_title(titl)
+        tet.saveFig(titl+' - 3dplot', t_dir_path)
 
-        plt.figure(figsize=(12,12))
-        plt.contourf(test_z,cmap = 'gnuplot',extent=[min(xD),max(xD),max(xA),min(xA)], levels=50)
-        plt.xlabel('xD')
-        plt.ylabel('xA')
-        plt.colorbar()
-        plt.title(f'tmax = {t_max}, points χA, χD = {len(xA), len(xD)}, λ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}')
-        plt.show()
+        figure2, ax2 = plt.subplots(figsize=(12,12))
+        plot2 = ax2.contourf(test_z,cmap = 'gnuplot',extent=[min(xD),max(xD),max(xA),min(xA)], levels=50)
+        ax2.set_xlabel('xD')
+        ax2.set_ylabel('xA')
+        figure2.colorbar(plot2)
+        ax2.set_title(titl)
+        tet.saveFig(titl+' - contourplot', t_dir_path)
 
 if __name__=="__main__":
     main()
-
-# %%

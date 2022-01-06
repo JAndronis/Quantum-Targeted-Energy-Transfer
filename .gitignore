@@ -14,6 +14,8 @@ settings.json
 *.vsix
 
 # code generated files and dirs
+new_data/*
 data/*
 tests/data/*
 tests/images/*
+tests/new_data/*
