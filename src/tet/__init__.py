@@ -1,4 +1,4 @@
-__all__ = ['Execute', 'saveFig', 'Hamiltonian']
+__all__ = ['Execute', 'saveFig', 'Hamiltonian', 'data_process']
 
 # Deprecated, only here for backwards compatibility
 from tet.Execute import Execute
