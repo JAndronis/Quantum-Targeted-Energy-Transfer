@@ -20,8 +20,8 @@ def main():
     coupling_lambda = 0.001
     t_max = 2000
 
-    xA = np.linspace(-6, 6, 100)
-    xD = np.linspace(-6, 6, 100)
+    xA = np.linspace(-6, 6, 10)
+    xD = np.linspace(-6, 6, 10)
 
     return_query = True
 
@@ -61,9 +61,10 @@ def main():
             test_z[i[0]] = min(i[1])
             counter += 1
         test_z = test_z.reshape(len(xA), len(xD))
+        print(test_z)
 
         figure, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(12,12))
-        plot = ax.countour(XA, XD, test_z, cmap='gnuplot')
+        plot = ax.plot_surface(XA, XD, test_z, cmap='gnuplot')
         ax.set_xlabel('xD')
         ax.set_ylabel('xA')
         ax.set_title(f'tmax = {t_max}, points χA, χD = {len(xA), len(xD)}, λ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}')
