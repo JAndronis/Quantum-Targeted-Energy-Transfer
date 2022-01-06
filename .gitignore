@@ -1,16 +1,19 @@
+# jupyter related files
 .ipynb_checkpoints 
 
+# vscode local settings
 .vscode/
 settings.json
 
 .vscode/settings.json
+
 # Local History for Visual Studio Code
 .history/
 
 # Built Visual Studio Code Extensions
 *.vsix
 
+# code generated files and dirs
 data/*
-
 tests/data/*
 tests/images/*
