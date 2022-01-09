@@ -14,13 +14,13 @@ def main():
     np.set_printoptions(formatter={'float': lambda x: "{0:0.1f}".format(x)})
     
     max_N = 12
-    omegaA, omegaD = 3, -3
+    omegaA, omegaD = 2, -3
     chiA, chiD = -0.5, 0.5
     coupling_lambda = 0.001
-    t_max = 200
+    t_max = 2000
 
-    xA = np.linspace(-6, 6, 10)
-    xD = np.linspace(-6, 6, 10)
+    xA = np.linspace(-6, 6, 100)
+    xD = np.linspace(-6, 6, 100)
 
     return_query = True
 
