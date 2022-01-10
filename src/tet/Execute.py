@@ -21,7 +21,7 @@ class Execute:
         self.initial_state = self.initial_state / np.linalg.norm(self.initial_state)
 
         if np.ndim(chiA)>0: self.executeGrid()
-        else: 2
+        else: self.executeOnce()
 
     def executeGrid(self):
         H = np.zeros((len(list(product(self.chiA, self.chiD))), self.max_N+1, self.max_N+1))
