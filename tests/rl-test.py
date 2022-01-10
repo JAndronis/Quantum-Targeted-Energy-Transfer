@@ -16,8 +16,8 @@ def main():
     max_N = 12
     omegaA, omegaD = 3, -3
     chiA, chiD = -0.5, 0.5
-    coupling_lambda = 1
-    t_max = 200
+    coupling_lambda = 0.001
+    t_max = 2000
 
     xA = np.linspace(-4, 4, 100)
     xD = np.linspace(-4, 4, 100)
