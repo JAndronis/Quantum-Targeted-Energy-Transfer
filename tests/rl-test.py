@@ -17,10 +17,10 @@ def main():
     omegaA, omegaD = 3, -3
     chiA, chiD = -0.5, 0.5
     coupling_lambda = 0.001
-    t_max = 2000
+    t_max = 20
 
-    xA = np.linspace(-4.5, 4.5, 100)
-    xD = np.linspace(-4.5, 4.5, 100)
+    xA = np.linspace(-4, 4, 100)
+    xD = np.linspace(-4, 4, 100)
 
     return_query = True
 
@@ -48,9 +48,11 @@ def main():
                             max_N=max_N, 
                             max_t=t_max, 
                             data_dir=data_dest,
-                            return_data=return_query).executeOnce()
+                            return_data=return_query)()
 
-    if return_query:                        
+    if return_query:
+        print(np.ndim(chiA))
+        print(test_data)
         df = pd.DataFrame(test_data)
         XA, XD = np.meshgrid(xA, xD)
 
