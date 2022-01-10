@@ -14,13 +14,13 @@ def main():
     np.set_printoptions(formatter={'float': lambda x: "{0:0.1f}".format(x)})
     
     max_N = 12
-    omegaA, omegaD = 2, -3
+    omegaA, omegaD = 3, -3
     chiA, chiD = -0.5, 0.5
-    coupling_lambda = 0.001
-    t_max = 2000
+    coupling_lambda = 1
+    t_max = 200
 
-    xA = np.linspace(-6, 6, 100)
-    xD = np.linspace(-6, 6, 100)
+    xA = np.linspace(-4, 4, 100)
+    xD = np.linspace(-4, 4, 100)
 
     return_query = True
 
@@ -62,19 +62,19 @@ def main():
         test_z = test_z.reshape(len(xA), len(xD))
 
         figure, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(12,12))
-        plot = ax.plot_surface(XA, XD, test_z, cmap='gnuplot')
-        ax.set_xlabel('xD')
-        ax.set_ylabel('xA')
-        titl = f'tmax = {t_max}, points χA, χD = {len(xA), len(xD)}, λ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}'
-        ax.set_title(titl)
+        plot = ax.contour(XA, XD, test_z, cmap='rainbow', levels=50)
+        ax.set_xlabel(r"$\chi_{D}$", fontsize=20)
+        ax.set_ylabel(r"$\chi_{A}$", fontsize=20)
+        titl = f'N={max_N}, tmax = {t_max}, # points (χA, χD) = {len(xA), len(xD)}, λ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}'
+        ax.set_title(titl, fontsize=20)
         tet.saveFig(titl+' - 3dplot', t_dir_path)
 
         figure2, ax2 = plt.subplots(figsize=(12,12))
-        plot2 = ax2.contourf(test_z,cmap = 'gnuplot',extent=[min(xD),max(xD),max(xA),min(xA)], levels=50)
-        ax2.set_xlabel('xD')
-        ax2.set_ylabel('xA')
+        plot2 = ax2.contourf(test_z,cmap = 'rainbow',extent=[min(xD),max(xD),max(xA),min(xA)], levels=50)
+        ax2.set_xlabel(r"$\chi_{D}$", fontsize=20)
+        ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
         figure2.colorbar(plot2)
-        ax2.set_title(titl)
+        ax2.set_title(titl, fontsize=20)
         tet.saveFig(titl+' - contourplot', t_dir_path)
 
 if __name__=="__main__":
