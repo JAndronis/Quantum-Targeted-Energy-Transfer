@@ -1,3 +1,4 @@
+#%%
 import numpy as np
 from itertools import product
 from tet.Hamiltonian import Hamiltonian
@@ -20,8 +21,9 @@ class Execute:
         for n in range(max_N+1): self.initial_state[n] = np.exp(-(max_N-n)**2)
         self.initial_state = self.initial_state / np.linalg.norm(self.initial_state)
 
-        if np.ndim(chiA)>0: self.executeGrid()
-        else: self.executeOnce()
+    def __call__(self):
+        if np.ndim(self.chiA)>0: return self.executeGrid()
+        else: return self.executeOnce()
 
     def executeGrid(self):
         H = np.zeros((len(list(product(self.chiA, self.chiD))), self.max_N+1, self.max_N+1))
@@ -71,3 +73,4 @@ class Execute:
         else:
             title_file = f'ND_analytical-λ={self.coupling_lambda}-t_max={self.max_t}-χA={self.chiA}-χD={self.chiD}.txt'
             writeData(data=avg_ND_analytical, destination=self.data_dir, name_of_file=title_file)
+# %%
