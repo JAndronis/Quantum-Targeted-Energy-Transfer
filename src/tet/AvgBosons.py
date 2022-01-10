@@ -70,22 +70,22 @@ class AvgBosons:
         The calculation is done based on the equation (25) in our report.
 
         INPUTS:
-        max_t == int(), The maximum time of the experiment.
-        max_N == int(), The number of bosons on the donor site.
-        eigvecs == np.array(),
+        max_t == int, The maximum time of the experiment.
+        max_N == int, The number of bosons on the donor site.
+        eigvecs == np.array,
                     shape == (max_N+1, max_N+1),
                     The eigenvectors of the hamiltonian of the system as columns in a numpy array.
-        eigvals == np.array(),
+        eigvals == np.array,
                     shape == max_N+1,
                     The eigenvalues of the hamiltonian of the system.
-        initial_state == np.array(),
+        initial_state == np.array,
                             shape == max_N+1,
                             An initial state for the system defined as the normalised version of:
                             np.exp(-(max_N-n)**2) where n is the n-th boson at the donor site.
 
         OUTPUTS:
-        avg_N == list(),
-                    len() == max_t
+        avg_N == list,
+                    len == max_t
                     The average number of bosons at the donor.
         '''
 
