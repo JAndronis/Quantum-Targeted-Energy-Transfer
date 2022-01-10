@@ -1,4 +1,3 @@
-#%%
 import numpy as np
 from itertools import product
 from tet.Hamiltonian import Hamiltonian
@@ -73,4 +72,3 @@ class Execute:
         else:
             title_file = f'ND_analytical-λ={self.coupling_lambda}-t_max={self.max_t}-χA={self.chiA}-χD={self.chiD}.txt'
             writeData(data=avg_ND_analytical, destination=self.data_dir, name_of_file=title_file)
-# %%
