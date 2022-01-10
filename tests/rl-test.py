@@ -1,7 +1,6 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
 import tet
@@ -50,10 +49,7 @@ def main():
                             data_dir=data_dest,
                             return_data=return_query)()
 
-    if return_query:
-        print(np.ndim(chiA))
-        print(test_data)
-        df = pd.DataFrame(test_data)
+    if return_query and np.ndim(test_data)>1:
         XA, XD = np.meshgrid(xA, xD)
 
         counter = 0
@@ -63,11 +59,13 @@ def main():
             counter += 1
         test_z = test_z.reshape(len(xA), len(xD))
 
+        titl = f'N={max_N}, tmax = {t_max}, # points (χA, χD) = {len(xA), len(xD)}, λ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}'
+
         figure, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(12,12))
         plot = ax.contour(XA, XD, test_z, cmap='rainbow', levels=50)
         ax.set_xlabel(r"$\chi_{D}$", fontsize=20)
         ax.set_ylabel(r"$\chi_{A}$", fontsize=20)
-        titl = f'N={max_N}, tmax = {t_max}, # points (χA, χD) = {len(xA), len(xD)}, λ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}'
+        figure.colorbar(plot)
         ax.set_title(titl, fontsize=20)
         tet.saveFig(titl+' - 3dplot', t_dir_path)
 
