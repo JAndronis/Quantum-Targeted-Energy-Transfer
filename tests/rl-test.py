@@ -19,8 +19,8 @@ def main():
     coupling_lambda = 0.001
     t_max = 2000
 
-    xA = np.linspace(-4, 4, 100)
-    xD = np.linspace(-4, 4, 100)
+    xA = np.linspace(-4.5, 4.5, 100)
+    xD = np.linspace(-4.5, 4.5, 100)
 
     return_query = True
 
@@ -40,15 +40,15 @@ def main():
     tet.data_process.createDir(t_dir_path)
     tet.data_process.createDir(data_dest)
 
-    test_data = tet.Execute(chiA=xA, 
-                            chiD=xD, 
+    test_data = tet.Execute(chiA=chiA, 
+                            chiD=chiD, 
                             coupling_lambda=coupling_lambda, 
                             omegaA=omegaA, 
                             omegaD=omegaD, 
                             max_N=max_N, 
                             max_t=t_max, 
                             data_dir=data_dest,
-                            return_data=return_query).executeGrid()
+                            return_data=return_query).executeOnce()
 
     if return_query:                        
         df = pd.DataFrame(test_data)
