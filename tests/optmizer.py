@@ -49,7 +49,7 @@ class Opt_PertTheory(tf.keras.Model):
     
   def pred_plot(self, xA, xD):
     cwd = os.getcwd()
-    data = f"{cwd}/data-PINN"
+    data = f"{cwd}/data-optimizer"
 
     coupling_lambda = self.sites["coupling_lambda"]
 

@@ -18,4 +18,4 @@ data/*
 tests/data/*
 tests/images/*
 tests/new_data/*
-tests/data-PINN/*
+tests/data-optimizer/*
