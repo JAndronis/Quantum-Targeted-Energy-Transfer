@@ -1,8 +1,10 @@
+from grpc import Status
 import numpy as np
 from itertools import product
-from tet.Hamiltonian import Hamiltonian
-from tet.AvgBosons import AvgBosons
-from tet.data_process import writeData
+from Hamiltonian import Hamiltonian
+from AvgBosons import AvgBosons
+from data_process import writeData
+import os
 
 class Execute:
     def __init__(self, chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, max_t, data_dir, return_data=False):
@@ -34,8 +36,7 @@ class Execute:
         counter = 0
         param_id = []
         for combination in product(self.chiA, self.chiD):
-            x = combination[0]
-            y = combination[1]
+            x,y = combination
             H[counter] = Hamiltonian(x, y, self.coupling_lambda, self.omegaA, self.omegaD, self.max_N).createHamiltonian()
             eigenvalues[counter], eigenvectors[counter] = np.linalg.eigh(H[counter])
             counter += 1
@@ -51,8 +52,7 @@ class Execute:
         else:
             counter_2 = 0
             for combination in product(self.chiA, self.chiD):
-                i = combination[0]
-                j = combination[1]
+                i,j=combination
                 title = f'ND_analytical-λ={self.coupling_lambda}-t_max={self.max_t}-χA={i}-χD={j}.txt'
                 _tmp_data = avg_ND_analytical[counter_2]
                 writeData(_tmp_data, self.data_dir, title)
@@ -72,3 +72,5 @@ class Execute:
         else:
             title_file = f'ND_analytical-λ={self.coupling_lambda}-t_max={self.max_t}-χA={self.chiA}-χD={self.chiD}.txt'
             writeData(data=avg_ND_analytical, destination=self.data_dir, name_of_file=title_file)
+
+
