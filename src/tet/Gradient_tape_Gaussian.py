@@ -77,3 +77,4 @@ trial1 = Reinforcement_GradientTape(plot_parameters=[-2,5,-2,5,500],initial_poin
 trial1.ExecuteTwoVariables()
 
 
+
