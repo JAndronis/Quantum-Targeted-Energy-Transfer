@@ -192,17 +192,17 @@ class Reinforcement:
             chiD_initial += -self.learning_rate*der_xD
         """
 
-
-coupling_parameter = 1
-if coupling_parameter <= 10**(-1): learning_rate = 1000*coupling_parameter
-else: learning_rate = 0.1*coupling_parameter
-problem = Reinforcement(omegaD=-3,omegaA=3,
-                        coupling_lambda=coupling_parameter,
-                        max_N=12,
-                        max_t = 10**4,
-                        limitsxAxD = [-2,2,-2,2],
-                        stepxA=10**(-2),
-                        stepxD =10**(-2),
-                        iterations = 1000,
-                        learning_rate = learning_rate)
-problem.train()
+if __name__=='__main__':
+    coupling_parameter = 1
+    if coupling_parameter <= 10**(-1): learning_rate = 1000*coupling_parameter
+    else: learning_rate = 0.1*coupling_parameter
+    problem = Reinforcement(omegaD=-3,omegaA=3,
+                            coupling_lambda=coupling_parameter,
+                            max_N=12,
+                            max_t = 10**4,
+                            limitsxAxD = [-2,2,-2,2],
+                            stepxA=10**(-2),
+                            stepxD =10**(-2),
+                            iterations = 1000,
+                            learning_rate = learning_rate)
+    problem.train()
