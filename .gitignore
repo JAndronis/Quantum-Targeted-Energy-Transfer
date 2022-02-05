@@ -19,3 +19,7 @@ tests/data/*
 tests/images/*
 tests/new_data/*
 tests/data-optimizer/*
+
+# pycache
+__pycache__/*
+src/tet/__pycache__/*
