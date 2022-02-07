@@ -118,8 +118,9 @@ epsilon = 0.8
 epsilon_decay = 0.95
 gamma = 0.6
 learning_rate = 0.6
-iterations = 10
+iterations = 100
 
 
-Agent.TrainAgent(epsilon,epsilon_decay,iterations,learning_rate,gamma,max_t = 10**4)
-
+q, inf = Agent.TrainAgent(epsilon,epsilon_decay,iterations,learning_rate,gamma,max_t = 10**2)
+print(q)
+print(inf)
