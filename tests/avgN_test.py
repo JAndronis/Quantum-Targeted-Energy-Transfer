@@ -5,10 +5,6 @@ import tensorflow as tf
 from tensorflow import keras
 import tet
 
-class RLModel(tf.keras.Model):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
 def main():
     np.set_printoptions(formatter={'float': lambda x: "{0:0.1f}".format(x)})
     

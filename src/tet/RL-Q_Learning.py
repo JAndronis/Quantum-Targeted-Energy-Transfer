@@ -111,14 +111,14 @@ class EducateAgent:
 
 
 
-Agent = EducateAgent(paramsxAxD=[-2,2,-2,2,1500],coupling_lambda = 10**(-3),omegaA = 3,omegaD = -3,
+Agent = EducateAgent(paramsxAxD=[-2,2,-2,2,1500],coupling_lambda = 10**(-1),omegaA = 3,omegaD = -3,
                     maxN=12)
 
 epsilon = 0.8
 epsilon_decay = 0.95
 gamma = 0.6
 learning_rate = 0.6
-iterations = 100
+iterations = 10
 
 
 Agent.TrainAgent(epsilon,epsilon_decay,iterations,learning_rate,gamma,max_t = 10**4)
