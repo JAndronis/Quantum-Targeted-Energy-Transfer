@@ -67,7 +67,26 @@ class Env:
     self.Denied_minxD = [self.States[i] for i in range(0,self.NStates,self.NpointsChiD) ]
     self.Denied_maxxD = [self.States[i] for i in range(self.NpointsChiD-1,self.NStates,self.NpointsChiD) ]
 
+  def _getReward(self, edge, CurrentChiA, CurrentChiD, NewChiA, NewChiD, coupling_lambda, omegaA, omegaD, maxN, maxt):
+    # --------- New state --------
+    # print("Current: ", round(CurrentChiA,5), round(CurrentChiD,5))
+    print("New: ", round(NewChiA,5), round(NewChiD,5))
+    NewStateIndex = find_nearest_2D(self.States,(NewChiA,NewChiD))
 
+    # --------- Reward ---------
+    NewStateAverageProbabilityCase = AverageProbability(chiA = NewChiA,chiD = NewChiD,
+                                                        coupling_lambda = coupling_lambda,
+                                                        omegaA = omegaA,
+                                                        omegaD = omegaD,
+                                                        max_N = maxN,
+                                                        max_t = maxt)
+
+    if edge:
+      Reward = maxN*(1- 50*abs(NewStateAverageProbabilityCase.PDData()-0.5) )
+    else:
+      Reward = maxN*(1- 5*abs(NewStateAverageProbabilityCase.PDData()-0.5) )
+
+    return Reward, NewStateIndex, NewStateAverageProbabilityCase
 
   def Step(self,action,CurrentChiA,CurrentChiD,coupling_lambda,omegaA,omegaD,maxN,maxt):
     # --------- Apply the action ---------
