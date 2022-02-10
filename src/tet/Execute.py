@@ -1,4 +1,3 @@
-from grpc import Status
 import numpy as np
 from itertools import product
 from Hamiltonian import Hamiltonian
