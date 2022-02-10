@@ -58,10 +58,10 @@ class Env:
     self.minxA,self.maxxA,self.minxD,self.maxxD = paramsxAxD
     self.NpointsChiA,self.NpointsChiD = NpointsChiA,NpointsChiD
     
-    chiAs,chiDs = np.linspace(self.minxA,self.maxxA,self.NpointsChiA),np.linspace(self.minxD,self.maxxD,self.NpointsChiD)
+    self.chiAs,self.chiDs = np.linspace(self.minxA,self.maxxA,self.NpointsChiA),np.linspace(self.minxD,self.maxxD,self.NpointsChiD)
 
     self.NStates,self.Nactions = len(self.States),len(list(self.PossibleActions.values()))
-    self.stepxA,self.stepxD = np.diff(chiAs)[0],np.diff(chiDs)[0]
+    self.stepxA,self.stepxD = np.diff(self.chiAs)[0],np.diff(self.chiDs)[0]
     self.Denied_minxA = [self.States[i] for i in range(0,self.NpointsChiD) ]
     self.Denied_maxxA = [self.States[i] for i in range(self.NStates-self.NpointsChiD,self.NStates) ]
     self.Denied_minxD = [self.States[i] for i in range(0,self.NStates,self.NpointsChiD) ]
