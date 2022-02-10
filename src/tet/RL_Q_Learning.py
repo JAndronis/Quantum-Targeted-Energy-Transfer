@@ -1,6 +1,6 @@
 import numpy as np
 from itertools import product
-from Execute import Execute
+from tet.Execute import Execute
 from matplotlib import pyplot as plt
 
 def find_nearest_2D(array, value):

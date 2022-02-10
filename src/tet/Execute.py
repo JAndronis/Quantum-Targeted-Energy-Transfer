@@ -1,9 +1,8 @@
 import numpy as np
 from itertools import product
-from Hamiltonian import Hamiltonian
-from AvgBosons import AvgBosons
-from data_process import writeData
-import os
+from tet.Hamiltonian import Hamiltonian
+from tet.AvgBosons import AvgBosons
+from tet.data_process import writeData
 
 class Execute:
     def __init__(self, chiA, chiD, coupling_lambda, omegaA, omegaD, max_N, max_t, data_dir, return_data=False):
