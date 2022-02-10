@@ -92,11 +92,16 @@ class Env:
     # --------- Apply the action ---------
     #Fix Boundary. Demand to start a new episode
     if (CurrentChiA,CurrentChiD) in self.Denied_minxA + self.Denied_maxxA + self.Denied_minxD + self.Denied_maxxD:
+      # randomchoice = 4*np.random.sample(2)-2  # random choice from [-2,2)
+      # print(randomchoice)
+      NewChiA, NewChiD = np.random.choice(self.chiAs), np.random.choice(self.chiDs)
       print('edge')
-      Done = True
-      return None,None,Done,None
+      edge = True
+      # Done = True
+      # return None,None,Done,None
 
     else:
+      edge = False
       match action:
         case 0:
             NewChiA,NewChiD = CurrentChiA - self.stepxA,CurrentChiD
@@ -117,20 +122,31 @@ class Env:
 
 
     #print('Old (xA,xD) = {},{}, New (xA,xD) = {},{}'.format( CurrentChiA,CurrentChiD,NewChiA,NewChiD ) ) 
-    # --------- New state --------
-    print("Current: ", round(CurrentChiA,5), round(CurrentChiD,5))
-    print("New: ", round(NewChiA,5), round(NewChiD,5))
-    NewStateIndex = find_nearest_2D(self.States,(NewChiA,NewChiD))
+    # # --------- New state --------
+    # print("Current: ", round(CurrentChiA,5), round(CurrentChiD,5))
+    # print("New: ", round(NewChiA,5), round(NewChiD,5))
+    # NewStateIndex = find_nearest_2D(self.States,(NewChiA,NewChiD))
 
-    # --------- Reward ---------
-    NewStateAverageProbabilityCase = AverageProbability(chiA = NewChiA,chiD = NewChiD,
-                                                        coupling_lambda = coupling_lambda,
-                                                        omegaA = omegaA,
-                                                        omegaD = omegaD,
-                                                        max_N = maxN,
-                                                        max_t = maxt)
+    # # --------- Reward ---------
+    # NewStateAverageProbabilityCase = AverageProbability(chiA = NewChiA,chiD = NewChiD,
+    #                                                     coupling_lambda = coupling_lambda,
+    #                                                     omegaA = omegaA,
+    #                                                     omegaD = omegaD,
+    #                                                     max_N = maxN,
+    #                                                     max_t = maxt)
 
-    Reward = maxN*(1- 5*abs(NewStateAverageProbabilityCase.PDData()-0.5) )
+    # Reward = maxN*(1- 5*abs(NewStateAverageProbabilityCase.PDData()-0.5) )
+
+    Reward, NewStateIndex, NewStateAverageProbabilityCase = self._getReward(edge,
+                                                                            CurrentChiA, 
+                                                                            CurrentChiD, 
+                                                                            NewChiA, 
+                                                                            NewChiD, 
+                                                                            coupling_lambda,
+                                                                            omegaA, 
+                                                                            omegaD, 
+                                                                            maxN, 
+                                                                            maxt)
 
     # --------- Extra Info ---------
     Info = NewStateAverageProbabilityCase.PDData()
