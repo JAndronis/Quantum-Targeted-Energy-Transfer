@@ -4,7 +4,8 @@ import numpy as np
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from itertools import product
-from Execute import Execute
+from tet.Execute import Execute
+from tet.saveFig import saveFig
 from matplotlib import pyplot as plt
 import tensorflow
 from tensorflow.keras.models import Sequential
@@ -177,7 +178,7 @@ class Env:
 """
 class Agent:
 
-  def __init__(self,paramsxAxD,NpointsChiA,NpointsChiD,coupling_lambda,omegaA,omegaD,maxN,maxt):
+  def __init__(self,paramsxAxD,NpointsChiA,NpointsChiD,coupling_lambda,omegaA,omegaD,maxN,maxt,data_dir):
 
     #Environment Parameters
     self.paramsxAxD = paramsxAxD
@@ -187,6 +188,7 @@ class Agent:
     self.omegaA,self.omegaD = omegaA,omegaD
     self.max_N = maxN
     self.max_t = maxt
+    self.data_dir = data_dir
 
     #Possible Actions
     self.PossibleActions = {'Decrease xA':0,'Increase xA':1,
@@ -275,22 +277,22 @@ class Agent:
     plt.plot(np.arange(1,Episodes+1), RewardsList)
     plt.xlabel('Episode')
     plt.ylabel('Average Reward')
-    plt.show()
+    saveFig('Reward Plot', self.data_dir)
 
-epsilon = 0.8
-epsilon_decay = 0.95
-gamma = 0.6
-learning_rate = 0.6
-episodes = 50
+# epsilon = 0.8
+# epsilon_decay = 0.95
+# gamma = 0.6
+# learning_rate = 0.6
+# episodes = 50
 
-case_Agent = Agent(paramsxAxD=[-2,2,-2,2], 
-                  NpointsChiA=100, NpointsChiD=100,
-                  coupling_lambda = 10**(-1),
-                  omegaA = 3,omegaD = -3,
-                  maxN=12,
-                  maxt= 10**2)
+# case_Agent = Agent(paramsxAxD=[-2,2,-2,2], 
+#                   NpointsChiA=100, NpointsChiD=100,
+#                   coupling_lambda = 10**(-1),
+#                   omegaA = 3,omegaD = -3,
+#                   maxN=12,
+#                   maxt= 10**2)
 
-case_Agent.Train(EpsilonInitial = epsilon,
-                EpsilonDecay = epsilon_decay,
-                Gamma = gamma,
-                Episodes = episodes)
+# case_Agent.Train(EpsilonInitial = epsilon,
+#                 EpsilonDecay = epsilon_decay,
+#                 Gamma = gamma,
+#                 Episodes = episodes)

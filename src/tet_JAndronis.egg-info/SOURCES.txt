@@ -6,9 +6,9 @@ src/tet/AvgBosons.py
 src/tet/Execute.py
 src/tet/Gradient_tape_Gaussian.py
 src/tet/Hamiltonian.py
-src/tet/RL-Gradient_Tape.py
-src/tet/RL-Q_Learning.py
-src/tet/RL-Q_learning-NN.py
+src/tet/RL_Gradient_Tape.py
+src/tet/RL_Q_Learning.py
+src/tet/RL_Q_learning_NN.py
 src/tet/__init__.py
 src/tet/data_process.py
 src/tet/reinforcment_new.py
