@@ -10,7 +10,7 @@ import tensorflow
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense,InputLayer
 from tensorflow.keras.optimizers import SGD, Adam
-
+np.random.seed(57)
 
 def find_nearest_2D(array, value):
   valuex,valuey = value
@@ -43,9 +43,7 @@ class AverageProbability:
     t_span = range(0,self.max_t+1)
 
     avgPD= np.array(avgND)/ self.max_N
-    #Period= ExtractPeriod(xdata=t_span,ydata = avgPD,maxt=self.max_t).EstimatePeriod()
-
-    #avgPD = np.average(avgPD[0:self.find_nearest(t_span,2*Period)] )
+    
     avgPD = np.average(avgPD)
     return avgPD
 
@@ -73,37 +71,36 @@ class Env:
 
   def Step(self,action,CurrentChiA,CurrentChiD,coupling_lambda,omegaA,omegaD,maxN,maxt):
     # --------- Apply the action ---------
-    #Fix Boundary
+    #Fix Boundary. Demand to start a new episode
     if (CurrentChiA,CurrentChiD) in self.Denied_minxA + self.Denied_maxxA + self.Denied_minxD + self.Denied_maxxD:
-      NewChiA,NewChiD = CurrentChiA,CurrentChiD
       print('edge')
-    #Examine which action
-    elif action == 0: 
-      NewChiA,NewChiD = CurrentChiA - self.stepxA,CurrentChiD
-      #print('Enter 0 case')
-    elif action == 1: 
-      NewChiA,NewChiD = CurrentChiA + self.stepxA,CurrentChiD
-      #print('Enter 1 case')
-    elif action == 2: 
-      NewChiA,NewChiD = CurrentChiA,CurrentChiD - self.stepxD
-      #print('Enter 2 case')
-    elif action == 3: 
-      NewChiA,NewChiD = CurrentChiA,CurrentChiD + self.stepxD
-      #print('Enter 3 case')
-    elif action == 4:
-      NewChiA,NewChiD = CurrentChiA - self.stepxA,CurrentChiD - self.stepxD
-      #print('Enter 4 case')
-    elif action == 5:
-      NewChiA,NewChiD = CurrentChiA + self.stepxA,CurrentChiD + self.stepxD
-      #print('Enter 5 case')
-    elif action == 6: 
-      NewChiA,NewChiD = CurrentChiA,CurrentChiD
-      #print('Enter 6 case')
+      Done = True
+      return None,None,Done,None
+
+    else:
+      match action:
+        case 0:
+            NewChiA,NewChiD = CurrentChiA - self.stepxA,CurrentChiD
+        case 1:
+            NewChiA,NewChiD = CurrentChiA + self.stepxA,CurrentChiD
+        case 2:
+            NewChiA,NewChiD = CurrentChiA,CurrentChiD - self.stepxD
+        case 3:
+            NewChiA,NewChiD = CurrentChiA,CurrentChiD + self.stepxD
+        case 4:
+            NewChiA,NewChiD = CurrentChiA - self.stepxA,CurrentChiD - self.stepxD
+        case 5:
+            NewChiA,NewChiD = CurrentChiA + self.stepxA,CurrentChiD + self.stepxD
+        case 6:
+            NewChiA,NewChiD = CurrentChiA,CurrentChiD
+        case _:
+            return "Non valid action"
+
 
     #print('Old (xA,xD) = {},{}, New (xA,xD) = {},{}'.format( CurrentChiA,CurrentChiD,NewChiA,NewChiD ) ) 
-    # --------- New state ---------
-    print("Current: ", CurrentChiA, CurrentChiD)
-    print("New: ", NewChiA, NewChiD)
+    # --------- New state --------
+    print("Current: ", round(CurrentChiA,5), round(CurrentChiD,5))
+    print("New: ", round(NewChiA,5), round(NewChiD,5))
     NewStateIndex = find_nearest_2D(self.States,(NewChiA,NewChiD))
 
     # --------- Reward ---------
@@ -114,10 +111,11 @@ class Env:
                                                         max_N = maxN,
                                                         max_t = maxt)
 
-    Reward = maxN*(1- 5*(NewStateAverageProbabilityCase.PDData()-0.5)**2 )
+    Reward = maxN*(1- 5*abs(NewStateAverageProbabilityCase.PDData()-0.5) )
 
     # --------- Extra Info ---------
     Info = NewStateAverageProbabilityCase.PDData()
+    print('Info:  {}  '.format(round(Info,5)))
 
     print(30*'-')
     # --------- Done ---------
@@ -200,18 +198,19 @@ class Agent:
     OneHotStates = np.identity(self.NStates)
 
     model = self.CreateModel(OneHotStates[0].shape)
-    StateResetIndex = np.random.randint(0,self.NStates+1)
-
+    StateResetIndex = np.random.randint(0,self.NStates)
+    RewardsList = []
     for episode in range(Episodes):
-      print('Episode = {} out of {}'.format(episode+1,Episodes))
+
+      print('-'*15 + f'> Episode = {episode+1} out of {Episodes} <' + '-'*15)
       StateIndex = StateResetIndex
       Epsilon = EpsilonInitial
       Done = False
-      #print(OneHotStates[StateIndex].shape == OneHotStates[0].shape)
-      #print(OneHotStates[StateIndex].shape)
-      #print(OneHotStates[0].shape)
+      SumReward = 0
+      CounterSum = 0
     
       while not Done:
+        
         Epsilon *= EpsilonDecay
         if np.random.uniform(0,1) < Epsilon:
             action = np.random.randint(0,self.Nactions)
@@ -228,28 +227,40 @@ class Agent:
                                                       omegaD = self.omegaD,
                                                       maxN = self.max_N,
                                                       maxt = self.max_t)
-        if Done: break
-
+        if Done and CounterSum == 0:
+          print('Unfortunate initial guess,try again')
+          exit()
+        elif Done:
+          RewardsList.append(SumReward/CounterSum)
+          break
+        
+        SumReward += Reward
         target_vector = model.predict(np.expand_dims(OneHotStates[StateIndex],0))[0]
       
         target = Reward + Gamma * np.max(model.predict(np.expand_dims(OneHotStates[NewStateIndex],0)))
         
         target_vector[action] = target
         model.fit(np.expand_dims(OneHotStates[StateIndex],0),target_vector.reshape(-1, self.Nactions), epochs=1, verbose=0)
-        if(StateIndex==NewStateIndex):
-          StateIndex = np.random.randint(0,self.NStates+1)
-        else:
-          StateIndex = NewStateIndex
-      
+        #if(StateIndex==NewStateIndex):
+        #  StateIndex = np.random.randint(0,self.NStates+1)
+        #else:
+          #StateIndex = NewStateIndex
+        StateIndex = NewStateIndex
 
+        CounterSum +=1
+    plt.figure()
+    plt.plot(np.arange(1,Episodes+1),RewardsList)
+    plt.xlabel('Episode')
+    plt.ylabel('Average Reward')
+    plt.show()
 
 epsilon = 0.8
 epsilon_decay = 0.95
 gamma = 0.6
 learning_rate = 0.6
-episodes = 3
+episodes = 2
 
-case_Agent = Agent(paramsxAxD=[-2,2,-2,2],NpointsChiA = 8,NpointsChiD=10,
+case_Agent = Agent(paramsxAxD=[-2,2,-2,2],NpointsChiA = 5,NpointsChiD=7,
                   coupling_lambda = 10**(-1),omegaA = 3,omegaD = -3,
                   maxN=12,
                   maxt= 10**4)
