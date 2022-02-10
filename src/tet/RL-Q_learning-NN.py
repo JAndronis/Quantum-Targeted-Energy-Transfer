@@ -99,7 +99,7 @@ class Env:
       edge = True
       # Done = True
       # return None,None,Done,None
-
+    
     else:
       edge = False
       match action:
@@ -235,6 +235,11 @@ class Agent:
     model = self.CreateModel(OneHotStates[0].shape)
     StateResetIndex = np.random.randint(0,self.NStates)
     RewardsList = []
+
+    # for now
+    max_iter = 5
+    counter = 0
+
     for episode in range(Episodes):
 
       print('-'*15 + f'> Episode = {episode+1} out of {Episodes} <' + '-'*15)
@@ -243,25 +248,30 @@ class Agent:
       Done = False
       SumReward = 0
       CounterSum = 0
-    
-      while not Done:
-        
-        Epsilon *= EpsilonDecay
-        if np.random.uniform(0,1) < Epsilon:
-            action = np.random.randint(0,self.Nactions)
-        else:
-          action = np.argmax(model.predict(np.expand_dims(OneHotStates[StateIndex],0)))
-        
-        (xAState,xDState) = self.States[StateIndex]
 
-        NewStateIndex,Reward,Done,Info = Env_case.Step(action=action,
-                                                      CurrentChiA = xAState,
-                                                      CurrentChiD= xDState,
-                                                      coupling_lambda = self.coupling_lambda,
-                                                      omegaA = self.omegaA,
-                                                      omegaD = self.omegaD,
-                                                      maxN = self.max_N,
-                                                      maxt = self.max_t)
+      counter = 0
+
+      while not Done:
+        counter += 1
+        if counter >= max_iter: Done = True
+        else:
+          Epsilon *= EpsilonDecay
+          if np.random.uniform(0,1) < Epsilon:
+              action = np.random.randint(0,self.Nactions)
+          else:
+            action = np.argmax(model.predict(np.expand_dims(OneHotStates[StateIndex],0)))
+          
+          (xAState,xDState) = self.States[StateIndex]
+
+          NewStateIndex,Reward,Done,Info = Env_case.Step(action=action,
+                                                        CurrentChiA = xAState,
+                                                        CurrentChiD= xDState,
+                                                        coupling_lambda = self.coupling_lambda,
+                                                        omegaA = self.omegaA,
+                                                        omegaD = self.omegaD,
+                                                        maxN = self.max_N,
+                                                        maxt = self.max_t)
+        
         if Done and CounterSum == 0:
           print('Unfortunate initial guess,try again')
           exit()
@@ -276,15 +286,12 @@ class Agent:
         
         target_vector[action] = target
         model.fit(np.expand_dims(OneHotStates[StateIndex],0),target_vector.reshape(-1, self.Nactions), epochs=1, verbose=0)
-        #if(StateIndex==NewStateIndex):
-        #  StateIndex = np.random.randint(0,self.NStates+1)
-        #else:
-          #StateIndex = NewStateIndex
         StateIndex = NewStateIndex
 
         CounterSum +=1
+
     plt.figure()
-    plt.plot(np.arange(1,Episodes+1),RewardsList)
+    plt.plot(np.arange(1,Episodes+1), RewardsList)
     plt.xlabel('Episode')
     plt.ylabel('Average Reward')
     plt.show()
