@@ -236,7 +236,10 @@ class Agent:
         
         target_vector[action] = target
         model.fit(np.expand_dims(OneHotStates[StateIndex],0),target_vector.reshape(-1, self.Nactions), epochs=1, verbose=0)
-        StateIndex = NewStateIndex
+        if(StateIndex==NewStateIndex):
+          StateIndex = np.random.randint(0,self.NStates+1)
+        else:
+          StateIndex = NewStateIndex
       
 
 
