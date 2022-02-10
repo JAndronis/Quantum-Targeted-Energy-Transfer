@@ -124,8 +124,8 @@ class EducateAgent:
     #Define the Reward
     CurrentAverageProbabilityCase = AverageProbability(NewChiA,NewChiD,self.coupling_lambda,
                                                       self.omegaA,self.omegaD,self.max_N,max_t)
-    Reward = 1 - (CurrentAverageProbabilityCase.PDData()-0.5)**2
-
+    #Reward = 1 - (CurrentAverageProbabilityCase.PDData()-0.5)**2
+    Reward = self.max_N - (self.max_N*CurrentAverageProbabilityCase.PDData()-0.5*self.max_N)**2
     #Define Info
     Info = CurrentAverageProbabilityCase.PDData()
 
@@ -153,7 +153,7 @@ class EducateAgent:
         action = np.random.choice(list(self.PossibleActions.values()) )
       else:
         action = np.argmax(Q_table[CurrentState, :])
-      epsilon *= 1/epsilon_decay
+      epsilon *= epsilon_decay
 
       #New state,Reward,Done,Info after applying the action selected
       NewStateIndex,Reward,Done,Info = self.ApplyAction(action,CurrentChiA,CurrentChiD,max_t)
