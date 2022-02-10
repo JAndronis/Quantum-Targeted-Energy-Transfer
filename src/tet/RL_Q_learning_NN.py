@@ -211,7 +211,7 @@ class Agent:
 
     return model
 
-  def Train(self,EpsilonInitial,EpsilonDecay,Gamma,Episodes):
+  def Train(self,EpsilonInitial,EpsilonDecay,Gamma,Episodes, max_iter):
     Env_case = Env(self.States,self.PossibleActions,self.paramsxAxD,self.NpointsChiA,self.NpointsChiD)
     OneHotStates = np.identity(self.NStates)
 
@@ -220,7 +220,6 @@ class Agent:
     RewardsList = []
 
     # for now
-    max_iter = 10
     counter = 0
 
     for episode in range(Episodes):

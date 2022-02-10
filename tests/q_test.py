@@ -24,4 +24,5 @@ if __name__=="__main__":
     case_Agent.Train(EpsilonInitial = epsilon,
                     EpsilonDecay = epsilon_decay,
                     Gamma = gamma,
-                    Episodes = episodes)
+                    Episodes = episodes,
+                    max_iter=100)
