@@ -102,22 +102,22 @@ class Env:
     
     else:
       edge = False
-      match action:
-        case 0:
+      # match action:
+      if action == 0:
             NewChiA,NewChiD = CurrentChiA - self.stepxA,CurrentChiD
-        case 1:
+      elif action == 1:
             NewChiA,NewChiD = CurrentChiA + self.stepxA,CurrentChiD
-        case 2:
+      elif action == 2:
             NewChiA,NewChiD = CurrentChiA,CurrentChiD - self.stepxD
-        case 3:
+      elif action == 3:
             NewChiA,NewChiD = CurrentChiA,CurrentChiD + self.stepxD
-        case 4:
+      elif action == 4:
             NewChiA,NewChiD = CurrentChiA - self.stepxA,CurrentChiD - self.stepxD
-        case 5:
+      elif action == 5:
             NewChiA,NewChiD = CurrentChiA + self.stepxA,CurrentChiD + self.stepxD
-        case 6:
+      elif action == 6:
             NewChiA,NewChiD = CurrentChiA,CurrentChiD
-        case _:
+      else:
             return "Non valid action"
 
 
