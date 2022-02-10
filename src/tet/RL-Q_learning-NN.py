@@ -76,31 +76,34 @@ class Env:
     #Fix Boundary
     if (CurrentChiA,CurrentChiD) in self.Denied_minxA + self.Denied_maxxA + self.Denied_minxD + self.Denied_maxxD:
       NewChiA,NewChiD = CurrentChiA,CurrentChiD
+      print('edge')
     #Examine which action
-    if action == 0: 
+    elif action == 0: 
       NewChiA,NewChiD = CurrentChiA - self.stepxA,CurrentChiD
       #print('Enter 0 case')
-    if action == 1: 
+    elif action == 1: 
       NewChiA,NewChiD = CurrentChiA + self.stepxA,CurrentChiD
       #print('Enter 1 case')
-    if action == 2: 
+    elif action == 2: 
       NewChiA,NewChiD = CurrentChiA,CurrentChiD - self.stepxD
       #print('Enter 2 case')
-    if action == 3: 
+    elif action == 3: 
       NewChiA,NewChiD = CurrentChiA,CurrentChiD + self.stepxD
       #print('Enter 3 case')
-    if action == 4:
+    elif action == 4:
       NewChiA,NewChiD = CurrentChiA - self.stepxA,CurrentChiD - self.stepxD
       #print('Enter 4 case')
-    if action == 5:
+    elif action == 5:
       NewChiA,NewChiD = CurrentChiA + self.stepxA,CurrentChiD + self.stepxD
       #print('Enter 5 case')
-    if action == 6: 
+    elif action == 6: 
       NewChiA,NewChiD = CurrentChiA,CurrentChiD
       #print('Enter 6 case')
 
     #print('Old (xA,xD) = {},{}, New (xA,xD) = {},{}'.format( CurrentChiA,CurrentChiD,NewChiA,NewChiD ) ) 
     # --------- New state ---------
+    print("Current: ", CurrentChiA, CurrentChiD)
+    print("New: ", NewChiA, NewChiD)
     NewStateIndex = find_nearest_2D(self.States,(NewChiA,NewChiD))
 
     # --------- Reward ---------
@@ -116,6 +119,7 @@ class Env:
     # --------- Extra Info ---------
     Info = NewStateAverageProbabilityCase.PDData()
 
+    print(30*'-')
     # --------- Done ---------
     if abs(Info-1) < 10**(-3) or abs(Info - 0.5) < 10**(-2): Done = True 
     else: Done = False
@@ -243,7 +247,7 @@ learning_rate = 0.6
 episodes = 3
 
 case_Agent = Agent(paramsxAxD=[-2,2,-2,2],NpointsChiA = 8,NpointsChiD=10,
-                  coupling_lambda = 10**(-3),omegaA = 3,omegaD = -3,
+                  coupling_lambda = 10**(-1),omegaA = 3,omegaD = -3,
                   maxN=12,
                   maxt= 10**4)
 
