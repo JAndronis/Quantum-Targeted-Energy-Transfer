@@ -74,9 +74,8 @@ class Env:
   def Step(self,action,CurrentChiA,CurrentChiD,coupling_lambda,omegaA,omegaD,maxN,maxt):
     # --------- Apply the action ---------
     #Fix Boundary
-    if (CurrentChiA,CurrentChiD) in self.Denied_minxA+ self.Denied_maxxA + self.Denied_minxD + self.Denied_maxxD:
+    if (CurrentChiA,CurrentChiD) in self.Denied_minxA + self.Denied_maxxA + self.Denied_minxD + self.Denied_maxxD:
       NewChiA,NewChiD = CurrentChiA,CurrentChiD
-
     #Examine which action
     if action == 0: 
       NewChiA,NewChiD = CurrentChiA - self.stepxA,CurrentChiD
@@ -202,21 +201,21 @@ class Agent:
     for episode in range(Episodes):
       print('Episode = {} out of {}'.format(episode+1,Episodes))
       StateIndex = StateResetIndex
-      (xAState,xDState) = self.States[StateIndex]
       Epsilon = EpsilonInitial
       Done = False
       #print(OneHotStates[StateIndex].shape == OneHotStates[0].shape)
       #print(OneHotStates[StateIndex].shape)
       #print(OneHotStates[0].shape)
-      model.predict(np.expand_dims(OneHotStates[StateIndex],0))
     
       while not Done:
-        Epsilon*= EpsilonDecay
+        Epsilon *= EpsilonDecay
         if np.random.uniform(0,1) < Epsilon:
-            action = np.random.randint(0,self.Nactions+1)
+            action = np.random.randint(0,self.Nactions)
         else:
           action = np.argmax(model.predict(np.expand_dims(OneHotStates[StateIndex],0)))
         
+        (xAState,xDState) = self.States[StateIndex]
+
         NewStateIndex,Reward,Done,Info = Env_case.Step(action=action,
                                                       CurrentChiA = xAState,
                                                       CurrentChiD= xDState,
