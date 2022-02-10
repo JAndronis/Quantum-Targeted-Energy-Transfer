@@ -277,21 +277,3 @@ class Agent:
     plt.xlabel('Episode')
     plt.ylabel('Average Reward')
     saveFig('Reward Plot', self.data_dir)
-
-# epsilon = 0.8
-# epsilon_decay = 0.95
-# gamma = 0.6
-# learning_rate = 0.6
-# episodes = 50
-
-# case_Agent = Agent(paramsxAxD=[-2,2,-2,2], 
-#                   NpointsChiA=100, NpointsChiD=100,
-#                   coupling_lambda = 10**(-1),
-#                   omegaA = 3,omegaD = -3,
-#                   maxN=12,
-#                   maxt= 10**2)
-
-# case_Agent.Train(EpsilonInitial = epsilon,
-#                 EpsilonDecay = epsilon_decay,
-#                 Gamma = gamma,
-#                 Episodes = episodes)
