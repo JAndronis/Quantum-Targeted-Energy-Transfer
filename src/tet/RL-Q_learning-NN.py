@@ -23,8 +23,6 @@ def find_nearest_2D(array, value):
 
   return np.intersect1d(x_indices,y_indices)[0]
 
-
-
 class AverageProbability:
 
   def __init__(self,chiA,chiD,coupling_lambda,omegaA,omegaD,max_N,max_t):
@@ -70,7 +68,7 @@ class Env:
   def _getReward(self, edge, CurrentChiA, CurrentChiD, NewChiA, NewChiD, coupling_lambda, omegaA, omegaD, maxN, maxt):
     # --------- New state --------
     # print("Current: ", round(CurrentChiA,5), round(CurrentChiD,5))
-    print("New: ", round(NewChiA,5), round(NewChiD,5))
+    # print("New: ", round(NewChiA,5), round(NewChiD,5))
     NewStateIndex = find_nearest_2D(self.States,(NewChiA,NewChiD))
 
     # --------- Reward ---------
@@ -104,38 +102,21 @@ class Env:
       edge = False
       # match action:
       if action == 0:
-            NewChiA,NewChiD = CurrentChiA - self.stepxA,CurrentChiD
+          NewChiA,NewChiD = CurrentChiA - self.stepxA,CurrentChiD
       elif action == 1:
-            NewChiA,NewChiD = CurrentChiA + self.stepxA,CurrentChiD
+          NewChiA,NewChiD = CurrentChiA + self.stepxA,CurrentChiD
       elif action == 2:
-            NewChiA,NewChiD = CurrentChiA,CurrentChiD - self.stepxD
+          NewChiA,NewChiD = CurrentChiA,CurrentChiD - self.stepxD
       elif action == 3:
-            NewChiA,NewChiD = CurrentChiA,CurrentChiD + self.stepxD
+          NewChiA,NewChiD = CurrentChiA,CurrentChiD + self.stepxD
       elif action == 4:
-            NewChiA,NewChiD = CurrentChiA - self.stepxA,CurrentChiD - self.stepxD
+          NewChiA,NewChiD = CurrentChiA - self.stepxA,CurrentChiD - self.stepxD
       elif action == 5:
-            NewChiA,NewChiD = CurrentChiA + self.stepxA,CurrentChiD + self.stepxD
+          NewChiA,NewChiD = CurrentChiA + self.stepxA,CurrentChiD + self.stepxD
       elif action == 6:
-            NewChiA,NewChiD = CurrentChiA,CurrentChiD
+          NewChiA,NewChiD = CurrentChiA,CurrentChiD
       else:
-            return "Non valid action"
-
-
-    #print('Old (xA,xD) = {},{}, New (xA,xD) = {},{}'.format( CurrentChiA,CurrentChiD,NewChiA,NewChiD ) ) 
-    # # --------- New state --------
-    # print("Current: ", round(CurrentChiA,5), round(CurrentChiD,5))
-    # print("New: ", round(NewChiA,5), round(NewChiD,5))
-    # NewStateIndex = find_nearest_2D(self.States,(NewChiA,NewChiD))
-
-    # # --------- Reward ---------
-    # NewStateAverageProbabilityCase = AverageProbability(chiA = NewChiA,chiD = NewChiD,
-    #                                                     coupling_lambda = coupling_lambda,
-    #                                                     omegaA = omegaA,
-    #                                                     omegaD = omegaD,
-    #                                                     max_N = maxN,
-    #                                                     max_t = maxt)
-
-    # Reward = maxN*(1- 5*abs(NewStateAverageProbabilityCase.PDData()-0.5) )
+          return "Non valid action"
 
     Reward, NewStateIndex, NewStateAverageProbabilityCase = self._getReward(edge,
                                                                             CurrentChiA, 
@@ -150,9 +131,9 @@ class Env:
 
     # --------- Extra Info ---------
     Info = NewStateAverageProbabilityCase.PDData()
-    print('Info:  {}  '.format(round(Info,5)))
+    # print('Info:  {}  '.format(round(Info,5)))
 
-    print(30*'-')
+    # print(30*'-')
     # --------- Done ---------
     if abs(Info-1) < 10**(-3) or abs(Info - 0.5) < 10**(-2): Done = True 
     else: Done = False
@@ -237,7 +218,7 @@ class Agent:
     RewardsList = []
 
     # for now
-    max_iter = 5
+    max_iter = 10
     counter = 0
 
     for episode in range(Episodes):
@@ -300,12 +281,14 @@ epsilon = 0.8
 epsilon_decay = 0.95
 gamma = 0.6
 learning_rate = 0.6
-episodes = 2
+episodes = 50
 
-case_Agent = Agent(paramsxAxD=[-2,2,-2,2],NpointsChiA = 5,NpointsChiD=7,
-                  coupling_lambda = 10**(-1),omegaA = 3,omegaD = -3,
+case_Agent = Agent(paramsxAxD=[-2,2,-2,2], 
+                  NpointsChiA=100, NpointsChiD=100,
+                  coupling_lambda = 10**(-1),
+                  omegaA = 3,omegaD = -3,
                   maxN=12,
-                  maxt= 10**4)
+                  maxt= 10**2)
 
 case_Agent.Train(EpsilonInitial = epsilon,
                 EpsilonDecay = epsilon_decay,
