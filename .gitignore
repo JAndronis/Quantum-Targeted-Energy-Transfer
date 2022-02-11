@@ -23,3 +23,7 @@ tests/data-optimizer/*
 # pycache
 __pycache__/*
 src/tet/__pycache__/*
+
+# mac ds_store
+.ds_store
+.DS_Store
