@@ -2,6 +2,7 @@ import numpy as np
 import os
 import shutil
 import sys
+from keras.models import model_from_json
 
 def writeData(data, destination, name_of_file):
     _destination = os.path.join(destination, name_of_file)
@@ -48,3 +49,25 @@ def createDir(destination, replace=True):
             if fl_1 == 'n': sys.exit(0)
     else:
         os.makedirs(destination, exist_ok=True)
+
+
+def SaveWeights(ModelToSave,jsonFileToSave,h5FileToSave):
+    #Save weights
+    model_json = ModelToSave.to_json()
+    with open(jsonFileToSave, "w") as json_file:
+      json_file.write(model_json)
+    # serialize weights to HDF5
+    ModelToSave.save_weights(h5FileToSave)
+    print('Saved')
+    
+def LoadModel(jsonFileToRead,h5FileToRead):
+    #load json and create model
+    json_file = open(jsonFileToRead, 'r')
+    loaded_model_json = json_file.read()
+    json_file.close()
+    loaded_model = model_from_json(loaded_model_json)
+    # load weights into new model
+    loaded_model.load_weights(h5FileToRead)
+    print("Loaded model from disk")
+
+    return loaded_model
