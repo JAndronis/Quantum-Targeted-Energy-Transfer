@@ -1,140 +1,159 @@
-from calendar import SATURDAY
-from debugpy import trace_this_thread
 import numpy as np
 import os
+import random
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+from calendar import SATURDAY
+from debugpy import trace_this_thread
 from itertools import product
-from tet.Execute import Execute
-from tet.saveFig import saveFig
+from Execute import Execute
+from saveFig import saveFig
 from matplotlib import pyplot as plt
-import tensorflow
+from data_process import createDir,SaveWeights,LoadModel
+from itertools import chain
+from collections import deque
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense,InputLayer
 from tensorflow.keras.optimizers import SGD, Adam
+
+
 np.random.seed(57)
 
-def find_nearest_2D(array, value):
-  valuex,valuey = value
-  x_indices,y_indices = [],[]
-  for i in range(len(array)):
-    if abs(array[i][0] -valuex) < 10**(-9):
-      x_indices.append(i)
-    if abs(array[i][1] -valuey) <10**(-9):
-      y_indices.append(i)
 
-  return np.intersect1d(x_indices,y_indices)[0]
+# ------------- First Set of Parameters ------------- 
+minxA,maxxA,minxD,maxxD = -2,2,-2,2
+data_dir = f"{os.getcwd()}/data"
+createDir(data_dir)
+
+ParametersFirstSet = {'ParamschiAchiD': [minxA,maxxA,minxD,maxxD],'NpointsChiA':100,
+                      'NpointsChiD':100,'coupling_lambda':0.1,
+                      'maxN':12,'maxt':10**2,'data_dir': data_dir,
+                      'omegaA': 3,'omegaD':-3  }
+
+ChiAs = np.linspace(minxA,maxxA,ParametersFirstSet['NpointsChiA'])
+ChiDs = np.linspace(minxD,maxxD,ParametersFirstSet['NpointsChiD'])
+
+ParametersFirstSet = {**ParametersFirstSet, **{'ChiAs':ChiAs},**{'ChiDs':ChiDs} }
+
+#ParametersFirstSet = ParametersFirstSet | {'ChiAs':ChiAs} | {'ChiDs':ChiDs}
+# ------------- Second Set of Parameters ------------- 
+ParametersSecondSet = {'EpsilonInitial': 1,'EpsilonDecay':0.995,'MinEpsilon':10**(-3),
+                        'Gamma':0.90,'Episodes':300, 'MaxIterations':50,
+                        'ReplayMemorySize': 1000,'MinReplayMemorySize': 30, 
+                        'BatchSize': 16,'UpdateWeigthsTargetCounter':8,
+                        'ShowEvery':10}
+
+# ------------- Total Parameters -------------
+TotalParameters = {**ParametersFirstSet, **ParametersSecondSet }
+#TotalParameters = ParametersFirstSet | ParametersSecondSet
+
+#------------- Dictionary with actions -------------
+PossibleActions = { 'Decrease xA':0,'Increase xA':1,
+                    'Decrease xD':2,'Increase xD':3,
+                    'Decrease both':4,'Increase both':5,
+                    'Idle':6 }
+
 
 class AverageProbability:
 
-  def __init__(self,chiA,chiD,coupling_lambda,omegaA,omegaD,max_N,max_t):
-    self.chiA,self.chiD = chiA,chiD
-    self.coupling_lambda = coupling_lambda
-    self.omegaA,self.omegaD = omegaA,omegaD
-    self.max_N = max_N
-    self.max_t = max_t
-
+  def __init__(self,CaseChiA,CaseChiD):
+    self.CaseChiA,self.CaseChiD = CaseChiA,CaseChiD
+    self.coupling_lambda = TotalParameters['coupling_lambda']
+    self.omegaA,self.omegaD = TotalParameters['omegaA'],TotalParameters['omegaD']
+    self.maxN = TotalParameters['maxN']
+    self.maxt = TotalParameters['maxt']
+    self.datadir = TotalParameters['data_dir']
 
   def PDData(self):
        
-    avgND = Execute(self.chiA,self.chiD,self.coupling_lambda,self.omegaA, self.omegaD,
-                        self.max_N,self.max_t, data_dir="", return_data=True).executeOnce()
+    avgND = Execute(chiA = self.CaseChiA,chiD = self.CaseChiD,
+                    coupling_lambda = self.coupling_lambda,
+                    omegaA = self.omegaA, omegaD = self.omegaD, max_N= self.maxN,
+                    max_t = self.maxt, data_dir=self.datadir, return_data=True).executeOnce()
 
-    t_span = range(0,self.max_t+1)
+    #t_span = range(0,self.maxt+1)
 
-    avgPD= np.array(avgND)/ self.max_N
+    avgPD= np.array(avgND)/ self.maxN
     
-    avgPD = np.average(avgPD)
-    return avgPD
-
+    avgPD_OverTime = np.average(avgPD)
+    return avgPD_OverTime
 
 
 class Env:
 
-  def __init__(self,States,PossibleActions,paramsxAxD,NpointsChiA,NpointsChiD):
+  def __init__(self):
     
-    self.States = States
+    self.NpointsChiA,self.NpointsChiD = TotalParameters['NpointsChiA'],TotalParameters['NpointsChiD']   
     self.PossibleActions = PossibleActions
-    self.minxA,self.maxxA,self.minxD,self.maxxD = paramsxAxD
-    self.NpointsChiA,self.NpointsChiD = NpointsChiA,NpointsChiD
-    
-    self.chiAs,self.chiDs = np.linspace(self.minxA,self.maxxA,self.NpointsChiA),np.linspace(self.minxD,self.maxxD,self.NpointsChiD)
-
+    self.ChiAs,self.ChiDs = TotalParameters['ChiAs'],TotalParameters['ChiDs']
+    self.States = list(product(self.ChiAs,self.ChiDs))
     self.NStates,self.Nactions = len(self.States),len(list(self.PossibleActions.values()))
-    self.stepxA,self.stepxD = np.diff(self.chiAs)[0],np.diff(self.chiDs)[0]
-    self.Denied_minxA = [self.States[i] for i in range(0,self.NpointsChiD) ]
-    self.Denied_maxxA = [self.States[i] for i in range(self.NStates-self.NpointsChiD,self.NStates) ]
-    self.Denied_minxD = [self.States[i] for i in range(0,self.NStates,self.NpointsChiD) ]
-    self.Denied_maxxD = [self.States[i] for i in range(self.NpointsChiD-1,self.NStates,self.NpointsChiD) ]
+    self.stepChiA,self.stepChiD = np.diff(self.ChiAs)[0],np.diff(self.ChiDs)[0]
+    self.coupling_lambda =TotalParameters['coupling_lambda']
+    self.omegaA,self.omegaD = TotalParameters['omegaA'],TotalParameters['omegaD']
+    self.maxN,self.maxt = TotalParameters['maxN'],TotalParameters['maxt']
 
-  def _getReward(self, edge, CurrentChiA, CurrentChiD, NewChiA, NewChiD, coupling_lambda, omegaA, omegaD, maxN, maxt):
-    # --------- New state --------
-    # print("Current: ", round(CurrentChiA,5), round(CurrentChiD,5))
-    # print("New: ", round(NewChiA,5), round(NewChiD,5))
-    NewStateIndex = find_nearest_2D(self.States,(NewChiA,NewChiD))
+    self.Denied_minxA = [i for i in range(0,self.NpointsChiD) ]
+    self.Denied_maxxA = [i for i in range(self.NStates-self.NpointsChiD,self.NStates) ]
+    self.Denied_minxD = [i for i in range(0,self.NStates,self.NpointsChiD) ]
+    self.Denied_maxxD = [i for i in range(self.NpointsChiD-1,self.NStates,self.NpointsChiD) ]
+    self.BoundaryLimitsIndices = self.Denied_minxA + self.Denied_maxxA + self.Denied_minxD + self.Denied_maxxD
+
+  def FindNearest2D(self,array, value):
+    valuex,valuey = value
+    x_indices,y_indices = [],[]
+    for i in range(len(array)):
+      if abs(array[i][0] -valuex) < 10**(-9): x_indices.append(i)
+      if abs(array[i][1] -valuey) <10**(-9): y_indices.append(i)
+      
+    return np.intersect1d(x_indices,y_indices)[0]
+
+
+  def GetReward(self, Edge, NewChiA, NewChiD):
+    # --------- Find NewStateIndex given NewChiA,NewChiD --------
+    NewStateIndex = self.FindNearest2D(self.States,(NewChiA,NewChiD))
 
     # --------- Reward ---------
-    NewStateAverageProbabilityCase = AverageProbability(chiA = NewChiA,chiD = NewChiD,
-                                                        coupling_lambda = coupling_lambda,
-                                                        omegaA = omegaA,
-                                                        omegaD = omegaD,
-                                                        max_N = maxN,
-                                                        max_t = maxt)
+    NewStateAverageProbabilityData = AverageProbability(CaseChiA = NewChiA,CaseChiD= NewChiD).PDData()
 
-    if edge:
-      Reward = maxN*(1- 50*abs(NewStateAverageProbabilityCase.PDData()-0.5) )
+    if Edge: Reward = self.maxN*(1- 50*abs(NewStateAverageProbabilityData-0.5) )
+    else:Reward = self.maxN*(1- 5*abs(NewStateAverageProbabilityData-0.5) )
+
+    return Reward, NewStateIndex, NewStateAverageProbabilityData
+
+
+
+  def Step(self,Action,CurrentStateIndex):
+    # Check Boundary. Reset(No new episode) given the respective penalnty 
+    if CurrentStateIndex in self.BoundaryLimitsIndices: 
+      NewStateIndex = np.random.randint(self.NStates)
+      NewChiA, NewChiD = self.States[NewStateIndex]
+      #print('edge')
+      Edge = True
+
     else:
-      Reward = maxN*(1- 5*abs(NewStateAverageProbabilityCase.PDData()-0.5) )
-
-    return Reward, NewStateIndex, NewStateAverageProbabilityCase
-
-  def Step(self,action,CurrentChiA,CurrentChiD,coupling_lambda,omegaA,omegaD,maxN,maxt):
-    # --------- Apply the action ---------
-    #Fix Boundary. Demand to start a new episode
-    if (CurrentChiA,CurrentChiD) in self.Denied_minxA + self.Denied_maxxA + self.Denied_minxD + self.Denied_maxxD:
-      # randomchoice = 4*np.random.sample(2)-2  # random choice from [-2,2)
-      # print(randomchoice)
-      NewChiA, NewChiD = np.random.choice(self.chiAs), np.random.choice(self.chiDs)
-      print('edge')
-      edge = True
-      # Done = True
-      # return None,None,Done,None
-    
-    else:
-      edge = False
+      Edge = False
+      CurrentChiA,CurrentChiD = self.States[CurrentStateIndex]
       # match action:
-      if action == 0:
-          NewChiA,NewChiD = CurrentChiA - self.stepxA,CurrentChiD
-      elif action == 1:
-          NewChiA,NewChiD = CurrentChiA + self.stepxA,CurrentChiD
-      elif action == 2:
-          NewChiA,NewChiD = CurrentChiA,CurrentChiD - self.stepxD
-      elif action == 3:
-          NewChiA,NewChiD = CurrentChiA,CurrentChiD + self.stepxD
-      elif action == 4:
-          NewChiA,NewChiD = CurrentChiA - self.stepxA,CurrentChiD - self.stepxD
-      elif action == 5:
-          NewChiA,NewChiD = CurrentChiA + self.stepxA,CurrentChiD + self.stepxD
-      elif action == 6:
-          NewChiA,NewChiD = CurrentChiA,CurrentChiD
-      else:
-          return "Non valid action"
+      if Action == 0:NewChiA,NewChiD = CurrentChiA - self.stepChiA,CurrentChiD
 
-    Reward, NewStateIndex, NewStateAverageProbabilityCase = self._getReward(edge,
-                                                                            CurrentChiA, 
-                                                                            CurrentChiD, 
-                                                                            NewChiA, 
-                                                                            NewChiD, 
-                                                                            coupling_lambda,
-                                                                            omegaA, 
-                                                                            omegaD, 
-                                                                            maxN, 
-                                                                            maxt)
+      elif Action == 1:NewChiA,NewChiD = CurrentChiA + self.stepChiA,CurrentChiD
 
-    # --------- Extra Info ---------
-    Info = NewStateAverageProbabilityCase.PDData()
-    # print('Info:  {}  '.format(round(Info,5)))
+      elif Action == 2:NewChiA,NewChiD = CurrentChiA,CurrentChiD - self.stepChiD
+          
+      elif Action == 3:NewChiA,NewChiD = CurrentChiA,CurrentChiD + self.stepChiD
+          
+      elif Action == 4:NewChiA,NewChiD = CurrentChiA - self.stepChiA,CurrentChiD - self.stepChiD
+          
+      elif Action == 5:NewChiA,NewChiD = CurrentChiA + self.stepChiA,CurrentChiD + self.stepChiD
+          
+      elif Action == 6:NewChiA,NewChiD = CurrentChiA,CurrentChiD
+          
+      else:return "Non valid action"
+          
 
-    # print(30*'-')
+    Reward, NewStateIndex, Info = self.GetReward(Edge, NewChiA, NewChiD) 
+                                                                            
     # --------- Done ---------
     if abs(Info-1) < 10**(-3) or abs(Info - 0.5) < 10**(-2): Done = True 
     else: Done = False
@@ -142,68 +161,33 @@ class Env:
     return NewStateIndex,Reward,Done,Info
 
 
-  """ 
-  def KeepPath(self,Q_table,max_t):
-    InitialStateIndex = np.random.choice(self.NStates)
-    InitialState = self.States[InitialStateIndex]
-    chiAInitial,chiDInitial = InitialState
-    AvgProbInitialInstance = AverageProbability(chiAInitial,chiDInitial,self.coupling_lambda,
-                                                self.omegaA,self.omegaD,self.max_N,max_t)
-    PDInitial = AvgProbInitialInstance.PDData()
-    Path = []
-    Path.append(InitialStateIndex) 
-    while abs(PDInitial - 0.5) > 0.01:
-      CurrentStateIndex = InitialStateIndex
-      CurrentChiA,CurrentChiD = self.States[CurrentStateIndex]
-      action = np.argmax(Q_table[CurrentStateIndex,])
-      NewStateIndex,_,_,Info = self.ApplyAction(action,CurrentChiA,CurrentChiD,max_t)
-      Path.append(NewStateIndex)
-      PDInitial = Info
-      InitialStateIndex = NewStateIndex
+class Agent: 
+
+  def __init__(self):
+
+    self.Episodes = TotalParameters['Episodes']
+    self.Gamma = TotalParameters['Gamma']
+    self.EpsilonDecay = TotalParameters['EpsilonDecay']
+    self.MaxIterations = TotalParameters['MaxIterations']
+    self.ReplayMemorySize = TotalParameters['ReplayMemorySize']
+    self.MinReplayMemorySize = TotalParameters['MinReplayMemorySize']
+    self.BatchSize = TotalParameters['BatchSize']
+    self.Nactions = len(list(PossibleActions.values()))
+    self.Epsilon,self.MinEpsilon =TotalParameters['EpsilonInitial'],TotalParameters['MinEpsilon']
+    self.datadir = TotalParameters['data_dir']
+
     
-    FinalChiA,FinalChiD = CurrentChiA,CurrentChiD
-    print(FinalChiA,FinalChiD)
 
-    FinalData = AverageProbability(FinalChiA,FinalChiD,self.coupling_lambda,self.omegaA,
-                                                  self.omegaD,self.max_N,max_t)
-
-    print('------------ This is the path followed ------------')
-    for k in Path:
-      print(self.States[k])
-
-    T_span = np.arange(0,max_t+1)
-    plt.plot(T_span,FinalData)
-    plt.show()
- 
-"""
-class Agent:
-
-  def __init__(self,paramsxAxD,NpointsChiA,NpointsChiD,coupling_lambda,omegaA,omegaD,maxN,maxt,data_dir):
-
-    #Environment Parameters
-    self.paramsxAxD = paramsxAxD
-    self.minxA,self.maxxA,self.minxD,self.maxxD =self.paramsxAxD
-    self.NpointsChiA,self.NpointsChiD = NpointsChiA,NpointsChiD
-    self.coupling_lambda = coupling_lambda
-    self.omegaA,self.omegaD = omegaA,omegaD
-    self.max_N = maxN
-    self.max_t = maxt
-    self.data_dir = data_dir
-
-    #Possible Actions
-    self.PossibleActions = {'Decrease xA':0,'Increase xA':1,
-                            'Decrease xD':2,'Increase xD':3,
-                            'Decrease both':4,'Increase both':5,
-                            'Idle':6 }
-    #Possible States
-    chiAs,chiDs = np.linspace(self.minxA,self.maxxA,self.NpointsChiA),np.linspace(self.minxD,self.maxxD,self.NpointsChiD)
-    self.States = list(product(chiAs,chiDs))
-    self.NStates,self.Nactions = len(self.States),len(list(self.PossibleActions.values()))
+    self.ReplayMemoryDeque = deque(maxlen=self.ReplayMemorySize)
+    self.OneHotStates = np.identity(len(list(product(TotalParameters['ChiAs'],TotalParameters['ChiDs']))))
+    self.model,self.TargetModel = self.CreateModel(),self.CreateModel()
+    self.TargetModel.set_weights(self.model.get_weights())
+    self.UpdateWeightsTarget = 0
 
 
-  def CreateModel(self,InputShape):
+  def CreateModel(self):
     model = Sequential()
-    model.add(InputLayer(input_shape=InputShape))
+    model.add(InputLayer(input_shape=self.OneHotStates[0].shape))
     model.add(Dense(60, activation='relu'))
     model.add(Dense(30, activation='relu'))
     model.add(Dense(self.Nactions, activation='linear'))
@@ -211,69 +195,106 @@ class Agent:
 
     return model
 
-  def Train(self,EpsilonInitial,EpsilonDecay,Gamma,Episodes, max_iter):
-    Env_case = Env(self.States,self.PossibleActions,self.paramsxAxD,self.NpointsChiA,self.NpointsChiD)
-    OneHotStates = np.identity(self.NStates)
+  def DeriveBatch(self):
+    #Structure of Batch: (CurrentStateIndex, Action, Reward, NewStateIndex, Done)
+    if len(self.ReplayMemoryDeque) < self.MinReplayMemorySize: return 0
+    else: return random.sample(self.ReplayMemoryDeque, self.BatchSize)
 
-    model = self.CreateModel(OneHotStates[0].shape)
-    StateResetIndex = np.random.randint(0,self.NStates)
+
+
+  def TrainEpisode(self, Done):
+    
+    #Decide if Batch will be derived
+    if self.DeriveBatch() == 0:return
+    else: Batch = self.DeriveBatch()
+      
+    CurrentStatesIndices = [case[0] for case in Batch]
+    CurrentQsList = [self.model.predict(np.expand_dims(self.OneHotStates[index],0) for index in CurrentStatesIndices) ][0]
+ 
+    NewStatesIndices = [case[3] for case in Batch]
+    NewQsList = [self.TargetModel.predict(np.expand_dims(self.OneHotStates[index],0) for index in NewStatesIndices) ][0]
+    
+
+    StatesFit,QValuesFit = [],[]
+
+    
+    for index, (CurrentStateIndex, Action, Reward, NewStateIndex, Done) in enumerate(Batch):
+     
+      if not Done: NewQIndex = Reward + self.Gamma*np.max(NewQsList[index])
+      else: NewQIndex = Reward
+
+      self.CumulativeReward += Reward
+      #print(self.CumulativeReward)
+
+      # Update Q value for given state
+      CurrentQsList[index][Action] = NewQIndex
+      # And append to our training data
+      StatesFit.append(self.OneHotStates[CurrentStateIndex])
+      QValuesFit.append(CurrentQsList[index])
+
+    
+    self.model.fit(np.array(StatesFit), np.array(QValuesFit).reshape(-1,self.Nactions), batch_size=self.BatchSize, verbose=0, shuffle=False)
+
+    # Track of updating weights to target model
+    if Done: self.UpdateWeightsTarget += 1
+
+    # If counter reaches set value, update target network with weights of main network
+    if self.UpdateWeightsTarget == TotalParameters['UpdateWeigthsTargetCounter']:
+      print('Updated')
+      self.TargetModel.set_weights(self.model.get_weights())
+      self.UpdateWeightsTarget = 0
+
+
+  def TrainTotal(self):
     RewardsList = []
-
-    # for now
-    counter = 0
-
-    for episode in range(Episodes):
-
-      print('-'*15 + f'> Episode = {episode+1} out of {Episodes} <' + '-'*15)
-      StateIndex = StateResetIndex
-      Epsilon = EpsilonInitial
+    for episode in range(self.Episodes):
+      print('-'*15 + f'> Episode = {episode+1} out of {self.Episodes} <' + '-'*15 + '\n')
+      #Begin a new episode
+      self.CumulativeReward= 0
+      IterationsCounter = 1
+      
+      #This is the reset state. The nomeclature is followed for iteration sake
+      CurrentStateIndex = np.random.randint(len(self.OneHotStates))
       Done = False
-      SumReward = 0
-      CounterSum = 0
-
-      counter = 0
+      
 
       while not Done:
-        counter += 1
-        if counter >= max_iter: Done = True
-        else:
-          Epsilon *= EpsilonDecay
-          if np.random.uniform(0,1) < Epsilon:
-              action = np.random.randint(0,self.Nactions)
-          else:
-            action = np.argmax(model.predict(np.expand_dims(OneHotStates[StateIndex],0)))
-          
-          (xAState,xDState) = self.States[StateIndex]
+        
+        if np.random.uniform() > self.Epsilon: Action = np.argmax(self.model.predict(np.expand_dims(
+                                                        self.OneHotStates[CurrentStateIndex],0) ) )
+        else: Action = np.random.randint(0,self.Nactions)
+  
+        NewStateIndex,Reward,Done,_ = Env().Step(Action,CurrentStateIndex)
 
-          NewStateIndex,Reward,Done,Info = Env_case.Step(action=action,
-                                                        CurrentChiA = xAState,
-                                                        CurrentChiD= xDState,
-                                                        coupling_lambda = self.coupling_lambda,
-                                                        omegaA = self.omegaA,
-                                                        omegaD = self.omegaD,
-                                                        maxN = self.max_N,
-                                                        maxt = self.max_t)
-        
-        if Done and CounterSum == 0:
-          print('Unfortunate initial guess,try again')
-          exit()
-        elif Done:
-          RewardsList.append(SumReward/CounterSum)
-          break
-        
-        SumReward += Reward
-        target_vector = model.predict(np.expand_dims(OneHotStates[StateIndex],0))[0]
-      
-        target = Reward + Gamma * np.max(model.predict(np.expand_dims(OneHotStates[NewStateIndex],0)))
-        
-        target_vector[action] = target
-        model.fit(np.expand_dims(OneHotStates[StateIndex],0),target_vector.reshape(-1, self.Nactions), epochs=1, verbose=0)
-        StateIndex = NewStateIndex
+        if IterationsCounter >= self.MaxIterations: Done = True
+        if IterationsCounter % TotalParameters['ShowEvery'] == 0:print(f'Counter:{IterationsCounter}')
+        #Update Replay Memory Deque
+        self.ReplayMemoryDeque.append((CurrentStateIndex, Action, Reward, NewStateIndex, Done))
+        self.TrainEpisode(Done)
 
-        CounterSum +=1
+        CurrentStateIndex = NewStateIndex
+        IterationsCounter += 1
+
+  
+      RewardsList.append(self.CumulativeReward)
+  
+    # Update epsilon value
+    if self.Epsilon > self.MinEpsilon:
+        self.Epsilon *= self.EpsilonDecay
+        self.Epsilon = max(self.MinEpsilon, self.Epsilon)
 
     plt.figure()
-    plt.plot(np.arange(1,Episodes+1), RewardsList)
+    plt.plot(np.arange(1,self.Episodes+1), RewardsList)
     plt.xlabel('Episode')
     plt.ylabel('Average Reward')
-    saveFig('Reward Plot', self.data_dir)
+    saveFig('Reward Plot', self.datadir)
+    plt.show()
+
+    SaveWeights(ModelToSave=self.model,jsonFileToSave='model.json',h5FileToSave='model.h5')
+    LoadModel(jsonFileToRead = 'model.json',h5FileToRead = "model.h5")
+
+
+			
+Agent().TrainTotal()
+
+
