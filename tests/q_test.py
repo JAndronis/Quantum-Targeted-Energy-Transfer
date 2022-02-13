@@ -1,28 +1,17 @@
-from tet.RL_Q_learning_NN import Agent
-from tet.data_process import createDir
-import os
+import numpy as np
+from itertools import product
+from data_process import writeData,LoadModel
+import os 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+from RL_Q_learning_NN import Agent
 
-if __name__=="__main__":
-	epsilon = 0.8
-	epsilon_decay = 0.95
-	gamma = 0.6
-	learning_rate = 0.6
-	episodes = 50
 
-	cwd = os.getcwd()
-	data = f"{cwd}/data"
-	createDir(data)
+NumberOfRuns = 8
+for Run in range(1,NumberOfRuns+1):
+    agent = Agent()
+    agent.ExecutionUpdateTry = Run 
+    if Run == 1: ModelExists = False
+    else: ModelExists = True
+    print('\n\nUpdate Try {} out of {}'.format(agent.ExecutionUpdateTry,NumberOfRuns))
+    agent.TrainTotal(ModelExists = ModelExists,NumberOfRuns = NumberOfRuns)
 
-	case_Agent = Agent(paramsxAxD=[-2,2,-2,2], 
-					NpointsChiA=100, NpointsChiD=100,
-					coupling_lambda = 10**(-1),
-					omegaA = 3,omegaD = -3,
-					maxN=12,
-					maxt= 10**2,
-					data_dir=data)
-
-	case_Agent.Train(EpsilonInitial = epsilon,
-					EpsilonDecay = epsilon_decay,
-					Gamma = gamma,
-					Episodes = episodes,
-					max_iter=100)
