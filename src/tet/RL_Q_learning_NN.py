@@ -1,3 +1,4 @@
+from ast import Load
 import numpy as np
 import os
 import random
@@ -9,7 +10,7 @@ from itertools import product
 from Execute import Execute
 from saveFig import saveFig
 from matplotlib import pyplot as plt
-from data_process import createDir,SaveWeights,LoadModel
+from data_process import createDir,SaveWeights,LoadModel,writeData,read_1D_data,ReadDeque
 from itertools import chain
 from collections import deque
 from tensorflow.keras.models import Sequential
@@ -23,7 +24,7 @@ np.random.seed(57)
 # ------------- First Set of Parameters ------------- 
 minxA,maxxA,minxD,maxxD = -2,2,-2,2
 data_dir = f"{os.getcwd()}/data"
-createDir(data_dir)
+createDir(data_dir,replace = True)
 
 ParametersFirstSet = {'ParamschiAchiD': [minxA,maxxA,minxD,maxxD],'NpointsChiA':100,
                       'NpointsChiD':100,'coupling_lambda':0.1,
@@ -38,9 +39,9 @@ ParametersFirstSet = {**ParametersFirstSet, **{'ChiAs':ChiAs},**{'ChiDs':ChiDs} 
 #ParametersFirstSet = ParametersFirstSet | {'ChiAs':ChiAs} | {'ChiDs':ChiDs}
 # ------------- Second Set of Parameters ------------- 
 ParametersSecondSet = {'EpsilonInitial': 1,'EpsilonDecay':0.995,'MinEpsilon':10**(-3),
-                        'Gamma':0.90,'Episodes':300, 'MaxIterations':50,
-                        'ReplayMemorySize': 1000,'MinReplayMemorySize': 30, 
-                        'BatchSize': 16,'UpdateWeigthsTargetCounter':8,
+                        'Gamma':0.90,'Episodes':250, 'MaxIterations':50,
+                        'ReplayMemorySize': 1000,'MinReplayMemorySize': 128, 
+                        'BatchSize': 32,'UpdateWeigthsTargetCounter':64,
                         'ShowEvery':10}
 
 # ------------- Total Parameters -------------
@@ -175,15 +176,63 @@ class Agent:
     self.Nactions = len(list(PossibleActions.values()))
     self.Epsilon,self.MinEpsilon =TotalParameters['EpsilonInitial'],TotalParameters['MinEpsilon']
     self.datadir = TotalParameters['data_dir']
-
     
 
     self.ReplayMemoryDeque = deque(maxlen=self.ReplayMemorySize)
     self.OneHotStates = np.identity(len(list(product(TotalParameters['ChiAs'],TotalParameters['ChiDs']))))
     self.model,self.TargetModel = self.CreateModel(),self.CreateModel()
     self.TargetModel.set_weights(self.model.get_weights())
-    self.UpdateWeightsTarget = 0
+    self.UpdateWeightsTarget,self.ExecutionUpdateTry  = 0,0
 
+
+  def PlotResults(self):
+    
+    FinalDataEpsilons = read_1D_data(self.datadir,name_of_file='Epsilons.txt')
+    FinalDataRewards = read_1D_data(self.datadir,name_of_file='Rewards.txt')
+    FinalDataAvgProbs =  read_1D_data(self.datadir,name_of_file='AverageProbs.txt')
+
+    plt.figure(figsize = (12,12))
+
+    plt.subplot(2,2,1)
+    plt.plot(np.arange(1,self.Episodes*self.ExecutionUpdateTry +1), FinalDataEpsilons)
+    plt.xlabel('Episode')
+    plt.ylabel('Epsilon')
+
+    plt.subplot(2,2,2)
+    plt.plot(np.arange(1,self.Episodes*self.ExecutionUpdateTry +1), FinalDataRewards)
+    plt.xlabel('Episode')
+    plt.ylabel('Average Reward')
+    
+    plt.subplot(2,2,3)
+    plt.plot(np.arange(1,self.Episodes*self.ExecutionUpdateTry +1), FinalDataAvgProbs)
+    plt.xlabel('Episode')
+    plt.ylabel(r'<P$_{D}$>_${t,iterations}$')
+
+
+    saveFig('FinalData', self.datadir)
+    plt.show()
+
+    #os.remove(self.datadir)
+
+
+  def SaveData(self):
+    #Save rewards list
+    writeData(data=self.RewardsList, destination=self.datadir, name_of_file='Rewards.txt')
+    #Save AverageProbs list
+    writeData(data=self.AverageProbs, destination=self.datadir, name_of_file='AverageProbs.txt')
+    #Save epsilons list
+    writeData(data=self.Epsilons, destination=self.datadir, name_of_file='Epsilons.txt')
+    #Save the current ReplayMemoryDeque
+    writeData(data=self.ReplayMemoryDeque, destination=self.datadir, name_of_file='Deque.txt')
+    #Save the value of self.UpdateWeightsTarget
+    writeData(data = [self.UpdateWeightsTarget],destination=self.datadir,name_of_file='UpdateTarget.txt')
+    #Save the value of self.ExecutionUpdateTry 
+    #writeData(data = [self.ExecutionUpdateTry],destination=self.datadir,name_of_file='Try.txt')
+    #Save current weigths from self.model
+    SaveWeights(ModelToSave=self.model,case = 'model',destination=self.datadir)
+    #Save current weights from self.TargetModel
+    SaveWeights(ModelToSave=self.TargetModel,case = 'TargetModel',destination=self.datadir)
+  
 
   def CreateModel(self):
     model = Sequential()
@@ -195,11 +244,11 @@ class Agent:
 
     return model
 
+
   def DeriveBatch(self):
     #Structure of Batch: (CurrentStateIndex, Action, Reward, NewStateIndex, Done)
     if len(self.ReplayMemoryDeque) < self.MinReplayMemorySize: return 0
     else: return random.sample(self.ReplayMemoryDeque, self.BatchSize)
-
 
 
   def TrainEpisode(self, Done):
@@ -207,7 +256,7 @@ class Agent:
     #Decide if Batch will be derived
     if self.DeriveBatch() == 0:return
     else: Batch = self.DeriveBatch()
-      
+
     CurrentStatesIndices = [case[0] for case in Batch]
     CurrentQsList = [self.model.predict(np.expand_dims(self.OneHotStates[index],0) for index in CurrentStatesIndices) ][0]
  
@@ -224,7 +273,6 @@ class Agent:
       else: NewQIndex = Reward
 
       self.CumulativeReward += Reward
-      #print(self.CumulativeReward)
 
       # Update Q value for given state
       CurrentQsList[index][Action] = NewQIndex
@@ -240,17 +288,27 @@ class Agent:
 
     # If counter reaches set value, update target network with weights of main network
     if self.UpdateWeightsTarget == TotalParameters['UpdateWeigthsTargetCounter']:
-      print('Updated')
+      #print('Updated')
       self.TargetModel.set_weights(self.model.get_weights())
       self.UpdateWeightsTarget = 0
 
 
-  def TrainTotal(self):
-    RewardsList = []
+ 
+  def TrainTotal(self,ModelExists,NumberOfRuns):
+
+    if ModelExists:
+      self.Epsilon = self.EpsilonDecay*read_1D_data(self.datadir,'Epsilons.txt')[(self.ExecutionUpdateTry-1)*self.Episodes-1]
+      self.ReplayMemoryDeque = ReadDeque(self.datadir,'Deque.txt')
+      self.model = LoadModel(case = 'model',destination=self.datadir)
+      self.TargetModel = LoadModel(case = 'TargetModel',destination=self.datadir)
+      self.UpdateWeightsTarget =int(read_1D_data(self.datadir,name_of_file='UpdateTarget.txt')[self.ExecutionUpdateTry-2])
+    
+    self.RewardsList,self.Epsilons,self.AverageProbs = [],[],[]
+    
     for episode in range(self.Episodes):
-      print('-'*15 + f'> Episode = {episode+1} out of {self.Episodes} <' + '-'*15 + '\n')
+      print('\rEpisode = {} out of {}'.format(episode+1,self.Episodes) ,end = "")
       #Begin a new episode
-      self.CumulativeReward= 0
+      self.CumulativeReward,self.AverageProb= 0,0
       IterationsCounter = 1
       
       #This is the reset state. The nomeclature is followed for iteration sake
@@ -264,37 +322,34 @@ class Agent:
                                                         self.OneHotStates[CurrentStateIndex],0) ) )
         else: Action = np.random.randint(0,self.Nactions)
   
-        NewStateIndex,Reward,Done,_ = Env().Step(Action,CurrentStateIndex)
+        NewStateIndex,Reward,Done,Info = Env().Step(Action,CurrentStateIndex)
 
         if IterationsCounter >= self.MaxIterations: Done = True
-        if IterationsCounter % TotalParameters['ShowEvery'] == 0:print(f'Counter:{IterationsCounter}')
+        #if IterationsCounter % TotalParameters['ShowEvery'] == 0:
+          #print(f'Counter:{IterationsCounter}',end = "")
         #Update Replay Memory Deque
         self.ReplayMemoryDeque.append((CurrentStateIndex, Action, Reward, NewStateIndex, Done))
+        
         self.TrainEpisode(Done)
 
         CurrentStateIndex = NewStateIndex
         IterationsCounter += 1
+        self.AverageProb += Info
 
   
-      RewardsList.append(self.CumulativeReward)
-  
-    # Update epsilon value
-    if self.Epsilon > self.MinEpsilon:
+      self.RewardsList.append(self.CumulativeReward)
+      self.AverageProbs.append(self.AverageProb/IterationsCounter)
+      self.Epsilons.append(self.Epsilon)
+
+      
+      # Update epsilon value
+      if self.Epsilon > self.MinEpsilon:
         self.Epsilon *= self.EpsilonDecay
         self.Epsilon = max(self.MinEpsilon, self.Epsilon)
 
-    plt.figure()
-    plt.plot(np.arange(1,self.Episodes+1), RewardsList)
-    plt.xlabel('Episode')
-    plt.ylabel('Average Reward')
-    saveFig('Reward Plot', self.datadir)
-    plt.show()
+    self.SaveData()
+    if self.ExecutionUpdateTry == NumberOfRuns: self.PlotResults()
 
-    SaveWeights(ModelToSave=self.model,jsonFileToSave='model.json',h5FileToSave='model.h5')
-    LoadModel(jsonFileToRead = 'model.json',h5FileToRead = "model.h5")
-
-
-			
-Agent().TrainTotal()
-
+    
+      
 
