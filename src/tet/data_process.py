@@ -1,3 +1,19 @@
+
+Meet
+Νέα σύσκεψη
+Συμμετοχή
+Hangouts
+
+1 από 12
+(κανένα θέμα)
+
+Georgios Arapantonis <garapantonis@gmail.com>
+Συνημμένα
+8:37 μ.μ. (πριν από 0 λεπτά)
+προς εγώ
+
+
+Περιοχή συνημμένων
 import numpy as np
 import os
 import shutil
@@ -96,43 +112,5 @@ def LoadModel(case,destination):
     loaded_model.load_weights(_destinationh5)
 
     
-
-    return loaded_model
-        try:
-            os.mkdir(destination)
-        except OSError as error:
-            print(error)
-            while True:
-                query = input("Directory exists, replace it? [y/n] ")
-                fl_1 = query[0].lower() 
-                if query == '' or not fl_1 in ['y','n']: 
-                    print('Please answer with yes or no')
-                else:
-                    shutil.rmtree(destination)
-                    os.makedirs(destination)
-                    break
-            if fl_1 == 'n': sys.exit(0)
-    else:
-        os.makedirs(destination, exist_ok=True)
-
-
-def SaveWeights(ModelToSave,jsonFileToSave,h5FileToSave):
-    #Save weights
-    model_json = ModelToSave.to_json()
-    with open(jsonFileToSave, "w") as json_file:
-      json_file.write(model_json)
-    # serialize weights to HDF5
-    ModelToSave.save_weights(h5FileToSave)
-    print('Saved')
-    
-def LoadModel(jsonFileToRead,h5FileToRead):
-    #load json and create model
-    json_file = open(jsonFileToRead, 'r')
-    loaded_model_json = json_file.read()
-    json_file.close()
-    loaded_model = model_from_json(loaded_model_json)
-    # load weights into new model
-    loaded_model.load_weights(h5FileToRead)
-    print("Loaded model from disk")
 
     return loaded_model
