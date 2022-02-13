@@ -1,19 +1,3 @@
-
-Meet
-Νέα σύσκεψη
-Συμμετοχή
-Hangouts
-
-1 από 12
-(κανένα θέμα)
-
-Georgios Arapantonis <garapantonis@gmail.com>
-Συνημμένα
-8:37 μ.μ. (πριν από 0 λεπτά)
-προς εγώ
-
-
-Περιοχή συνημμένων
 import numpy as np
 import os
 import shutil
