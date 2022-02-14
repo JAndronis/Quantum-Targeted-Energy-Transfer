@@ -12,7 +12,7 @@ from scipy.fft import fft
 # --- omegaA = 3
 # --- omgeaD = -3
 # ---  N=12
-# --- Coupling lambda = 10^(-3)
+# --- Coupling lambda = 10^(-2)
 #The goal is to find the optimal values of chiA,chiD
 
     
@@ -65,6 +65,7 @@ class Reinforcement:
 
     def change_xA(self,chiA_initial,chiD_initial):
         #2a) Optimal value of xA
+        print('-'*12 + 'Procedure for xA' + '-'*12)
         P_changexA = []
         P_changexA.append(1)
         count1,count2 = 0,0
@@ -93,12 +94,14 @@ class Reinforcement:
             if self.learning_rate == self.coupling_lambda/100 and count2 <= 5:
                 if P_changexA[iteration+1]-P_changexA[iteration] < 10**(-3) and abs(P_avg-0.5) < 0.1: count2 +=1
                 if count2 == 5: return chiA_initial
-            print(r"Iteration {},C1={},C2={},Pavg = {},Learning rate = {}".format(iteration +1,count1,count2,P_avg,self.learning_rate) )
+            print(r"Iteration {},C1={},C2={},Pavg = {},Learning rate = {}".format(iteration +1,round(count1,4),round(count2,4),
+                                                                                    round(P_avg,4),self.learning_rate) )
             der_xA = (0.5/self.stepxA)*(avgPD_chiAplus-avgPD_chiAminus)
             chiA_initial += -self.learning_rate*der_xA
 
 
     def change_xD(self,chiA_final,chiD_initial):
+        print('-'*12 + 'Procedure for xD' + '-'*12)
         P_changexD = []
         P_changexD.append(1)
         count1,count2 = 0,0
@@ -127,7 +130,8 @@ class Reinforcement:
             if self.learning_rate == self.coupling_lambda/100 and count2 <= 5:
                 if P_changexD[iteration+1]-P_changexD[iteration] < 10**(-3) and abs(P_avg-0.5) < 0.02: count2 +=1
                 if count2 == 5: return chiD_initial
-            print(r"Iteration {},C1={},C2={},Pavg = {},Learning rate = {}".format(iteration +1,count1,count2,P_avg,self.learning_rate) )
+            print(r"Iteration {},C1={},C2={},Pavg = {},Learning rate = {}".format(iteration +1,round(count1,4),round(count2,4),
+                                                                                    round(P_avg,4),self.learning_rate) )
             der_xD = (0.5/self.stepxD)*(avgPD_chiDplus-avgPD_chiDminus)
             chiD_initial += -self.learning_rate*der_xD
 
@@ -142,7 +146,7 @@ class Reinforcement:
         else: self.learning_rate = 0.1*self.coupling_lambda
         chiD_final = self.change_xD(chiA_final,chiD_initial)
 
-        print('Final: chiA,chiD = {},{}'.format(chiA_final,chiD_final))
+        print('Final: chiA,chiD = {},{}'.format(chiA_final[0],chiD_final[0]))
         final_data = Execute(chiA_final,chiD_final,self.coupling_lambda, self.omegaA, self.omegaD, self.max_N, 
                             self.max_t, data_dir = "", return_data=True).executeOnce()
         t_span = range(0,self.max_t+1)
@@ -194,7 +198,7 @@ class Reinforcement:
 
 if __name__=='__main__':
     coupling_parameter = 1
-    if coupling_parameter <= 10**(-1): learning_rate = 1000*coupling_parameter
+    if coupling_parameter <= 10**(-1): learning_rate = 10*coupling_parameter
     else: learning_rate = 0.1*coupling_parameter
     problem = Reinforcement(omegaD=-3,omegaA=3,
                             coupling_lambda=coupling_parameter,
