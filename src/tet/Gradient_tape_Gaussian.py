@@ -25,7 +25,7 @@ class Reinforcement_GradientTape:
         for i in range(len(y)):
             for j in range(len(x)):
                 P[i][j] =1- ( 4*tf.math.exp(-( (x[j]-0.5)**2 + (y[i]-0.7)**2 ) ) 
-                              + 4*tf.math.exp(-( (x[j]-2.4)**2 + (y[i]-4)**2 ) )
+                              + 6*tf.math.exp(-( (x[j]-2.4)**2 + (y[i]-4)**2 ) )
                             )
         return P
 
@@ -55,10 +55,11 @@ class Reinforcement_GradientTape:
         x_progress,y_progress,loss = [],[],[]
         counter = 0
         for k in range(self.iterations):
+            print('\rIteration {} out of {}'.format(k+1,self.iterations),end='')
             with tf.GradientTape() as tape:
                 #tape.watch([x,y])
                 P =1- ( 4*tf.math.exp(-( (x-0.5)**2 + (y-0.7)**2 ) ) 
-                    + 4*tf.math.exp(-( (x-2.4)**2 + (y-4)**2 ) )
+                    + 6*tf.math.exp(-( (x-2.4)**2 + (y-4)**2 ) )
                     )
                 
                 Gradient = tape.gradient(P, [x,y])
@@ -70,11 +71,13 @@ class Reinforcement_GradientTape:
             
 
         self.Plot_Results(x_plot,y_plot,x_progress,y_progress)
-        print('x_final = {}, y_final = {}'.format(x_progress[len(x_progress)-1],y_progress[len(y_progress)-1]))
+        print('\nx:{}, y:{}'.format(x_progress[len(x_progress)-1],y_progress[len(y_progress)-1]))
 
-trial1 = Reinforcement_GradientTape(plot_parameters=[-2,5,-2,5,500],initial_points=[0.95,1.65],iterations=20000,learning_rate=0.5)
+trial1 = Reinforcement_GradientTape(plot_parameters=[-2,5,-2,5,500],initial_points=[1.5,1.5],iterations=20000,learning_rate=0.5)
 
 trial1.ExecuteTwoVariables()
+
+
 
 
 
