@@ -8,10 +8,10 @@ from matplotlib import pyplot as plt
 from scipy.optimize import curve_fit
 
 #Parameters of the problem
-# --- omegaA = 3
-# --- omgeaD = -3
-# ---  N=12
-# --- Coupling lambda = 1
+# -- omegaA = 3
+# -- omgeaD = -3
+# --  N=12
+# -- Coupling lambda = 1
 #The goal is to find the optimal values of chiA,chiD
 
 class ExtractPeriod:
