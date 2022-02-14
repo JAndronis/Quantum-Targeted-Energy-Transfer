@@ -4,10 +4,11 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import time
-import pandas as pd
+# import pandas as pd
 import warnings
 
 import tet
+from tet.data_process import read_1D_data
 
 def printd(text, delay=.5):
     print(end=text)
@@ -31,9 +32,9 @@ if __name__ == "__main__":
     omegaA, omegaD = 3, -3
     # chiA, chiD = -0.5, 0.5
     coupling_lambda = 1
-    t_max = 2000
-    xA = np.linspace(-5, 5, 10)
-    xD = np.linspace(-5, 5, 10)
+    t_max = 200
+    xA = np.linspace(-5, 5, 100)
+    xD = np.linspace(-5, 5, 100)
 
     cwd = os.getcwd()
     data = f"{cwd}/data"
@@ -55,14 +56,14 @@ if __name__ == "__main__":
     count_it = 0
 
     t1 = time.time()
-    tet.execute(chiA=xA, 
+    tet.Execute(chiA=xA, 
                 chiD=xD, 
                 coupling_lambda=coupling_lambda, 
                 omegaA=omegaA, 
                 omegaD=omegaD, 
                 max_N=max_N, 
                 max_t=t_max, 
-                data_dir=data_dest)
+                data_dir=data_dest)()
     t2 = time.time()
     dt = t2-t1
     print(f"Code took: {dt:.3f}secs to run")
