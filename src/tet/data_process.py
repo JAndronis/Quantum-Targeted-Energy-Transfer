@@ -98,3 +98,18 @@ def LoadModel(case,destination):
     
 
     return loaded_model
+
+def write_min_N(xA, xD, min_n, destination, name_of_file):
+    z = min_n.flatten(order='C')
+    x = xD.flatten(order='C')
+    y = xA.flatten(order='C')
+    k = list(np.zeros(len(z)))
+    index = 0
+
+    for i in range(len(min_n)):
+        for j in range(len(min_n)):
+            index = 100*i+j
+            k[index] = x[index], y[index], z[index]
+    
+    temp_arr = np.array(k)
+    writeData(data=temp_arr, destination=destination, name_of_file=name_of_file)
