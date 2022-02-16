@@ -1,18 +1,16 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import tensorflow as tf
-from tensorflow import keras
 import tet
 
 def main():
-    np.set_printoptions(formatter={'float': lambda x: "{0:0.1f}".format(x)})
+    # np.set_printoptions(formatter={'float': lambda x: "{0:0.1f}".format(x)})
     
-    max_N = 12
+    max_N = 4
     omegaA, omegaD = 3, -3
     chiA, chiD = -0.5, 0.5
-    coupling_lambda = 0.001
-    t_max = 20
+    coupling_lambda = 0.1
+    t_max = 100
 
     xA = np.linspace(-4, 4, 100)
     xD = np.linspace(-4, 4, 100)
@@ -35,8 +33,8 @@ def main():
     tet.data_process.createDir(t_dir_path)
     tet.data_process.createDir(data_dest)
 
-    test_data = tet.Execute(chiA=chiA, 
-                            chiD=chiD, 
+    test_data = tet.Execute(chiA=xA, 
+                            chiD=xD, 
                             coupling_lambda=coupling_lambda, 
                             omegaA=omegaA, 
                             omegaD=omegaD, 
