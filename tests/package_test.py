@@ -1,3 +1,4 @@
+#%%
 import sys
 assert sys.version_info >= (3,6)
 import os
@@ -10,21 +11,6 @@ import warnings
 import tet
 from tet.data_process import read_1D_data
 
-def printd(text, delay=.5):
-    print(end=text)
-    n_dots = 0
-
-    while True:
-        if n_dots == 3:
-            print(end='\b\b\b', flush=True)
-            print(end='   ',    flush=True)
-            print(end='\b\b\b', flush=True)
-            n_dots = 0
-        else:
-            print(end='.', flush=True)
-            n_dots += 1
-        time.sleep(delay)
-
 if __name__ == "__main__":
     warnings.filterwarnings('ignore', category=np.ComplexWarning)
 
@@ -33,8 +19,8 @@ if __name__ == "__main__":
     # chiA, chiD = -0.5, 0.5
     coupling_lambda = 1
     t_max = 200
-    xA = np.linspace(-5, 5, 100)
-    xD = np.linspace(-5, 5, 100)
+    xA = np.linspace(-5, 5, 101)
+    xD = np.linspace(-5, 5, 101)
 
     cwd = os.getcwd()
     data = f"{cwd}/data"
@@ -88,3 +74,4 @@ if __name__ == "__main__":
     plt.title(f'tmax = {t_max}, points χA, χD = {len(xA), len(xD)}, λ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}')
     title_heatmap = f'heatmap_tmax{t_max}_pointsxA:{len(xA)}_pointsxD{len(xD)}_λ={coupling_lambda}.pdf'
     tet.saveFig(title_heatmap, t_dir_path)
+# %%
