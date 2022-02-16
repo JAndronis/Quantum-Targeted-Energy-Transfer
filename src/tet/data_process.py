@@ -16,6 +16,20 @@ def writeData(data, destination, name_of_file):
     
     else:np.savetxt(_destination, data)
 
+def write_min_N(xA, xD, min_n, destination, name_of_file):
+    z = min_n.flatten(order='C')
+    x = xD.flatten(order='C')
+    y = xA.flatten(order='C')
+    k = list(np.zeros(len(z)))
+    index = 0
+
+    for i in range(len(min_n)):
+        for j in range(len(min_n)):
+            index = 100*i+j
+            k[index] = x[index], y[index], z[index]
+    
+    temp_arr = np.array(k)
+    writeData(data=temp_arr, destination=destination, name_of_file=name_of_file)
 
 def read_1D_data(destination, name_of_file):
     _destination = os.path.join(destination, name_of_file)
@@ -95,21 +109,4 @@ def LoadModel(case,destination):
     loaded_model.compile(loss='mse', optimizer='adam', metrics=['mse'])
     loaded_model.load_weights(_destinationh5)
 
-    
-
     return loaded_model
-
-def write_min_N(xA, xD, min_n, destination, name_of_file):
-    z = min_n.flatten(order='C')
-    x = xD.flatten(order='C')
-    y = xA.flatten(order='C')
-    k = list(np.zeros(len(z)))
-    index = 0
-
-    for i in range(len(min_n)):
-        for j in range(len(min_n)):
-            index = 100*i+j
-            k[index] = x[index], y[index], z[index]
-    
-    temp_arr = np.array(k)
-    writeData(data=temp_arr, destination=destination, name_of_file=name_of_file)
