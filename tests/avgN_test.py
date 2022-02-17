@@ -13,8 +13,8 @@ def main():
     coupling_lambda = 0.1
     t_max = 200
 
-    xA = np.linspace(-4, 4, 400)
-    xD = np.linspace(-4, 4, 400)
+    xA = np.linspace(-4, 4, 100)
+    xD = xA
 
     return_query = True
 
