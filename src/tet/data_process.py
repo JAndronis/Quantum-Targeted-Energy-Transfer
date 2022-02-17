@@ -2,7 +2,7 @@ import numpy as np
 import os
 import shutil
 import sys
-from keras.models import model_from_json
+from tensorflow.keras.models import model_from_json
 from os.path import exists
 
 
