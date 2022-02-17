@@ -11,10 +11,10 @@ def main():
     omegaA, omegaD = 3, -3
     chiA, chiD = -0.5, 0.5
     coupling_lambda = 0.1
-    t_max = 100
+    t_max = 200
 
-    xA = np.linspace(-4, 4, 100)
-    xD = np.linspace(-4, 4, 100)
+    xA = np.linspace(-4, 4, 400)
+    xD = np.linspace(-4, 4, 400)
 
     return_query = True
 
@@ -54,7 +54,7 @@ def main():
             counter += 1
         test_z = test_z.reshape(len(xA), len(xD))
 
-        write_min_N(xA=xA, xD=xD, min_n=test_z, destination=data_dest, name_of_file='min_n_combinations')
+        write_min_N(xA=XA, xD=XD, min_n=test_z, destination=data_dest, name_of_file='min_n_combinations')
 
         titl = f'N={max_N}, tmax = {t_max}, # points (χA, χD) = {len(xA), len(xD)}, λ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}'
 
