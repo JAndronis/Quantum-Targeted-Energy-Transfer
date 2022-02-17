@@ -9,9 +9,9 @@ src/tet/Hamiltonian.py
 src/tet/RL_Gradient_Tape.py
 src/tet/RL_Q_Learning.py
 src/tet/RL_Q_learning_NN.py
+src/tet/RL_manual_GT.py
 src/tet/__init__.py
 src/tet/data_process.py
-src/tet/reinforcment_new.py
 src/tet/saveFig.py
 src/tet_JAndronis.egg-info/PKG-INFO
 src/tet_JAndronis.egg-info/SOURCES.txt

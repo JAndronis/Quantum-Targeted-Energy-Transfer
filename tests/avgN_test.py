@@ -2,6 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import tet
+from tet.data_process import write_min_N
 
 def main():
     # np.set_printoptions(formatter={'float': lambda x: "{0:0.1f}".format(x)})
@@ -52,6 +53,8 @@ def main():
             test_z[i[0]] = min(i[1])
             counter += 1
         test_z = test_z.reshape(len(xA), len(xD))
+
+        write_min_N(xA=xA, xD=xD, min_n=test_z, destination=data_dest, name_of_file='min_n_combinations')
 
         titl = f'N={max_N}, tmax = {t_max}, # points (χA, χD) = {len(xA), len(xD)}, λ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}'
 

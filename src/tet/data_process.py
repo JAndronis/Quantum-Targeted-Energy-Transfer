@@ -25,7 +25,7 @@ def write_min_N(xA, xD, min_n, destination, name_of_file):
 
     for i in range(len(min_n)):
         for j in range(len(min_n)):
-            index = 100*i+j
+            index = len(xA)*i+j
             k[index] = x[index], y[index], z[index]
     
     temp_arr = np.array(k)
