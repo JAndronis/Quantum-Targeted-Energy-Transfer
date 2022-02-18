@@ -1,4 +1,3 @@
-#%%
 import sys
 assert sys.version_info >= (3,6)
 import os
@@ -17,7 +16,7 @@ class Opt_PertTheory(tf.keras.Model):
 	def __init__(self, **kwargs):
 		super().__init__(**kwargs)
 		# characteristic parameters of the problem
-		self.sites = {"D":{"omegaD": -3, "chiD": 0.55}, "A":{"omegaA": 3, "chiA": 0.45}, "coupling_lambda": 0.1, "N":12}
+		self.sites = {"D":{"omegaD": -3, "chiD": 0.55}, "A":{"omegaA": 3, "chiA": 0.45}, "coupling_lambda": 0.1, "N":4}
 		self.mylosses = []
 
 	def An(self, i, xA, xD):
@@ -80,11 +79,11 @@ class Opt_PertTheory(tf.keras.Model):
 		saveFig(fig_id="pertubation_theory_loss", destination=coupling_dir_path)
 		plt.show()
 
-		x = np.array(xA)
-		y = np.array(xD)
+		x = np.array(xD)
+		y = np.array(xA)
 		figure2, ax2 = plt.subplots(figsize=(12,12))
 		# plot the predictions of the optimizer
-		plot2 = ax2.contourf(xA_plot, xD_plot, probs, levels=50, cmap='rainbow')
+		plot2 = ax2.contourf(xD_plot, xA_plot, probs, levels=50, cmap='rainbow')
 		ax2.plot(x, y, marker='o', color='black', label='Optimizer Predictions')
 		u = np.diff(x)
 		v = np.diff(y)
@@ -93,8 +92,8 @@ class Opt_PertTheory(tf.keras.Model):
 		norm = np.sqrt(u**2+v**2)
 		ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy",pivot="mid")
 		ax2.scatter(self.sites["A"]["chiA"], self.sites["D"]["chiD"], color='green', edgecolors='black', s=94, label='Initial Value')
-		ax2.set_xlabel(r"$\chi_{A}$", fontsize=20)
-		ax2.set_ylabel(r"$\chi_{D}$", fontsize=20)
+		ax2.set_xlabel(r"$\chi_{D}$", fontsize=20)
+		ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
 		figure2.colorbar(plot2)
 		ax2.legend(prop={'size': 15})
 		saveFig(fig_id="pertubation_theory_loss_contour", destination=coupling_dir_path)
@@ -172,4 +171,6 @@ class Opt_PertTheory(tf.keras.Model):
 keras.backend.clear_session()
 tf.random.set_seed(42)
 np.random.seed(42)
-# %%
+
+if __name__=="__main__":
+	xA, xD = Opt_PertTheory().train()
