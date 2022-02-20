@@ -2,7 +2,15 @@ import os
 import matplotlib.pyplot as plt
 
 def saveFig(fig_id, destination, tight_layout=True, fig_extension="jpg", resolution=300):
-    # Where to save the figures
+    """Function to save a figure in a specified directory.
+
+    Args:
+        fig_id (string): id to save figure under
+        destination (string): Directory to save figure into
+        tight_layout (bool, optional): Make use of tight layout. Defaults to True.
+        fig_extension (str, optional): File extension for saved figure. Defaults to "jpg".
+        resolution (int, optional): Resolution of saved figure. Defaults to 300.
+    """
     PROJECT_ROOT_DIR = destination
     IMAGES_PATH = os.path.join(PROJECT_ROOT_DIR, "images")
     os.makedirs(IMAGES_PATH, exist_ok=True)
