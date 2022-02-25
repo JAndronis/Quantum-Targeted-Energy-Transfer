@@ -13,8 +13,8 @@ import tensorflow as tf
 assert tf.__version__ >= "2.0"
 
 # enable memory growth
-gpu = tf.config.list_physical_devices('GPU')
-tf.config.experimental.set_memory_growth(device=gpu[0], enable=True)
+# gpu = tf.config.list_physical_devices('GPU')
+# tf.config.experimental.set_memory_growth(device=gpu[0], enable=True)
 
 # constants
 DTYPE = tf.complex64
@@ -32,10 +32,10 @@ class Opt_PertTheory():
         self.mylosses = []
         
         dim = tf.cast(self.max_N, dtype=tf.int32)
-        self.initial_state = tf.zeros(dim.numpy()+1,dtype=DTYPE)
+        self.initial_state = tf.zeros(4+1,dtype=DTYPE)
         initial_indices = []
         initial_updates = []
-        for n in range(dim.numpy()+1):
+        for n in range(4+1):
             initial_indices.append([n])
             i = tf.cast(n, dtype=tf.float32)
             initial_updates.append(tf.exp(-(self.max_N-i)**2))
@@ -43,8 +43,7 @@ class Opt_PertTheory():
         self.initial_state = self.initial_state / tf.linalg.norm(self.initial_state)
 
     def createHamiltonian(self, chiA, chiD):
-        dim = tf.cast(self.max_N, dtype=tf.int32)
-        h = tf.zeros((dim.numpy()+1, dim.numpy()+1), dtype=DTYPE)
+        h = tf.zeros((4+1, 4+1), dtype=DTYPE)
         
         diag_indices = []
         upper_diag_indices = []
@@ -54,10 +53,10 @@ class Opt_PertTheory():
         upper_diag_updates = []
         lower_diag_updates = []
         
-        for i in range(dim.numpy() + 1):
+        for i in range(4 + 1):
             n = tf.cast(i, dtype=tf.float32)
-            for j in range(dim.numpy() + 1):
-                if i==j: 
+            for j in range(4 + 1):
+                if i==j:
                     diag_indices.append([i,j])
                     diag_updates.append(self.omegaD * n + 0.5 * chiD * n ** 2\
                             + self.omegaA * (self.max_N - n) + 0.5 * chiA * (self.max_N - n) ** 2)
@@ -75,18 +74,19 @@ class Opt_PertTheory():
     
     def coeffs(self, xA, xD):
         problemHamiltonian = self.createHamiltonian(xA, xD)
-        self.eigvals, self.eigvecs = tf.linalg.eigh(problemHamiltonian)
+        eigvals, eigvecs = tf.linalg.eigh(problemHamiltonian)
         
-        dim = tf.cast(self.max_N, dtype=tf.int32)
-        self.coeff_c = tf.zeros(dim.numpy()+1, dtype=tf.complex64)
+        # dim = tf.cast(self.max_N, dtype=tf.int32)
+        coeff_c = tf.zeros(4+1, dtype=tf.complex64)
         c_indices = []
         c_updates = []
-        for i in range(dim.numpy()+1): 
+        for i in range(4+1): 
             c_indices.append([i])
-            c_updates.append(tf.tensordot(self.eigvecs[:,i], self.initial_state, 1))
+            c_updates.append(tf.tensordot(eigvecs[:,i], self.initial_state, 1))
         
-        self.coeff_c = tf.tensor_scatter_nd_update(self.coeff_c, c_indices, c_updates)
-        self.coeff_b = self.eigvecs
+        coeff_c = tf.tensor_scatter_nd_update(coeff_c, c_indices, c_updates)
+        coeff_b = eigvecs
+        return coeff_c, coeff_b, eigvals
     
     def computeAverage(self):
         avg_N = []
@@ -99,15 +99,8 @@ class Opt_PertTheory():
             # last = tf.math.real(avg_N[-1].numpy())
         return tf.math.real(avg_N)
 
-    def _computeAverageCalculation(self, t):
-        sum_j = 0
-        dim = tf.cast(self.max_N, dtype=tf.int32)
-        for j in range(dim.numpy()+1):
-            sum_i = tf.add_n(self.coeff_c*self.coeff_b[j,:]*tf.exp(-tf.complex(0.0,1.0)*self.eigvals*t))
-            sum_k = tf.add_n(self.coeff_c*self.coeff_b[j,:]*tf.exp(tf.complex(0.0,1.0)*self.eigvals*t)*sum_i)
-            sum_j += sum_k*j
-        return sum_j
-    
+    # def _computeAverageCalculation(self, t, c, b, e):
+        
     def loss(self, xA, xD):
         self.coeffs(xA, xD)
         avg_N = self.computeAverage()
