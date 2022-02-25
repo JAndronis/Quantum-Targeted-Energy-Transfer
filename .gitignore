@@ -30,3 +30,5 @@ tests/.DS_Store
 
 
 Untitled.ipynb
+tests/__pycache__/
+tests/data_optimizer_avgn/
