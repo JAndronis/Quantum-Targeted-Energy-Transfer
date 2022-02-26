@@ -13,8 +13,8 @@ import tensorflow as tf
 assert tf.__version__ >= "2.0"
 
 # enable memory growth
-# gpu = tf.config.list_physical_devices('GPU')
-# tf.config.experimental.set_memory_growth(device=gpu[0], enable=True)
+gpu = tf.config.list_physical_devices('GPU')
+tf.config.experimental.set_memory_growth(device=gpu[0], enable=True)
 
 # constants
 DTYPE = tf.complex64
@@ -99,7 +99,14 @@ class Opt_PertTheory():
             # last = tf.math.real(avg_N[-1].numpy())
         return tf.math.real(avg_N)
 
-    # def _computeAverageCalculation(self, t, c, b, e):
+    def _computeAverageCalculation(self, t):
+        sum_j = 0
+        dim = tf.cast(self.max_N, dtype=tf.int32)
+        for j in range(dim.numpy()+1):
+            sum_i = tf.add_n(self.coeff_c*self.coeff_b[j,:]*tf.exp(-tf.complex(0.0,1.0)*self.eigvals*t))
+            sum_k = tf.add_n(self.coeff_c*self.coeff_b[j,:]*tf.exp(tf.complex(0.0,1.0)*self.eigvals*t)*sum_i)
+            sum_j += sum_k*j
+        return sum_j
         
     def loss(self, xA, xD):
         self.coeffs(xA, xD)
@@ -191,7 +198,7 @@ class Opt_PertTheory():
 
 if __name__=="__main__":
     # change path to one with pre calculated values of avg_N
-    min_n_path = os.path.join(os.getcwd(), 'data/coupling-0.1/tmax-25/avg_N/min_n_combinations')
+    min_n_path = os.path.join(os.getcwd(), 'tests/data/coupling-0.1/tmax-25/avg_N/min_n_combinations')
     test_array = np.loadtxt(min_n_path)
     xA_plot, xD_plot = test_array[:,0].reshape(100,100), test_array[:,1].reshape(100,100)
     avg_n = test_array[:,2].reshape(100,100)
