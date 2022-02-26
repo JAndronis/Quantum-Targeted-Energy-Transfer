@@ -86,7 +86,9 @@ class Opt_PertTheory():
         
         coeff_c = tf.tensor_scatter_nd_update(coeff_c, c_indices, c_updates)
         coeff_b = eigvecs
-        return coeff_c, coeff_b, eigvals
+        self.coeff_c = coeff_c
+        self.coeff_b = coeff_b
+        self.eigvals = eigvals
     
     def computeAverage(self):
         avg_N = []
