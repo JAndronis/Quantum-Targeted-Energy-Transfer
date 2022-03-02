@@ -20,9 +20,9 @@ assert tf.__version__ >= "2.0"
 DTYPE = tf.complex64
 CHIA = tf.constant(0, dtype=tf.float32)
 CHID = tf.constant(0, dtype=tf.float32)
-LAMBDA = tf.constant(0.1, dtype=tf.float32)
-OMEGA_A = tf.constant(2, dtype=tf.float32)
-OMEGA_D = tf.constant(1, dtype=tf.float32)
+LAMBDA = tf.constant(1, dtype=tf.float32)
+OMEGA_A = tf.constant(3, dtype=tf.float32)
+OMEGA_D = tf.constant(-3, dtype=tf.float32)
 MAX_N = tf.constant(4, dtype=tf.float32)
 MAX_T = tf.constant(25, dtype=tf.float32)
 
@@ -277,9 +277,9 @@ if __name__=="__main__":
 
     # print(compute_loss(tf.constant(-4.0), tf.constant(3.0)))
     
-    test_data = np.loadtxt('/home/jason/Documents/git_repos/Thesis/tests/data/coupling-0.1/tmax-25/avg_N/min_n_combinations')
-    XA, XD = test_data[:,0].reshape(100,100), test_data[:,1].reshape(100,100)
-    avg_n = test_data[:,2].reshape(100,100)
+    # test_data = np.loadtxt('/Users/jasonandronis/Documents/GitHub/Thesis/tests/data/coupling-1/tmax-25/avg_N/min_n_combinations')
+    # XA, XD = test_data[:,0].reshape(100,100), test_data[:,1].reshape(100,100)
+    # avg_n = test_data[:,2].reshape(100,100)
 
     # cwd = os.getcwd()
     # data = f"{cwd}/data-optimizer"
