@@ -105,12 +105,12 @@ class Loss:
                 sum_j = tf.add(sum_j, sum_k*j)
             sum_j = tf.math.real(sum_j)
             n = n.write(t, tf.cast(sum_j, dtype=tf.float32))
-        return n
+        return n.stack()
         
     def loss(self, xA, xD):
         coeff_c, coeff_b, vals = self.coeffs(xA, xD)
         avg_N_list = self.computeAverage(coeff_c, coeff_b, vals)
-        avg_N = tf.reduce_min(avg_N_list.stack(), name='Average_N')
+        avg_N = tf.reduce_min(avg_N_list, name='Average_N')
         return avg_N
 
 @tf.function
