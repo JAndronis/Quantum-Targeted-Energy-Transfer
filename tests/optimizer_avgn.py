@@ -13,8 +13,8 @@ import tensorflow as tf
 assert tf.__version__ >= "2.0"
 
 # enable memory growth
-gpu = tf.config.list_physical_devices('GPU')
-tf.config.experimental.set_memory_growth(device=gpu[0], enable=True)
+# gpu = tf.config.list_physical_devices('GPU')
+# tf.config.experimental.set_memory_growth(device=gpu[0], enable=True)
 
 # constants
 DTYPE = tf.complex64
