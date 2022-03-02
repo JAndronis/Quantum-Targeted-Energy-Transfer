@@ -28,14 +28,14 @@ class Opt_PertTheory():
         self.omegaA = tf.constant(-3, dtype=tf.float32)
         self.omegaD = tf.constant(3, dtype=tf.float32)
         self.max_N = tf.constant(4, dtype=tf.float32)
+        self.dim = tf.constant(5, dtype=tf.int32)
         self.max_t = tf.constant(25, dtype=tf.float32)
         self.mylosses = []
         
-        dim = tf.cast(self.max_N, dtype=tf.int32)
-        self.initial_state = tf.zeros(4+1,dtype=DTYPE)
+        self.initial_state = tf.zeros(self.dim, dtype=DTYPE)
         initial_indices = []
         initial_updates = []
-        for n in range(4+1):
+        for n in range(self.dim):
             initial_indices.append([n])
             i = tf.cast(n, dtype=tf.float32)
             initial_updates.append(tf.exp(-(self.max_N-i)**2))
@@ -43,7 +43,7 @@ class Opt_PertTheory():
         self.initial_state = self.initial_state / tf.linalg.norm(self.initial_state)
 
     def createHamiltonian(self, chiA, chiD):
-        h = tf.zeros((4+1, 4+1), dtype=DTYPE)
+        h = tf.zeros((self.dim, self.dim), dtype=DTYPE)
         
         diag_indices = []
         upper_diag_indices = []
@@ -53,9 +53,9 @@ class Opt_PertTheory():
         upper_diag_updates = []
         lower_diag_updates = []
         
-        for i in range(4 + 1):
+        for i in range(self.dim):
             n = tf.cast(i, dtype=tf.float32)
-            for j in range(4 + 1):
+            for j in range(self.dim):
                 if i==j:
                     diag_indices.append([i,j])
                     diag_updates.append(self.omegaD * n + 0.5 * chiD * n ** 2\
@@ -77,10 +77,10 @@ class Opt_PertTheory():
         eigvals, eigvecs = tf.linalg.eigh(problemHamiltonian)
         
         # dim = tf.cast(self.max_N, dtype=tf.int32)
-        coeff_c = tf.zeros(4+1, dtype=tf.complex64)
+        coeff_c = tf.zeros(self.dim, dtype=tf.complex64)
         c_indices = []
         c_updates = []
-        for i in range(4+1): 
+        for i in range(self.dim): 
             c_indices.append([i])
             c_updates.append(tf.tensordot(eigvecs[:,i], self.initial_state, 1))
         
@@ -119,7 +119,7 @@ class Opt_PertTheory():
     
     def train(self):
         tol = 1e-8
-        max_iter = 1000
+        max_iter = 10
         opt = tf.keras.optimizers.Adam(learning_rate=0.1)
         xA = tf.Variable(initial_value=self.chiA, trainable=True, dtype=tf.float32)
         xD = tf.Variable(initial_value=self.chiD, trainable=True, dtype=tf.float32)
@@ -200,7 +200,7 @@ class Opt_PertTheory():
 
 if __name__=="__main__":
     # change path to one with pre calculated values of avg_N
-    min_n_path = os.path.join(os.getcwd(), 'tests/data/coupling-0.1/tmax-25/avg_N/min_n_combinations')
+    min_n_path = os.path.join(os.getcwd(), 'data/coupling-0.1/tmax-25/avg_N/min_n_combinations')
     test_array = np.loadtxt(min_n_path)
     xA_plot, xD_plot = test_array[:,0].reshape(100,100), test_array[:,1].reshape(100,100)
     avg_n = test_array[:,2].reshape(100,100)
