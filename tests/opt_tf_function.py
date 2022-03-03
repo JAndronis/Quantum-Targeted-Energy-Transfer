@@ -29,15 +29,15 @@ if gpus:
 
 # constants
 DTYPE = tf.float32
-CHIA = tf.constant(0, dtype=DTYPE)
-CHID = tf.constant(0, dtype=DTYPE)
+CHIA = tf.constant(1, dtype=DTYPE)
+CHID = tf.constant(-3, dtype=DTYPE)
 LAMBDA = tf.constant(0.1, dtype=DTYPE)
 OMEGA_A = tf.constant(-3, dtype=DTYPE)
 OMEGA_D = tf.constant(3, dtype=DTYPE)
 MAX_N = tf.constant(4, dtype=DTYPE)
 MAX_T = tf.constant(25, dtype=tf.int32)
 
-OPT = tf.keras.optimizers.Adam(learning_rate=0.1)
+OPT = tf.keras.optimizers.Adam(learning_rate=0.01)
 
 class Loss:
     def __init__(self):
