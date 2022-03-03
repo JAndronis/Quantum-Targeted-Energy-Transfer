@@ -16,7 +16,7 @@ def main():
     xA = np.linspace(-4, 4, 100)
     xD = xA
     
-    write_data=False    
+    write_data=True
     return_query = True
 
     cwd = os.getcwd()
@@ -29,23 +29,33 @@ def main():
     t_dir_path = os.path.join(coupling_dir_path, t_dir)
 
     data_dest = os.path.join(t_dir_path, "avg_N")
-    
-    test_data = tet.Execute(chiA=chiA, 
-                            chiD=chiD, 
-                            coupling_lambda=coupling_lambda, 
-                          omegaA=omegaA, 
-                            omegaD=omegaD, 
-                            max_N=max_N, 
-                            max_t=t_max, 
-                            data_dir=data_dest,
-                            return_data=return_query)()
 
     if write_data:
         tet.data_process.createDir(data, replace=False)
         tet.data_process.createDir(coupling_dir_path, replace=False)
         tet.data_process.createDir(t_dir_path)
         tet.data_process.createDir(data_dest)
-
+        
+        test_data = tet.Execute(chiA=xA, 
+                                chiD=xD, 
+                                coupling_lambda=coupling_lambda, 
+                                omegaA=omegaA, 
+                                omegaD=omegaD, 
+                                max_N=max_N, 
+                                max_t=t_max, 
+                                data_dir=data_dest,
+                                return_data=return_query)()
+    else:
+        test_data = tet.Execute(chiA=xA, 
+                                chiD=xD, 
+                                coupling_lambda=coupling_lambda, 
+                                omegaA=omegaA, 
+                                omegaD=omegaD, 
+                                max_N=max_N, 
+                                max_t=t_max, 
+                                data_dir=os.getcwd(),
+                                return_data=return_query)()
+        
     if return_query and np.ndim(test_data)>1:
         XA, XD = np.meshgrid(xA, xD)
 
