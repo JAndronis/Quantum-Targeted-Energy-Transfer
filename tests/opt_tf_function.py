@@ -36,6 +36,7 @@ OMEGA_A = tf.constant(-3, dtype=DTYPE)
 OMEGA_D = tf.constant(3, dtype=DTYPE)
 MAX_N = tf.constant(4, dtype=DTYPE)
 MAX_T = tf.constant(25, dtype=tf.int32)
+DIM = int(tf.constant(MAX_N+1).numpy())
 
 OPT = tf.keras.optimizers.Adam(learning_rate=0.01)
 
@@ -46,7 +47,7 @@ class Loss:
         self.omegaD = OMEGA_D
         self.max_N = MAX_N
         self.max_t = MAX_T
-        self.dim = tf.cast(MAX_N+1, dtype=tf.int32)
+        self.dim = DIM
 
         initial_state = tf.TensorArray(DTYPE, size=self.dim)
         for n in range(self.dim):
