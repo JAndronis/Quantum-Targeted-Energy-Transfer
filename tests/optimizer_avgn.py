@@ -209,8 +209,8 @@ if __name__=="__main__":
     xA_best, xD_best, a, d, a_init, d_init = Opt_PertTheory().train()
     titl = f'N={4}, tmax={25}, Initial (χA, χD) = {a_init.numpy(), d_init.numpy()}, λ={0.1}, ωA={-3}, ωD={3}'    
     
-    x = np.array(np.array(a))
-    y = np.array(np.array(d))
+    x = np.array(np.array(d))
+    y = np.array(np.array(a))
     figure2, ax2 = plt.subplots(figsize=(12,12))
     # plot the predictions of the optimizer
     plot2 = ax2.contourf(xD_plot, xA_plot, avg_n, levels=50, cmap='rainbow')
@@ -221,7 +221,7 @@ if __name__=="__main__":
     pos_y = y[:-1] + v/2
     norm = np.sqrt(u**2+v**2)
     ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy",pivot="mid")
-    ax2.scatter(a_init, d_init, color='green', edgecolors='black', s=94, label='Initial Value', zorder=3)
+    ax2.scatter(d_init, a_init, color='green', edgecolors='black', s=94, label='Initial Value', zorder=3)
     ax2.set_xlabel(r"$\chi_{D}$", fontsize=20)
     ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
     figure2.colorbar(plot2)
