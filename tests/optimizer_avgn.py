@@ -42,7 +42,7 @@ class Opt_PertTheory():
         self.initial_state = tf.tensor_scatter_nd_update(self.initial_state, initial_indices, initial_updates)
         self.initial_state = self.initial_state / tf.linalg.norm(self.initial_state)
 
-    def createHamiltonian(self, chiA, chiD):
+    def createHamiltonian(self, xA, xD):
         h = tf.zeros((self.dim, self.dim), dtype=DTYPE)
         
         diag_indices = []
@@ -58,8 +58,8 @@ class Opt_PertTheory():
             for j in range(self.dim):
                 if i==j:
                     diag_indices.append([i,j])
-                    diag_updates.append(self.omegaD * n + 0.5 * chiD * n ** 2\
-                            + self.omegaA * (self.max_N - n) + 0.5 * chiA * (self.max_N - n) ** 2)
+                    diag_updates.append(self.omegaD * n + 0.5 * xD * n ** 2\
+                            + self.omegaA * (self.max_N - n) + 0.5 * xA * (self.max_N - n) ** 2)
                 if i==j-1:
                     lower_diag_indices.append([i,j])
                     lower_diag_updates.append(-self.coupling_lambda * tf.sqrt((n + 1) * (self.max_N - n)))
@@ -93,12 +93,9 @@ class Opt_PertTheory():
     def computeAverage(self):
         avg_N = []
         _time = range(0, tf.cast(self.max_t, dtype=tf.int32).numpy()+1)
-        last = tf.Variable(4.0, trainable=False)
 
         for t in _time:
             avg_N.append(self._computeAverageCalculation(t))
-            # if tf.math.real(avg_N[-1].numpy()) > last: return tf.math.real(avg_N[-2])
-            # last = tf.math.real(avg_N[-1].numpy())
         return tf.math.real(avg_N)
 
     def _computeAverageCalculation(self, t):
