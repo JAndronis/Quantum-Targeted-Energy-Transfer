@@ -110,17 +110,17 @@ class Loss:
                 temp_c = tf.cast(c, dtype=tf.complex64)
                 temp_e = tf.cast(e, dtype=tf.complex64)
                 sum_i = tf.reduce_sum(temp_c*temp_b*tf.exp(-tf.complex(0.0,1.0)*temp_e*_t), 0)
-                sum_k = tf.reduce_sum(temp_c*temp_b*tf.exp(tf.complex(0.0,1.0)*temp_e*_t), 0)*sum_i
+                sum_k = tf.reduce_sum(temp_c*temp_b*tf.exp(tf.complex(0.0,1.0)*temp_e*_t)*sum_i, 0)
                 j = tf.cast(j, dtype=tf.complex64)
-                sum_j = tf.add(sum_j, sum_k*j)
+                sum_j = sum_j+sum_k*j
             sum_j = tf.math.real(sum_j)
-            n = n.write(t, tf.cast(sum_j, dtype=tf.float32))
+            n = n.write(t, sum_j)
         return n.stack()
         
     def loss(self, xA, xD):
         coeff_c, coeff_b, vals = self.coeffs(xA, xD)
         avg_N_list = self.computeAverage(coeff_c, coeff_b, vals)
-        avg_N = tf.reduce_min(avg_N_list, name='Average_N')
+        avg_N = tf.math.reduce_min(avg_N_list, name='Average_N')
         return avg_N
 
 @tf.function
