@@ -106,7 +106,7 @@ class Loss:
             _t = tf.cast(t, dtype=tf.complex64)
             sum_j = tf.cast(0, dtype=tf.complex64)
             for j in range(self.dim):
-                temp_b = tf.cast(b[:,j], dtype=tf.complex64)
+                temp_b = tf.cast(b[j,:], dtype=tf.complex64)
                 temp_c = tf.cast(c, dtype=tf.complex64)
                 temp_e = tf.cast(e, dtype=tf.complex64)
                 sum_i = tf.reduce_sum(temp_c*temp_b*tf.exp(-tf.complex(0.0,1.0)*temp_e*_t), 0)
