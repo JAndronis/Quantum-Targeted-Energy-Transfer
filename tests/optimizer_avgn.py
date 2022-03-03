@@ -22,8 +22,8 @@ DTYPE = tf.complex64
 class Opt_PertTheory():
     def __init__(self):
         # characteristic parameters of the problem
-        self.chiD = tf.constant(0, dtype=tf.float32)
-        self.chiA = tf.constant(0, dtype=tf.float32)
+        self.chiD = tf.constant(-3, dtype=tf.float32)
+        self.chiA = tf.constant(1, dtype=tf.float32)
         self.coupling_lambda = tf.constant(0.1, dtype=tf.float32)
         self.omegaA = tf.constant(-3, dtype=tf.float32)
         self.omegaD = tf.constant(3, dtype=tf.float32)
