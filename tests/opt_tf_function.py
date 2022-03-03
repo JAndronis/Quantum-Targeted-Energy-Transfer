@@ -208,7 +208,7 @@ def train(fig_path):
           "| Total timesteps:", MAX_T.numpy(),
           "\n"+40*"-")
 
-    plt.plot(mylosses)
+    plt.plot(mylosses[1:])
     saveFig(fig_id="loss", destination=fig_path)
 
     return xA_best.numpy(), xD_best.numpy(), a_data, d_data, CHIA, CHID
