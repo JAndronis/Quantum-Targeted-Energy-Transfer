@@ -8,14 +8,15 @@ def main():
     # np.set_printoptions(formatter={'float': lambda x: "{0:0.1f}".format(x)})
     
     max_N = 4
-    omegaA, omegaD = 2, 1
-    chiA, chiD = -1.5, 1.5
+    omegaA, omegaD = -3, 3
+    chiA, chiD = 1, -3
     coupling_lambda = 0.1
     t_max = 25
 
     xA = np.linspace(-4, 4, 100)
     xD = xA
-
+    
+    write_data=False    
     return_query = True
 
     cwd = os.getcwd()
@@ -28,26 +29,22 @@ def main():
     t_dir_path = os.path.join(coupling_dir_path, t_dir)
 
     data_dest = os.path.join(t_dir_path, "avg_N")
-
-    tet.data_process.createDir(data, replace=False)
-    tet.data_process.createDir(coupling_dir_path, replace=False)
-    tet.data_process.createDir(t_dir_path)
-    tet.data_process.createDir(data_dest)
-
-    test_data = tet.Execute(chiA=xA, 
-                            chiD=xD, 
+    
+    test_data = tet.Execute(chiA=chiA, 
+                            chiD=chiD, 
                             coupling_lambda=coupling_lambda, 
-                            omegaA=omegaA, 
+                          omegaA=omegaA, 
                             omegaD=omegaD, 
                             max_N=max_N, 
                             max_t=t_max, 
                             data_dir=data_dest,
                             return_data=return_query)()
 
-    # test_data = np.log(test_data)
-
-    # plt.plot(test_data)
-    # plt.show()
+    if write_data:
+        tet.data_process.createDir(data, replace=False)
+        tet.data_process.createDir(coupling_dir_path, replace=False)
+        tet.data_process.createDir(t_dir_path)
+        tet.data_process.createDir(data_dest)
 
     if return_query and np.ndim(test_data)>1:
         XA, XD = np.meshgrid(xA, xD)
@@ -77,6 +74,7 @@ def main():
         figure2.colorbar(plot2)
         ax2.set_title(titl, fontsize=20)
         tet.saveFig(titl+' - contourplot', t_dir_path)
+    else: print(np.min(test_data))
 
 if __name__=="__main__":
     main()
