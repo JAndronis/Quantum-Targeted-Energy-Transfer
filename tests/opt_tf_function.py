@@ -46,7 +46,7 @@ class Loss:
         self.omegaD = OMEGA_D
         self.max_N = MAX_N
         self.max_t = MAX_T
-        self.dim = 5
+        self.dim = tf.cast(MAX_N+1, dtype=tf.int32)
 
         initial_state = tf.TensorArray(DTYPE, size=self.dim)
         for n in range(self.dim):
@@ -57,7 +57,7 @@ class Loss:
     def __call__(self, xA, xD):
         return self.loss(xA, xD)
 
-    def createHamiltonian(self, chiA, chiD):
+    def createHamiltonian(self, xA, xD):
         h = tf.zeros((self.dim, self.dim), dtype=DTYPE)
         
         diag_indices = []
@@ -73,8 +73,8 @@ class Loss:
             for j in range(self.dim):
                 if i==j:
                     diag_indices.append([i,j])
-                    diag_updates.append(self.omegaD * n + 0.5 * chiD * n ** 2\
-                            + self.omegaA * (self.max_N - n) + 0.5 * chiA * (self.max_N - n) ** 2)
+                    diag_updates.append(self.omegaD * n + 0.5 * xD * n ** 2\
+                            + self.omegaA * (self.max_N - n) + 0.5 * xA * (self.max_N - n) ** 2)
                 if i==j-1:
                     lower_diag_indices.append([i,j])
                     lower_diag_updates.append(-self.coupling_lambda * tf.sqrt((n + 1) * (self.max_N - n)))
@@ -100,7 +100,7 @@ class Loss:
         return coeff_c, coeff_b, eigvals
     
     def computeAverage(self, c, b, e):
-        _time = MAX_T
+        _time = MAX_T+1
         n = tf.TensorArray(DTYPE, size=_time)
         for t in range(_time):
             _t = tf.cast(t, dtype=tf.complex64)
