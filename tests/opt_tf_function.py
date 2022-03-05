@@ -1,13 +1,18 @@
+from math import comb
 import sys
+
+from sympy import Chi
 assert sys.version_info >= (3,6)
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
 import matplotlib.pyplot as plt
 import time
 
-from tet.data_process import createDir
+from tet.data_process import createDir,writeData,read_1D_data
 from tet.saveFig import saveFig
+from itertools import combinations, product
 
 import tensorflow as tf
 assert tf.__version__ >= "2.0"
@@ -29,8 +34,7 @@ if gpus:
 
 # constants
 DTYPE = tf.float32
-CHIA = tf.constant(1, dtype=DTYPE)
-CHID = tf.constant(-3, dtype=DTYPE)
+
 LAMBDA = tf.constant(0.1, dtype=DTYPE)
 OMEGA_A = tf.constant(3, dtype=DTYPE)
 OMEGA_D = tf.constant(-3, dtype=DTYPE)
@@ -124,126 +128,160 @@ class Loss:
         avg_N = tf.math.reduce_min(avg_N_list, name='Average_N')
         return avg_N
 
-@tf.function
-def compute_loss(xA, xD):
-    return Loss().loss(xA, xD)
 
-def get_grads(xA, xD):
-    with tf.GradientTape() as t:
-            t.watch([xA, xD])
-            loss = compute_loss(xA, xD)
-    grads = t.gradient(loss, [xA, xD])
-    del t
-    return grads, loss
-    
-@tf.function
-def apply_grads(xA, xD):
-    grads, loss = get_grads(xA, xD)
-    OPT.apply_gradients(zip(grads, [xA, xD]))
-    return loss
 
-def train(fig_path):
-    mylosses = []
-    tol = 1e-8
-    max_iter = 1000
-    xA = tf.Variable(initial_value=CHIA, trainable=True, dtype=tf.float32)
-    xD = tf.Variable(initial_value=CHID, trainable=True, dtype=tf.float32)
-    xA_best = tf.Variable(initial_value=0, dtype=tf.float32)
-    xD_best = tf.Variable(initial_value=0, dtype=tf.float32)
-    mylosses.append(3.9)
-    best_loss = 4
-    counter = 0
-    d_data = []
-    a_data = []
-    loss = Loss()
-    change = 0
-
-    t0 = time.time()
-    for epoch in range(max_iter):
-        xA_init = xA.numpy()
-        xD_init = xD.numpy()
-        loss = apply_grads(xA, xD)
-        if loss.numpy()<=1 and change==0: 
-            K.set_value(OPT.learning_rate, 0.01)
-            change += 1
-        if epoch%100 ==0: print(f'Loss:{loss.numpy()}, xA:{xA.numpy()}, xD:{xD.numpy()}, epoch:{epoch}')
+class Train:
+    def __init__(self,ChiAInitial,ChiDInitial,DataExist,case):
+        self.DataExist = DataExist
+        self.ChiAInitial = ChiAInitial
+        self.ChiDInitial = ChiDInitial
+        self.data_path = os.path.join(os.getcwd(), 'data_optimizer_avgn')
+        self.CombinationPath = os.path.join(self.data_path,f'Combination {case}')
         
-        errorA = np.abs(xA.numpy() - xA_init)
-        errorD = np.abs(xD.numpy() - xD_init)
 
-        mylosses.append(loss.numpy())
-        if mylosses[epoch+1] < min(list(mylosses[:epoch+1])):
-            xA_best.assign(xA.numpy())
-            xD_best.assign(xD.numpy())
-            best_loss = mylosses[epoch+1]
+    def __call__(self):
+        if self.DataExist:self.PlotResults()
+        else: 
+            createDir(self.data_path, replace=False)
+            createDir(destination=self.CombinationPath,replace=True)
+            self.train()
 
-        counter += 1
-        if counter%10 == 0:
-            d_data.append(xD.numpy())
-            a_data.append(xA.numpy())
 
-        if np.abs(loss.numpy()) < tol:
-            break
+    @tf.function
+    def compute_loss(self,xA, xD):
+        return Loss().loss(xA, xD)
+
+
+    def get_grads(self,xA, xD):
+        with tf.GradientTape() as t:
+                t.watch([xA, xD])
+                loss = self.compute_loss(xA, xD)
+        grads = t.gradient(loss, [xA, xD])
+        del t
+        return grads, loss
         
-        if errorA < tol:
-            print('Stopped training because of xA_new-xA_old =', errorA)
-            break
 
-        if errorD < tol:
-            print('Stopped training because of xD_new-xD_old =', errorA)
-            break
+    @tf.function
+    def apply_grads(self,xA, xD):
+        grads, loss = self.get_grads(xA, xD)
+        OPT.apply_gradients(zip(grads, [xA, xD]))
+        return loss
+
+
+    def train(self):
+        CHIA = tf.constant(self.ChiAInitial, dtype=DTYPE)
+        CHID = tf.constant(self.ChiDInitial, dtype=DTYPE)
+        mylosses = []
+        tol = 1e-8
+        max_iter = 1000
+        xA = tf.Variable(initial_value=self.ChiAInitial, trainable=True, dtype=tf.float32)
+        xD = tf.Variable(initial_value=self.ChiDInitial, trainable=True, dtype=tf.float32)
+        xA_best = tf.Variable(initial_value=0, dtype=tf.float32)
+        xD_best = tf.Variable(initial_value=0, dtype=tf.float32)
+        mylosses.append(3.9)
+        best_loss = 4
+        counter = 0
+        d_data = []
+        a_data = []
+        loss = Loss()
+
+        t0 = time.time()
+        for epoch in range(max_iter):
+            xA_init = xA.numpy()
+            xD_init = xD.numpy()
+            loss = self.apply_grads(xA, xD)
+            if epoch%100 ==0: print(f'Loss:{loss.numpy()}, xA:{xA.numpy()}, xD:{xD.numpy()}, epoch:{epoch}')
+            
+            errorA = np.abs(xA.numpy() - xA_init)
+            errorD = np.abs(xD.numpy() - xD_init)
+
+            mylosses.append(loss.numpy())
+            if mylosses[epoch+1] < min(list(mylosses[:epoch+1])):
+                xA_best.assign(xA.numpy())
+                xD_best.assign(xD.numpy())
+                best_loss = mylosses[epoch+1]
+
+            counter += 1
+            if counter%10 == 0:
+                d_data.append(xD.numpy())
+                a_data.append(xA.numpy())
+
+            if np.abs(loss.numpy()) < tol:
+                break
+            
+            if errorA < tol:
+                print('Stopped training because of xA_new-xA_old =', errorA)
+                break
+
+            if errorD < tol:
+                print('Stopped training because of xD_new-xD_old =', errorA)
+                break
+            
+        t1 = time.time()
+        dt = t1-t0
+
+        print("\nApproximate value of chiA:", xA_best.numpy(), 
+            "\nApproximate value of chiD:", xD_best.numpy(),
+            "\nLoss - min #bosons on donor:", best_loss,
+            "\nOptimizer Iterations:", OPT.iterations.numpy(), 
+            "\nTraining Time:", dt,
+            "\n"+40*"-",
+            "\nParameters:",
+            "\nOmega_A:", OMEGA_A.numpy(),
+            "| Omega_D:", OMEGA_D.numpy(),
+            "| N:", MAX_N.numpy(),
+            "| Total timesteps:", MAX_T.numpy(),
+            "\n"+40*"-")
+
+        writeData(data=mylosses[1:],destination=self.CombinationPath,name_of_file='losses.txt')
+        writeData(data = a_data,destination=self.CombinationPath,name_of_file='xAs Trajectory.txt')
+        writeData(data = d_data,destination=self.CombinationPath,name_of_file='xDs Trajectory.txt')
+        writeData(data = [xA_best.numpy(),ChiAInitial],destination=self.CombinationPath,name_of_file='xAcharacteristics.txt')
+        writeData(data = [xD_best.numpy(),ChiDInitial],destination=self.CombinationPath,name_of_file='xDcharacteristics.txt')
+     
+
+    def PlotResults(self):
+        loss_data = read_1D_data(destination=self.CombinationPath,name_of_file='losses.txt')
+        plt.figure()
+        plt.plot(loss_data[1:])
+        saveFig(fig_id="loss", destination=self.CombinationPath)
+        plt.close()
+        """
+        min_n_path = os.path.join(os.getcwd(), 'data/coupling-0.1/tmax-25/avg_N/min_n_combinations')
+        test_array = np.loadtxt(min_n_path)
+        xA_plot, xD_plot = test_array[:,0].reshape(100,100), test_array[:,1].reshape(100,100)
+        avg_n = test_array[:,2].reshape(100,100)
+        titl = f'N={4}, tmax={25}, Initial (χA, χD) = {a_init.numpy(), d_init.numpy()}, λ={0.1}, ωA={3}, ωD={-3}'    
         
-    t1 = time.time()
-    dt = t1-t0
-
-    print("\nApproximate value of chiA:", xA_best.numpy(), 
-          "\nApproximate value of chiD:", xD_best.numpy(),
-          "\nLoss - min #bosons on donor:", best_loss,
-          "\nOptimizer Iterations:", OPT.iterations.numpy(), 
-          "\nTraining Time:", dt,
-          "\n"+40*"-",
-          "\nParameters:",
-          "\nOmega_A:", OMEGA_A.numpy(),
-          "| Omega_D:", OMEGA_D.numpy(),
-          "| N:", MAX_N.numpy(),
-          "| Total timesteps:", MAX_T.numpy(),
-          "\n"+40*"-")
-
-    plt.plot(mylosses[1:])
-    saveFig(fig_id="loss", destination=fig_path)
-
-    return xA_best.numpy(), xD_best.numpy(), a_data, d_data, CHIA, CHID
+        x = np.array(np.array(d))
+        y = np.array(np.array(a))
+        figure2, ax2 = plt.subplots(figsize=(12,12))
+        # plot the predictions of the optimizer
+        plot2 = ax2.contourf(xD_plot, xA_plot, avg_n, levels=50, cmap='rainbow')
+        ax2.plot(x, y, marker='o', color='black', label='Optimizer Predictions')
+        u = np.diff(x)
+        v = np.diff(y)
+        pos_x = x[:-1] + u/2
+        pos_y = y[:-1] + v/2
+        norm = np.sqrt(u**2+v**2)
+        ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy",pivot="mid")
+        ax2.scatter(d_init, a_init, color='green', edgecolors='black', s=94, label='Initial Value', zorder=3)
+        ax2.set_xlabel(r"$\chi_{D}$", fontsize=20)
+        ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
+        figure2.colorbar(plot2)
+        ax2.legend(prop={'size': 15})
+        ax2.set_title(titl, fontsize=20)
+        saveFig(fig_id="contour", destination=self.CombinationPath)
+        """
 
 if __name__=="__main__":
     # change path to one with pre calculated values of avg_N
-    min_n_path = os.path.join(os.getcwd(), 'data/coupling-0.1/tmax-25/avg_N/min_n_combinations')
-    test_array = np.loadtxt(min_n_path)
-    xA_plot, xD_plot = test_array[:,0].reshape(100,100), test_array[:,1].reshape(100,100)
-    avg_n = test_array[:,2].reshape(100,100)
-    
-    
-    data_path = os.path.join(os.getcwd(), 'data_optimizer_avgn')
-    createDir(data_path, replace=True)
-    
-    xa, xd, a, d, a_init, d_init = train(fig_path=data_path)
-    titl = f'N={4}, tmax={25}, Initial (χA, χD) = {a_init.numpy(), d_init.numpy()}, λ={0.1}, ωA={3}, ωD={-3}'    
-    
-    x = np.array(np.array(d))
-    y = np.array(np.array(a))
-    figure2, ax2 = plt.subplots(figsize=(12,12))
-    # plot the predictions of the optimizer
-    plot2 = ax2.contourf(xD_plot, xA_plot, avg_n, levels=50, cmap='rainbow')
-    ax2.plot(x, y, marker='o', color='black', label='Optimizer Predictions')
-    u = np.diff(x)
-    v = np.diff(y)
-    pos_x = x[:-1] + u/2
-    pos_y = y[:-1] + v/2
-    norm = np.sqrt(u**2+v**2)
-    ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy",pivot="mid")
-    ax2.scatter(d_init, a_init, color='green', edgecolors='black', s=94, label='Initial Value', zorder=3)
-    ax2.set_xlabel(r"$\chi_{D}$", fontsize=20)
-    ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
-    figure2.colorbar(plot2)
-    ax2.legend(prop={'size': 15})
-    ax2.set_title(titl, fontsize=20)
-    saveFig(fig_id="contour", destination=data_path)
+    ChiAInitials= [-1.7,-1.3]
+    ChiDInitials = [1.5,1.4]
+    Combinations = list(product(ChiAInitials,ChiDInitials))
+    DATAEXIST = False
+    for index,(ChiAInitial,ChiDInitial) in enumerate(Combinations):
+        print('-'*20+'Combination:{},Initials (xA,xD):({:.3f},{:.3f})'.format(index,ChiAInitial,ChiDInitial) + '-'*20)
+        #print(index)
+        Train(ChiAInitial=ChiAInitial,ChiDInitial=ChiDInitial,DataExist=DATAEXIST,case = index)()
+
