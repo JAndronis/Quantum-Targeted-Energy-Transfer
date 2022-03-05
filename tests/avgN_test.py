@@ -8,7 +8,7 @@ def main():
     # np.set_printoptions(formatter={'float': lambda x: "{0:0.1f}".format(x)})
     
     max_N = 4
-    omegaA, omegaD = -3, 3
+    omegaA, omegaD = 3, -3
     chiA, chiD = 1, -3
     coupling_lambda = 0.1
     t_max = 25
@@ -78,7 +78,7 @@ def main():
         tet.saveFig(titl+' - 3dplot', t_dir_path)
     
         figure2, ax2 = plt.subplots(figsize=(12,12))
-        plot2 = ax2.contourf(test_z,cmap = 'rainbow',extent=[min(xD),max(xD),min(-xA),max(-xA)], levels=50)
+        plot2 = ax2.contourf(test_z,cmap = 'rainbow',extent=[min(xD),max(xD),min(xA),max(xA)], levels=50)
         ax2.set_xlabel(r"$\chi_{D}$", fontsize=20)
         ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
         figure2.colorbar(plot2)
