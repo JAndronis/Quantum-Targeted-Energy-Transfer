@@ -32,8 +32,8 @@ DTYPE = tf.float32
 CHIA = tf.constant(1, dtype=DTYPE)
 CHID = tf.constant(-3, dtype=DTYPE)
 LAMBDA = tf.constant(0.1, dtype=DTYPE)
-OMEGA_A = tf.constant(-3, dtype=DTYPE)
-OMEGA_D = tf.constant(3, dtype=DTYPE)
+OMEGA_A = tf.constant(3, dtype=DTYPE)
+OMEGA_D = tf.constant(-3, dtype=DTYPE)
 MAX_N = tf.constant(4, dtype=DTYPE)
 MAX_T = tf.constant(25, dtype=tf.int32)
 DIM = int(tf.constant(MAX_N+1).numpy())
@@ -226,7 +226,7 @@ if __name__=="__main__":
     createDir(data_path, replace=True)
     
     xa, xd, a, d, a_init, d_init = train(fig_path=data_path)
-    titl = f'N={4}, tmax={25}, Initial (χA, χD) = {a_init.numpy(), d_init.numpy()}, λ={0.1}, ωA={-3}, ωD={3}'    
+    titl = f'N={4}, tmax={25}, Initial (χA, χD) = {a_init.numpy(), d_init.numpy()}, λ={0.1}, ωA={3}, ωD={-3}'    
     
     x = np.array(np.array(d))
     y = np.array(np.array(a))
