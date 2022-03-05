@@ -8,7 +8,7 @@ def main():
     # np.set_printoptions(formatter={'float': lambda x: "{0:0.1f}".format(x)})
     
     max_N = 4
-    omegaA, omegaD = -3, 3
+    omegaA, omegaD = 3, -3
     chiA, chiD = 1, -3
     coupling_lambda = 0.1
     t_max = 25
