@@ -137,11 +137,17 @@ class Train:
         self.ChiDInitial = ChiDInitial
         self.data_path = os.path.join(os.getcwd(), 'data_optimizer_avgn')
         self.CombinationPath = os.path.join(self.data_path,f'Combination {case}')
+
+        #For the heatmap
+        self.min_n_path = os.path.join(os.getcwd(), 'data/coupling-0.1/tmax-25/avg_N/min_n_combinations')
+        self.test_array = np.loadtxt(self.min_n_path)
+        self.xA_plot, self.xD_plot = self.test_array[:,0].reshape(100,100), self.test_array[:,1].reshape(100,100)
+        self.avg_n = self.test_array[:,2].reshape(100,100)
         
 
     def __call__(self):
         if self.DataExist:self.PlotResults()
-        else: 
+        else:
             createDir(self.data_path, replace=False)
             createDir(destination=self.CombinationPath,replace=True)
             self.train()
@@ -236,28 +242,31 @@ class Train:
         writeData(data=mylosses[1:],destination=self.CombinationPath,name_of_file='losses.txt')
         writeData(data = a_data,destination=self.CombinationPath,name_of_file='xAs Trajectory.txt')
         writeData(data = d_data,destination=self.CombinationPath,name_of_file='xDs Trajectory.txt')
-        writeData(data = [xA_best.numpy(),ChiAInitial],destination=self.CombinationPath,name_of_file='xAcharacteristics.txt')
-        writeData(data = [xD_best.numpy(),ChiDInitial],destination=self.CombinationPath,name_of_file='xDcharacteristics.txt')
+        writeData(data = [xA_best.numpy(),self.ChiAInitial],destination=self.CombinationPath,name_of_file='xAcharacteristics.txt')
+        writeData(data = [xD_best.numpy(),self.ChiDInitial],destination=self.CombinationPath,name_of_file='xDcharacteristics.txt')
      
 
     def PlotResults(self):
+        #Plot losses
         loss_data = read_1D_data(destination=self.CombinationPath,name_of_file='losses.txt')
+        a= read_1D_data(destination=self.CombinationPath,name_of_file='xAs Trajectory.txt')
+        d= read_1D_data(destination=self.CombinationPath,name_of_file='xAs Trajectory.txt')
+        a_init = read_1D_data(destination=self.CombinationPath,name_of_file='xAcharacteristics.txt')[1]
+        d_init = read_1D_data(destination=self.CombinationPath,name_of_file='xAcharacteristics.txt')[1]
         plt.figure()
         plt.plot(loss_data[1:])
         saveFig(fig_id="loss", destination=self.CombinationPath)
         plt.close()
-        """
-        min_n_path = os.path.join(os.getcwd(), 'data/coupling-0.1/tmax-25/avg_N/min_n_combinations')
-        test_array = np.loadtxt(min_n_path)
-        xA_plot, xD_plot = test_array[:,0].reshape(100,100), test_array[:,1].reshape(100,100)
-        avg_n = test_array[:,2].reshape(100,100)
-        titl = f'N={4}, tmax={25}, Initial (χA, χD) = {a_init.numpy(), d_init.numpy()}, λ={0.1}, ωA={3}, ωD={-3}'    
+        
+        #Plot heatmaps
+        
+        titl = f'N={4}, tmax={25}, Initial (χA, χD) = {a_init, d_init}, λ={0.1}, ωA={3}, ωD={-3}'    
         
         x = np.array(np.array(d))
         y = np.array(np.array(a))
         figure2, ax2 = plt.subplots(figsize=(12,12))
         # plot the predictions of the optimizer
-        plot2 = ax2.contourf(xD_plot, xA_plot, avg_n, levels=50, cmap='rainbow')
+        plot2 = ax2.contourf(self.xD_plot, self.xA_plot, self.avg_n, levels=50, cmap='rainbow')
         ax2.plot(x, y, marker='o', color='black', label='Optimizer Predictions')
         u = np.diff(x)
         v = np.diff(y)
@@ -272,16 +281,59 @@ class Train:
         ax2.legend(prop={'size': 15})
         ax2.set_title(titl, fontsize=20)
         saveFig(fig_id="contour", destination=self.CombinationPath)
-        """
+
+
+
+def MainGradient():
+    TotalLosses,TotalMinLosses = [],[]
+    TotalxATrajectories,TotalxDTrajectories = [],[]
+    TotalxABest,TotalxDBest = [],[]
+
+    #Read Data
+    for case in range(len(Combinations)):
+        data_path = os.path.join(os.getcwd(), 'data_optimizer_avgn')
+        CombinationPath = os.path.join(data_path,f'Combination {case}')
+        loss_data = read_1D_data(destination=CombinationPath,name_of_file='losses.txt')
+        xA_track = read_1D_data(destination=CombinationPath,name_of_file='xAs Trajectory.txt')
+        xD_track = read_1D_data(destination=CombinationPath,name_of_file='xDs Trajectory.txt')
+        xA_best = read_1D_data(destination=CombinationPath,name_of_file='xAcharacteristics.txt')[0]
+        xD_best = read_1D_data(destination=CombinationPath,name_of_file='xDcharacteristics.txt')[0]
+        TotalLosses.append(loss_data)
+        TotalMinLosses.append(min(loss_data))
+        TotalxATrajectories.append(xA_track)
+        TotalxDTrajectories.append(xD_track)
+        TotalxABest.append(xA_best)
+        TotalxDBest.append(xD_best)
+    
+    #Find the minimum loss
+    IndexLowestLoss = TotalMinLosses.index(min(TotalMinLosses))
+    #Begin Training based on that result
+    xAInitMainGradient,xDInitMainGradient = Combinations[IndexLowestLoss]
+    print('-'*35 + 'Begin Main Gradient' + '-'*35)
+    Train(ChiAInitial=xAInitMainGradient,ChiDInitial=xDInitMainGradient,
+                DataExist=False,
+                case = NPointsxA*NPointsxD)()
+
+
+
+
 
 if __name__=="__main__":
-    # change path to one with pre calculated values of avg_N
-    ChiAInitials= [-1.7,-1.3]
-    ChiDInitials = [1.5,1.4]
+    NPointsxA = 50
+    NPointsxD = 50
+    ChiAInitials= np.linspace(-8,8,NPointsxA)
+    ChiDInitials= np.linspace(-8,8,NPointsxD)
     Combinations = list(product(ChiAInitials,ChiDInitials))
-    DATAEXIST = False
+    DATAEXIST,MAINGRADIENT= False,False
+    
     for index,(ChiAInitial,ChiDInitial) in enumerate(Combinations):
-        print('-'*20+'Combination:{},Initials (xA,xD):({:.3f},{:.3f})'.format(index,ChiAInitial,ChiDInitial) + '-'*20)
+        print('-'*20+'Combination:{} out of {},Initials (xA,xD):({:.3f},{:.3f})'.format(index,len(Combinations)-1,ChiAInitial,ChiDInitial) + '-'*20)
         #print(index)
-        Train(ChiAInitial=ChiAInitial,ChiDInitial=ChiDInitial,DataExist=DATAEXIST,case = index)()
+        Train(ChiAInitial=ChiAInitial,ChiDInitial=ChiDInitial,
+            DataExist=DATAEXIST,
+            case = index)()
+    
+    if MAINGRADIENT: MainGradient()
+
+    
 
