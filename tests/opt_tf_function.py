@@ -1,7 +1,7 @@
 from math import comb
 import sys
 
-from sympy import Chi
+from sympy import Chi, Lambda
 assert sys.version_info >= (3,6)
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -35,10 +35,10 @@ if gpus:
 # constants
 DTYPE = tf.float32
 
-LAMBDA = tf.constant(0.01, dtype=DTYPE)
+LAMBDA = tf.constant(0.1, dtype=DTYPE)
 OMEGA_A = tf.constant(3, dtype=DTYPE)
 OMEGA_D = tf.constant(-3, dtype=DTYPE)
-MAX_N = tf.constant(4, dtype=DTYPE)
+MAX_N = tf.constant(2, dtype=DTYPE)
 MAX_T = tf.constant(25, dtype=tf.int32)
 DIM = int(tf.constant(MAX_N+1).numpy())
 
@@ -139,7 +139,9 @@ class Train:
         self.CombinationPath = os.path.join(self.data_path,f'Combination {case}')
 
         #For the heatmap
-        self.min_n_path = os.path.join(os.getcwd(), 'data/coupling-0.01/tmax-25/avg_N/min_n_combinations')
+        self.min_n_path = os.path.join(os.getcwd(), 'data/coupling-'+str(LAMBDA.numpy())+'/tmax-'+
+        str(MAX_T.numpy())+'/avg_N/min_n_combinations')
+        #self.min_n_path = os.path.join(os.getcwd(), 'data/coupling-0.1/tmax-25/avg_N/min_n_combinations')
         self.test_array = np.loadtxt(self.min_n_path)
         self.xA_plot, self.xD_plot = self.test_array[:,0].reshape(100,100), self.test_array[:,1].reshape(100,100)
         self.avg_n = self.test_array[:,2].reshape(100,100)
@@ -185,7 +187,7 @@ class Train:
         xA_best = tf.Variable(initial_value=0, dtype=tf.float32)
         xD_best = tf.Variable(initial_value=0, dtype=tf.float32)
         mylosses.append(3.9)
-        best_loss = 4
+        best_loss = 1.5
         counter = 0
         d_data = []
         a_data = []
@@ -237,6 +239,7 @@ class Train:
             "| Omega_D:", OMEGA_D.numpy(),
             "| N:", MAX_N.numpy(),
             "| Total timesteps:", MAX_T.numpy(),
+            "| Coupling Lambda:",LAMBDA.numpy(),
             "\n"+40*"-")
 
         writeData(data=mylosses[1:],destination=self.CombinationPath,name_of_file='losses.txt')
@@ -260,7 +263,7 @@ class Train:
         
         #Plot heatmaps
         
-        titl = f'N={4}, tmax={25}, Initial (χA, χD) = {a_init, d_init}, λ={0.01}, ωA={3}, ωD={-3}'    
+        titl = f'N={MAX_N.numpy()}, tmax={MAX_T.numpy()}, Initial (χA, χD) = {a_init, d_init}, λ={LAMBDA.numpy()}, ωA={OMEGA_A.numpy()}, ωD={OMEGA_D.numpy()}'    
         
         x = np.array(np.array(d))
         y = np.array(np.array(a))
@@ -319,7 +322,9 @@ def MainGradient():
 def PlotMainGradientData():
     #Plot the initial heatmap
     success_indices = []
-    min_n_path = os.path.join(os.getcwd(), 'data/coupling-0.01/tmax-25/avg_N/min_n_combinations')
+    min_n_path = os.path.join(os.getcwd(), 'data/coupling-'+str(LAMBDA.numpy())+'/tmax-'+
+        str(MAX_T.numpy())+'/avg_N/min_n_combinations')
+    #min_n_path = os.path.join(os.getcwd(), 'data/coupling-0.1/tmax-25/avg_N/min_n_combinations')
     test_array = np.loadtxt(min_n_path)
     xA_plot, xD_plot = test_array[:,0].reshape(100,100), test_array[:,1].reshape(100,100)
     avg_n =test_array[:,2].reshape(100,100)
@@ -331,7 +336,7 @@ def PlotMainGradientData():
         data_path = os.path.join(os.getcwd(), 'data_optimizer_avgn')
         CombinationPath = os.path.join(data_path,f'Combination {case}')
         loss_data = read_1D_data(destination=CombinationPath,name_of_file='losses.txt')
-        if min(loss_data) < 0.03:success_indices.append(case)
+        if min(loss_data) < 0.3:success_indices.append(case)
     
     for case in success_indices:
         data_path = os.path.join(os.getcwd(), 'data_optimizer_avgn')
@@ -348,7 +353,10 @@ def PlotMainGradientData():
         norm = np.sqrt(u**2+v**2)
         ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy",pivot="mid")
         ax2.scatter(d_init, a_init, color='green', edgecolors='black', s=94, zorder=3)
-    
+    #Just to include the label, these 2 lines are useless
+
+    d_initplot,a_initplot = Combinations[success_indices[0]][1],Combinations[success_indices[0]][0]
+    ax2.scatter(d_initplot, a_initplot, color='green', edgecolors='black',label = 'Initial Guesses of Test Agents', s=94, zorder=3)
     #Load data from the main agent
     data_path = os.path.join(os.getcwd(), 'data_optimizer_avgn')
     CombinationPath = os.path.join(data_path,f'Combination {NPointsxA*NPointsxD}')
@@ -365,14 +373,17 @@ def PlotMainGradientData():
     pos_y = y[:-1] + v/2
     norm = np.sqrt(u**2+v**2)
     ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy",pivot="mid")
-    ax2.scatter(d_init, a_init, color='b', edgecolors='black', s=94, zorder=3)
+    ax2.scatter(d_init, a_init, color='b', edgecolors='black',label='Initial Guess of Main Agent', s=94, zorder=3)
 
     # title and etc
     ax2.set_xlabel(r"$\chi_{D}$", fontsize=20)
     ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
     figure2.colorbar(plot2)
     ax2.legend(prop={'size': 15})
-    titl = f'N={4}, tmax={25}, λ={0.1}, ωA={3}, ωD={-3}' 
+    titl = 'N={}, tmax={}, λ={:.3f}, ωA={}, ωD={},#Test Agents = {}'.format(
+
+    MAX_N.numpy(),MAX_T.numpy(),LAMBDA.numpy(),OMEGA_A.numpy(),OMEGA_D.numpy(),NPointsxA*NPointsxD) 
+    #set_labels(ax2.plot(x, y), 'ABC')
     ax2.set_title(titl, fontsize=20)
 
     FinalPath = os.path.join(data_path,'Final Data')
@@ -384,12 +395,12 @@ def PlotMainGradientData():
 if __name__=="__main__":
     NPointsxA = 35
     NPointsxD = 35
-    ChiAInitials= np.linspace(-4,4,NPointsxA)
-    ChiDInitials= np.linspace(-4,4,NPointsxD)
+    ChiAInitials= np.linspace(-6,6,NPointsxA)
+    ChiDInitials= np.linspace(-6,6,NPointsxD)
     Combinations = list(product(ChiAInitials,ChiDInitials))
     DATAEXIST,MAINGRADIENT= False,False
-    
-    
+
+
     if not MAINGRADIENT:
         for index,(ChiAInitial,ChiDInitial) in enumerate(Combinations):
             print('-'*20+'Combination:{} out of {},Initials (xA,xD):({:.3f},{:.3f})'.format(index,len(Combinations)-1,ChiAInitial,ChiDInitial) + '-'*20)
@@ -397,11 +408,13 @@ if __name__=="__main__":
             Train(ChiAInitial=ChiAInitial,ChiDInitial=ChiDInitial,
                 DataExist=DATAEXIST,
                 case = index)()
-            
+       
     else: MainGradient()
     
 
     #PlotMainGradientData()
+
+    
 
     
     
