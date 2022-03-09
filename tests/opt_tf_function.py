@@ -38,7 +38,7 @@ DTYPE = tf.float32
 LAMBDA = tf.constant(0.1, dtype=DTYPE)
 OMEGA_A = tf.constant(3, dtype=DTYPE)
 OMEGA_D = tf.constant(-3, dtype=DTYPE)
-MAX_N = tf.constant(2, dtype=DTYPE)
+MAX_N = tf.constant(6, dtype=DTYPE)
 MAX_T = tf.constant(25, dtype=tf.int32)
 DIM = int(tf.constant(MAX_N+1).numpy())
 
@@ -143,8 +143,9 @@ class Train:
         str(MAX_T.numpy())+'/avg_N/min_n_combinations')
         #self.min_n_path = os.path.join(os.getcwd(), 'data/coupling-0.1/tmax-25/avg_N/min_n_combinations')
         self.test_array = np.loadtxt(self.min_n_path)
-        self.xA_plot, self.xD_plot = self.test_array[:,0].reshape(100,100), self.test_array[:,1].reshape(100,100)
-        self.avg_n = self.test_array[:,2].reshape(100,100)
+        self.xA_plot = self.test_array[:,0].reshape(POINTSBACKGROUND,POINTSBACKGROUND), 
+        self.xD_plot = self.test_array[:,1].reshape(POINTSBACKGROUND,POINTSBACKGROUND)
+        self.avg_n = self.test_array[:,2].reshape(POINTSBACKGROUND,POINTSBACKGROUND)
         
 
     def __call__(self):
@@ -187,7 +188,7 @@ class Train:
         xA_best = tf.Variable(initial_value=0, dtype=tf.float32)
         xD_best = tf.Variable(initial_value=0, dtype=tf.float32)
         mylosses.append(3.9)
-        best_loss = MAX_N.numpy()+1
+        best_loss = MAX_N.numpy()
         counter = 0
         d_data = []
         a_data = []
@@ -326,8 +327,9 @@ def PlotMainGradientData():
         str(MAX_T.numpy())+'/avg_N/min_n_combinations')
     #min_n_path = os.path.join(os.getcwd(), 'data/coupling-0.1/tmax-25/avg_N/min_n_combinations')
     test_array = np.loadtxt(min_n_path)
-    xA_plot, xD_plot = test_array[:,0].reshape(100,100), test_array[:,1].reshape(100,100)
-    avg_n =test_array[:,2].reshape(100,100)
+    xA_plot= test_array[:,0].reshape(POINTSBACKGROUND,POINTSBACKGROUND)
+    xD_plot = test_array[:,1].reshape(POINTSBACKGROUND,POINTSBACKGROUND)
+    avg_n =test_array[:,2].reshape(POINTSBACKGROUND,POINTSBACKGROUND)
     figure2, ax2 = plt.subplots(figsize=(12,12))
     # plot the predictions of the optimizer
     plot2 = ax2.contourf(xD_plot, xA_plot, avg_n, levels=50, cmap='rainbow')
@@ -354,7 +356,6 @@ def PlotMainGradientData():
         ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy",pivot="mid")
         ax2.scatter(d_init, a_init, color='green', edgecolors='black', s=94, zorder=3)
     #Just to include the label, these 2 lines are useless
-
     d_initplot,a_initplot = Combinations[success_indices[0]][1],Combinations[success_indices[0]][0]
     ax2.scatter(d_initplot, a_initplot, color='green', edgecolors='black',label = 'Initial Guesses of Test Agents', s=94, zorder=3)
     #Load data from the main agent
@@ -382,7 +383,7 @@ def PlotMainGradientData():
     ax2.legend(prop={'size': 15})
     titl = 'N={}, tmax={}, λ={:.3f}, ωA={}, ωD={},#Test Agents = {}'.format(
 
-    MAX_N.numpy(),MAX_T.numpy(),LAMBDA.numpy(),OMEGA_A.numpy(),OMEGA_D.numpy(),NPointsxA*NPointsxD) 
+    int(MAX_N.numpy()),MAX_T.numpy(),LAMBDA.numpy(),OMEGA_A.numpy(),OMEGA_D.numpy(),NPointsxA*NPointsxD) 
     #set_labels(ax2.plot(x, y), 'ABC')
     ax2.set_title(titl, fontsize=20)
 
@@ -395,12 +396,13 @@ def PlotMainGradientData():
 if __name__=="__main__":
     NPointsxA = 35
     NPointsxD = 35
-    ChiAInitials= np.linspace(-6,6,NPointsxA)
-    ChiDInitials= np.linspace(-6,6,NPointsxD)
+    POINTSBACKGROUND = 250
+    ChiAInitials= np.linspace(-5,5,NPointsxA)
+    ChiDInitials= np.linspace(-5,5,NPointsxD)
     Combinations = list(product(ChiAInitials,ChiDInitials))
     DATAEXIST,MAINGRADIENT= False,False
-
-
+    
+    
     if not MAINGRADIENT:
         for index,(ChiAInitial,ChiDInitial) in enumerate(Combinations):
             print('-'*20+'Combination:{} out of {},Initials (xA,xD):({:.3f},{:.3f})'.format(index,len(Combinations)-1,ChiAInitial,ChiDInitial) + '-'*20)
@@ -416,6 +418,5 @@ if __name__=="__main__":
 
     
 
-    
-    
+
 
