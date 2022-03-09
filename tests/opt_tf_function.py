@@ -187,7 +187,7 @@ class Train:
         xA_best = tf.Variable(initial_value=0, dtype=tf.float32)
         xD_best = tf.Variable(initial_value=0, dtype=tf.float32)
         mylosses.append(3.9)
-        best_loss = 1.5
+        best_loss = MAX_N.numpy()+1
         counter = 0
         d_data = []
         a_data = []
