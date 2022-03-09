@@ -127,7 +127,7 @@ class Loss:
         avg_N_list = self.computeAverage(coeff_c, coeff_b, vals)
         avg_N = tf.math.reduce_min(avg_N_list, name='Average_N')
         return avg_N
-
+#
 
 
 class Train:
