@@ -2,18 +2,22 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import tet
-from tet.data_process import write_min_N
+#from tet.data_process import write_min_N
+from data_process import write_min_N
 
 def main():
     # np.set_printoptions(formatter={'float': lambda x: "{0:0.1f}".format(x)})
     
-    max_N = 4
+    max_N = 6
+    POINTSBACKGROUND = 250
+
     omegaA, omegaD = 3, -3
     chiA, chiD = 1, -3
     coupling_lambda = 0.1
     t_max = 25
+    
 
-    xA = np.linspace(-4, 4, 100)
+    xA = np.linspace(-5,5,POINTSBACKGROUND )
     xD = xA
     
     write_data=True
