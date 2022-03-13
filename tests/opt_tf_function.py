@@ -1,3 +1,4 @@
+from cProfile import label
 from math import comb
 import sys
 
@@ -38,7 +39,7 @@ DTYPE = tf.float32
 LAMBDA = tf.constant(0.1, dtype=DTYPE)
 OMEGA_A = tf.constant(3, dtype=DTYPE)
 OMEGA_D = tf.constant(-3, dtype=DTYPE)
-MAX_N = tf.constant(6, dtype=DTYPE)
+MAX_N = tf.constant(13, dtype=DTYPE)
 MAX_T = tf.constant(25, dtype=tf.int32)
 DIM = int(tf.constant(MAX_N+1).numpy())
 
@@ -127,7 +128,7 @@ class Loss:
         avg_N_list = self.computeAverage(coeff_c, coeff_b, vals)
         avg_N = tf.math.reduce_min(avg_N_list, name='Average_N')
         return avg_N
-#
+
 
 
 class Train:
@@ -391,18 +392,80 @@ def PlotMainGradientData():
     createDir(destination=FinalPath,replace=True)
     saveFig(fig_id="FinalContour", destination=FinalPath)
 
+def PlotFinalPlot():
+    xAsoptimal,xDsoptimal =[],[]
+    Ns = []
+    #Read data
+    for i in range(2,14):
+        _case = f'Case {i}'
+        PathToMeeting = r"C:\Users\Giwrgos Arapantonis\Desktop\8th semester\Meetings\March\March 8th"
+        PathToCase = os.path.join(PathToMeeting,_case)
+        PathToOptimizerData = os.path.join(PathToCase,'data_optimizer_avgn')
+        #Number of folders in this directory
+        NDirs = len(os.listdir(PathToOptimizerData))
+        #Index to main agent
+        IndexMainAgent = NDirs-2
+        TitleMainAgent = f'Combination {IndexMainAgent}'
+        PathMainAgent = os.path.join(PathToOptimizerData,TitleMainAgent)
+
+        #Go to data
+        xD_optimal = read_1D_data(destination=PathMainAgent,name_of_file='xDcharacteristics.txt')[0]
+        xA_optimal = read_1D_data(destination=PathMainAgent,name_of_file='xAcharacteristics.txt')[0]
+
+        xAsoptimal.append(xA_optimal)
+        xDsoptimal.append(xD_optimal)
+        Ns.append(i)
+        
+
+    plt.figure(figsize=(15,4))
+    Nsample = np.linspace(1,13,50)
+    xDsample = 6/Nsample
+    xAsample = -xDsample
+    #N-xD
+    plt.subplot(1,2,1)
+    plt.plot(Nsample,xDsample,label=r"Theory: $\frac{\omega_A-\omega_D}{N}$")
+    plt.scatter(Ns,xDsoptimal,label='Experimental',c='r')
+    plt.xlabel("Number of bosons")
+    plt.ylabel(r"$\chi_{D}$")
+    plt.legend()
+
+    #N-xA
+    plt.subplot(1,2,2)
+    plt.plot(Nsample,xAsample,label=r"Theory: $\frac{\omega_A-\omega_D}{N}$")
+    plt.scatter(Ns,xAsoptimal,label='Experimental',c='r')
+    plt.xlabel("Number of bosons")
+    plt.ylabel(r"$\chi_{A}$")
+    plt.legend()
+    
+    plt.savefig('N-ChiAChiD.pdf')
+    plt.close()
+
+    plt.figure()
+    #xA-xD
+    alphas = np.linspace(1, 0.1, len(xAsoptimal))
+    for i in range(len(xAsoptimal)):
+        plt.scatter(xAsoptimal[i],xDsoptimal[i],alpha=alphas[i],c='b')
+    plt.scatter(xAsoptimal[0],xDsoptimal[0],alpha=alphas[0],c='b',label=f'N={Ns[0]}')
+    plt.scatter(xAsoptimal[len(xAsoptimal)-1],xDsoptimal[len(xAsoptimal)-1],alpha=alphas[len(xAsoptimal)-1],
+    c='b',label=f'N={Ns[len(xAsoptimal)-1]}')
+    plt.xlabel(r"$\chi_{A}$")
+    plt.ylabel(r"$\chi_{D}$")
+    plt.legend()
+    plt.savefig('ChiA-ChiD.pdf')
+    plt.close()    
+    
 
 
 if __name__=="__main__":
-    NPointsxA = 35
-    NPointsxD = 35
+    NPointsxA = 20
+    NPointsxD = 20
     POINTSBACKGROUND = 250
-    ChiAInitials= np.linspace(-5,5,NPointsxA)
-    ChiDInitials= np.linspace(-5,5,NPointsxD)
+    ChiAInitials= np.linspace(-3,3,NPointsxA)
+    ChiDInitials= np.linspace(-3,3,NPointsxD)
     Combinations = list(product(ChiAInitials,ChiDInitials))
-    DATAEXIST,MAINGRADIENT= False,False
+    DATAEXIST,MAINGRADIENT= False,True
     
-    
+    """
     if not MAINGRADIENT:
         for index,(ChiAInitial,ChiDInitial) in enumerate(Combinations):
             print('-'*20+'Combination:{} out of {},Initials (xA,xD):({:.3f},{:.3f})'.format(index,len(Combinations)-1,ChiAInitial,ChiDInitial) + '-'*20)
@@ -412,11 +475,11 @@ if __name__=="__main__":
                 case = index)()
        
     else: MainGradient()
+    """
     
 
     #PlotMainGradientData()
-
-    
+    PlotFinalPlot()
 
 
 
