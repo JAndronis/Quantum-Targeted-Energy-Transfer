@@ -6,7 +6,7 @@ assert tf.__version__ >= "2.0"
 import keras.backend as K
 
 from tet.constants import Constants
-from tet.loss import loss
+from tet.loss import Loss
 
 const = Constants()
 
@@ -21,23 +21,22 @@ MAX_T = tf.constant(const.max_t, dtype=tf.int32)
 DIM = int(tf.constant(MAX_N+1).numpy())
 
 OPT = tf.keras.optimizers.Adam(learning_rate=0.01)
-LOSS = loss()
 
 @tf.function
-def compute_loss(self,xA, xD):
-    return LOSS().loss(xA, xD)
+def compute_loss(xA, xD):
+    return Loss().loss(xA, xD)
 
-def get_grads(self,xA, xD):
+def get_grads(xA, xD):
     with tf.GradientTape() as t:
             t.watch([xA, xD])
-            loss = self.compute_loss(xA, xD)
+            loss = compute_loss(xA, xD)
     grads = t.gradient(loss, [xA, xD])
     del t
     return grads, loss
 
 @tf.function
-def apply_grads(self,xA, xD):
-    grads, loss = self.get_grads(xA, xD)
+def apply_grads(xA, xD):
+    grads, loss = get_grads(xA, xD)
     OPT.apply_gradients(zip(grads, [xA, xD]))
     return loss
 
@@ -54,7 +53,6 @@ def train(ChiAInitial, ChiDInitial):
     counter = 0
     d_data = []
     a_data = []
-    loss = LOSS()
 
     t0 = time.time()
     for epoch in range(max_iter):
@@ -104,3 +102,6 @@ def train(ChiAInitial, ChiDInitial):
         "| Total timesteps:", MAX_T.numpy(),
         "| Coupling Lambda:",LAMBDA.numpy(),
         "\n"+40*"-")
+    
+if __name__=="__main__":
+    train(0.1,-1)
