@@ -14,7 +14,7 @@ def writeData(data, destination, name_of_file):
         with open(_destination, "a") as f:
             np.savetxt(f, data)
     
-    else:np.savetxt(_destination, data)
+    else: np.savetxt(_destination, data)
 
 def write_min_N(xA, xD, min_n, destination, name_of_file):
     z = min_n.flatten(order='C')
