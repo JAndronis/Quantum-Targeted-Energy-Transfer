@@ -5,12 +5,14 @@ class Constants:
     def __init__(self):
         self.xA = 0.
         self.xD = 0.
-        self.max_N = 0.
+        self.max_N = 4.
         self.max_t = 0
-        self.omegaA = 0.
-        self.omegaD = 0.
+        self.omegaA = 3.
+        self.omegaD = -3.
+        self.coupling = 0.1
         self.constants = {'xA': self.xA, 'xD': self.xD, 'max_N': self.max_N,\
-            'max_t': self.max_t, 'omegaA': self.omegaA, 'omegaD': self.omegaD}
+            'max_t': self.max_t, 'omegaA': self.omegaA, 'omegaD': self.omegaD,\
+            'coupling': self.coupling}
     
     def __call__(self):
         return self.constants

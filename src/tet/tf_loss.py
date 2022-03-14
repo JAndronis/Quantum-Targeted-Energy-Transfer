@@ -1,7 +1,17 @@
 import tensorflow as tf
+from tet.constants import Constants
 assert tf.__version__ >= "2.0"
 
+const = Constants()
+
 DTYPE = tf.float32
+
+LAMBDA = tf.constant(const.coupling, dtype=DTYPE)
+OMEGA_A = tf.constant(const.omegaA, dtype=DTYPE)
+OMEGA_D = tf.constant(const.omegaD, dtype=DTYPE)
+MAX_N = tf.constant(const.max_N, dtype=DTYPE)
+MAX_T = tf.constant(const.max_t, dtype=tf.int32)
+
 DIM = int(tf.constant(MAX_N+1).numpy())
 
 class Loss:
