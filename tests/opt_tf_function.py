@@ -2,7 +2,6 @@ from cProfile import label
 from math import comb
 import sys
 
-from sympy import Chi, Lambda
 assert sys.version_info >= (3,6)
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -32,14 +31,13 @@ if gpus:
     # Memory growth must be set before GPUs have been initialized
     print(e)
 
-
 # constants
 DTYPE = tf.float32
 
 LAMBDA = tf.constant(0.1, dtype=DTYPE)
 OMEGA_A = tf.constant(3, dtype=DTYPE)
 OMEGA_D = tf.constant(-3, dtype=DTYPE)
-MAX_N = tf.constant(13, dtype=DTYPE)
+MAX_N = tf.constant(4, dtype=DTYPE)
 MAX_T = tf.constant(25, dtype=tf.int32)
 DIM = int(tf.constant(MAX_N+1).numpy())
 
@@ -140,7 +138,7 @@ class Train:
         self.CombinationPath = os.path.join(self.data_path,f'Combination {case}')
 
         #For the heatmap
-        self.min_n_path = os.path.join(os.getcwd(), 'data/coupling-'+str(LAMBDA.numpy())+'/tmax-'+
+        self.min_n_path = os.path.join(os.getcwd(), 'tests/data/coupling-'+str(LAMBDA.numpy())+'/tmax-'+
         str(MAX_T.numpy())+'/avg_N/min_n_combinations')
         #self.min_n_path = os.path.join(os.getcwd(), 'data/coupling-0.1/tmax-25/avg_N/min_n_combinations')
         self.test_array = np.loadtxt(self.min_n_path)
@@ -324,7 +322,7 @@ def MainGradient():
 def PlotMainGradientData():
     #Plot the initial heatmap
     success_indices = []
-    min_n_path = os.path.join(os.getcwd(), 'data/coupling-'+str(LAMBDA.numpy())+'/tmax-'+
+    min_n_path = os.path.join(os.getcwd(), 'tests/data/coupling-'+str(LAMBDA.numpy())+'/tmax-'+
         str(MAX_T.numpy())+'/avg_N/min_n_combinations')
     #min_n_path = os.path.join(os.getcwd(), 'data/coupling-0.1/tmax-25/avg_N/min_n_combinations')
     test_array = np.loadtxt(min_n_path)
@@ -356,6 +354,7 @@ def PlotMainGradientData():
         norm = np.sqrt(u**2+v**2)
         ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy",pivot="mid")
         ax2.scatter(d_init, a_init, color='green', edgecolors='black', s=94, zorder=3)
+        
     #Just to include the label, these 2 lines are useless
     d_initplot,a_initplot = Combinations[success_indices[0]][1],Combinations[success_indices[0]][0]
     ax2.scatter(d_initplot, a_initplot, color='green', edgecolors='black',label = 'Initial Guesses of Test Agents', s=94, zorder=3)
@@ -398,9 +397,9 @@ def PlotFinalPlot():
     #Read data
     for i in range(2,14):
         _case = f'Case {i}'
-        PathToMeeting = r"C:\Users\Giwrgos Arapantonis\Desktop\8th semester\Meetings\March\March 8th"
-        PathToCase = os.path.join(PathToMeeting,_case)
-        PathToOptimizerData = os.path.join(PathToCase,'data_optimizer_avgn')
+        # PathToMeeting = r"C:\Users\Giwrgos Arapantonis\Desktop\8th semester\Meetings\March\March 8th"
+        # PathToCase = os.path.join(PathToMeeting,_case)
+        PathToOptimizerData = os.path.join(os.getcwd(),'data_optimizer_avgn')
         #Number of folders in this directory
         NDirs = len(os.listdir(PathToOptimizerData))
         #Index to main agent
@@ -457,15 +456,15 @@ def PlotFinalPlot():
 
 
 if __name__=="__main__":
-    NPointsxA = 20
-    NPointsxD = 20
+    NPointsxA = 4
+    NPointsxD = 4
     POINTSBACKGROUND = 250
     ChiAInitials= np.linspace(-3,3,NPointsxA)
     ChiDInitials= np.linspace(-3,3,NPointsxD)
     Combinations = list(product(ChiAInitials,ChiDInitials))
-    DATAEXIST,MAINGRADIENT= False,True
+    DATAEXIST,MAINGRADIENT= True,True
     
-    """
+    
     if not MAINGRADIENT:
         for index,(ChiAInitial,ChiDInitial) in enumerate(Combinations):
             print('-'*20+'Combination:{} out of {},Initials (xA,xD):({:.3f},{:.3f})'.format(index,len(Combinations)-1,ChiAInitial,ChiDInitial) + '-'*20)
@@ -475,11 +474,11 @@ if __name__=="__main__":
                 case = index)()
        
     else: MainGradient()
-    """
+    
     
 
-    #PlotMainGradientData()
-    PlotFinalPlot()
+    PlotMainGradientData()
+    # PlotFinalPlot()
 
 
 
