@@ -6,7 +6,7 @@ class Constants:
         self.xA = 0.
         self.xD = 0.
         self.max_N = 4.
-        self.max_t = 0
+        self.max_t = 25
         self.omegaA = 3.
         self.omegaD = -3.
         self.coupling = 0.1
