@@ -21,6 +21,7 @@ tests/images/*
 tests/new_data/*
 tests/data-optimizer/*
 tests/data_optimizer_avgn/
+data_optimizer_avgn/*
 
 # pycache
 __pycache__/*
