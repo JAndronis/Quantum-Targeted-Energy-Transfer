@@ -5,6 +5,8 @@ setup.cfg
 src/tet/AvgBosons.py
 src/tet/Execute.py
 src/tet/Hamiltonian.py
+src/tet/Optimizer.py
+src/tet/Solver.py
 src/tet/__init__.py
 src/tet/constants.py
 src/tet/data_process.py
