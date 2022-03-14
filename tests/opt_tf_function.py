@@ -148,7 +148,7 @@ class Train:
         
 
     def __call__(self):
-        if self.DataExist:self.PlotResults()
+        if self.DataExist: self.PlotResults()
         else:
             createDir(self.data_path, replace=False)
             createDir(destination=self.CombinationPath,replace=True)
@@ -243,10 +243,10 @@ class Train:
             "\n"+40*"-")
 
         writeData(data=mylosses[1:],destination=self.CombinationPath,name_of_file='losses.txt')
-        writeData(data = a_data,destination=self.CombinationPath,name_of_file='xAs Trajectory.txt')
-        writeData(data = d_data,destination=self.CombinationPath,name_of_file='xDs Trajectory.txt')
-        writeData(data = [xA_best.numpy(),self.ChiAInitial],destination=self.CombinationPath,name_of_file='xAcharacteristics.txt')
-        writeData(data = [xD_best.numpy(),self.ChiDInitial],destination=self.CombinationPath,name_of_file='xDcharacteristics.txt')
+        writeData(data=a_data,destination=self.CombinationPath,name_of_file='xAs Trajectory.txt')
+        writeData(data=d_data,destination=self.CombinationPath,name_of_file='xDs Trajectory.txt')
+        writeData(data=[xA_best.numpy(),self.ChiAInitial],destination=self.CombinationPath,name_of_file='xAcharacteristics.txt')
+        writeData(data=[xD_best.numpy(),self.ChiDInitial],destination=self.CombinationPath,name_of_file='xDcharacteristics.txt')
      
 
     def PlotResults(self):
@@ -451,9 +451,7 @@ def PlotFinalPlot():
     plt.ylabel(r"$\chi_{D}$")
     plt.legend()
     plt.savefig('ChiA-ChiD.pdf')
-    plt.close()    
-    
-
+    plt.close()
 
 if __name__=="__main__":
     NPointsxA = 4
@@ -465,19 +463,21 @@ if __name__=="__main__":
     DATAEXIST,MAINGRADIENT= True,True
     
     
-    if not MAINGRADIENT:
-        for index,(ChiAInitial,ChiDInitial) in enumerate(Combinations):
-            print('-'*20+'Combination:{} out of {},Initials (xA,xD):({:.3f},{:.3f})'.format(index,len(Combinations)-1,ChiAInitial,ChiDInitial) + '-'*20)
-            #print(index)
-            Train(ChiAInitial=ChiAInitial,ChiDInitial=ChiDInitial,
+    # if not MAINGRADIENT:
+    #     for index,(ChiAInitial,ChiDInitial) in enumerate(Combinations):
+    #         print('-'*20+'Combination:{} out of {},Initials (xA,xD):({:.3f},{:.3f})'.format(index,len(Combinations)-1,ChiAInitial,ChiDInitial) + '-'*20)
+    #         #print(index)
+    #         Train(ChiAInitial=ChiAInitial,ChiDInitial=ChiDInitial,
+    #             DataExist=DATAEXIST,
+    #             case = index)()
+       
+    # else: MainGradient()
+    
+    Train(ChiAInitial=ChiAInitial,ChiDInitial=ChiDInitial,
                 DataExist=DATAEXIST,
                 case = index)()
-       
-    else: MainGradient()
-    
-    
 
-    PlotMainGradientData()
+    # PlotMainGradientData()
     # PlotFinalPlot()
 
 
