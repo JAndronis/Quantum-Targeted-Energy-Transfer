@@ -8,18 +8,20 @@ import keras.backend as K
 from tet.constants import Constants
 from tet.loss import Loss
 
-const = Constants()
+# enable memory growth
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+  try:
+    # Currently, memory growth needs to be the same across GPUs
+    for gpu in gpus:
+      tf.config.experimental.set_memory_growth(gpu, True)
+    logical_gpus = tf.config.list_logical_devices('GPU')
+    print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+  except RuntimeError as e:
+    # Memory growth must be set before GPUs have been initialized
+    print(e)
 
 DTYPE = tf.float32
-
-LAMBDA = tf.constant(const.coupling, dtype=DTYPE)
-OMEGA_A = tf.constant(const.omegaA, dtype=DTYPE)
-OMEGA_D = tf.constant(const.omegaD, dtype=DTYPE)
-MAX_N = tf.constant(const.max_N, dtype=DTYPE)
-MAX_T = tf.constant(const.max_t, dtype=tf.int32)
-
-DIM = int(tf.constant(MAX_N+1).numpy())
-
 OPT = tf.keras.optimizers.Adam(learning_rate=0.01)
 
 @tf.function
@@ -40,14 +42,25 @@ def apply_grads(xA, xD):
     OPT.apply_gradients(zip(grads, [xA, xD]))
     return loss
 
-def train(ChiAInitial, ChiDInitial):
+def train(ChiAInitial, ChiDInitial, constants=Constants()):
+    # Reset Optimizer
+    K.clear_session()
+    for var in OPT.variables():
+        var.assign(tf.zeros_like(var))
+    
+    LAMBDA = tf.constant(constants.coupling, dtype=DTYPE)
+    OMEGA_A = tf.constant(constants.omegaA, dtype=DTYPE)
+    OMEGA_D = tf.constant(constants.omegaD, dtype=DTYPE)
+    MAX_N = tf.constant(constants.max_N, dtype=DTYPE)
+    MAX_T = tf.constant(constants.max_t, dtype=tf.int32)
+    
     mylosses = []
     tol = 1e-8
     max_iter = 1000
-    xA = tf.Variable(initial_value=ChiAInitial, trainable=True, dtype=tf.float32)
-    xD = tf.Variable(initial_value=ChiDInitial, trainable=True, dtype=tf.float32)
-    xA_best = tf.Variable(initial_value=0, dtype=tf.float32)
-    xD_best = tf.Variable(initial_value=0, dtype=tf.float32)
+    xA = tf.Variable(initial_value=ChiAInitial, trainable=True, dtype=DTYPE)
+    xD = tf.Variable(initial_value=ChiDInitial, trainable=True, dtype=DTYPE)
+    xA_best = tf.Variable(initial_value=0, dtype=DTYPE)
+    xD_best = tf.Variable(initial_value=0, dtype=DTYPE)
     mylosses.append(3.9)
     best_loss = MAX_N.numpy()
     counter = 0
@@ -102,3 +115,5 @@ def train(ChiAInitial, ChiDInitial):
         "| Total timesteps:", MAX_T.numpy(),
         "| Coupling Lambda:",LAMBDA.numpy(),
         "\n"+40*"-")
+    
+    return mylosses, a_data, d_data, xA_best, xD_best
