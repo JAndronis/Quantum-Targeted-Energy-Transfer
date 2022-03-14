@@ -102,6 +102,3 @@ def train(ChiAInitial, ChiDInitial):
         "| Total timesteps:", MAX_T.numpy(),
         "| Coupling Lambda:",LAMBDA.numpy(),
         "\n"+40*"-")
-    
-if __name__=="__main__":
-    train(0.1,-1)
