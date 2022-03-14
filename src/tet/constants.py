@@ -23,6 +23,6 @@ class Constants:
     def getConstant(self, key):
         return self.constants[key]
     
-    def dumpConstans(self):
+    def dumpConstants(self):
         data_list = list(self.constants.items())
         writeData(data=data_list, destination=os.getcwd(), name_of_file='system_constants')
