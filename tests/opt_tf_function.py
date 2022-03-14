@@ -457,25 +457,23 @@ if __name__=="__main__":
     NPointsxA = 4
     NPointsxD = 4
     POINTSBACKGROUND = 250
-    ChiAInitials= np.linspace(-3,3,NPointsxA)
-    ChiDInitials= np.linspace(-3,3,NPointsxD)
-    Combinations = list(product(ChiAInitials,ChiDInitials))
-    DATAEXIST,MAINGRADIENT= True,True
+    ChiAInitials= np.linspace(-3, 3, NPointsxA)
+    ChiDInitials= np.linspace(-3, 3, NPointsxD)
+    Combinations = list(product(ChiAInitials, ChiDInitials))
+    DATAEXIST,MAINGRADIENT= False, False
     
+    if not MAINGRADIENT:
+        for index,(ChiAInitial, ChiDInitial) in enumerate(Combinations):
+            print('-'*20+'Combination:{} out of {},Initials (xA,xD):({:.3f},{:.3f})'.\
+                format(index, len(Combinations)-1, ChiAInitial, ChiDInitial) + '-'*20)
+            Train(ChiAInitial=ChiAInitial, ChiDInitial=ChiDInitial,\
+                DataExist=DATAEXIST, case = index)()
+       
+    else: MainGradient()
     
-    # if not MAINGRADIENT:
-    #     for index,(ChiAInitial,ChiDInitial) in enumerate(Combinations):
-    #         print('-'*20+'Combination:{} out of {},Initials (xA,xD):({:.3f},{:.3f})'.format(index,len(Combinations)-1,ChiAInitial,ChiDInitial) + '-'*20)
-    #         #print(index)
-    #         Train(ChiAInitial=ChiAInitial,ChiDInitial=ChiDInitial,
+    # Train(ChiAInitial=ChiAInitial,ChiDInitial=ChiDInitial,
     #             DataExist=DATAEXIST,
     #             case = index)()
-       
-    # else: MainGradient()
-    
-    Train(ChiAInitial=ChiAInitial,ChiDInitial=ChiDInitial,
-                DataExist=DATAEXIST,
-                case = index)()
 
     # PlotMainGradientData()
     # PlotFinalPlot()
