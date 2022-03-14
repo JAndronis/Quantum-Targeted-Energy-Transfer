@@ -2,22 +2,19 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import tet
-#from tet.data_process import write_min_N
 from tet.data_process import write_min_N
+from tet.constants import Constants
 
 def main():
-    # np.set_printoptions(formatter={'float': lambda x: "{0:0.1f}".format(x)})
-    
-    max_N = 6
-    POINTSBACKGROUND = 250
+    Constants().setConstant(key='max_N', value=4)
+    max_N = Constants().constants['max_N']
 
-    omegaA, omegaD = 3, -3
-    chiA, chiD = 1, -3
-    coupling_lambda = 0.1
-    t_max = 25
+    omegaA, omegaD = Constants().omegaA, Constants().omegaD
+    # chiA, chiD = 1, -3
+    coupling_lambda = Constants().coupling
+    t_max = Constants().max_t
     
-
-    xA = np.linspace(-5,5,POINTSBACKGROUND )
+    xA = np.linspace(-5,5, Constants().plot_res)
     xD = xA
     
     write_data=True
