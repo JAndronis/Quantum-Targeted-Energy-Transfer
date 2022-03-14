@@ -42,7 +42,7 @@ def apply_grads(xA, xD):
     OPT.apply_gradients(zip(grads, [xA, xD]))
     return loss
 
-def train(ChiAInitial, ChiDInitial, constants=Constants()):
+def train(ChiAInitial, ChiDInitial, constants=Constants(), max_iter=200):
     # Reset Optimizer
     K.clear_session()
     for var in OPT.variables():
@@ -56,7 +56,6 @@ def train(ChiAInitial, ChiDInitial, constants=Constants()):
     
     mylosses = []
     tol = 1e-8
-    max_iter = 1000
     xA = tf.Variable(initial_value=ChiAInitial, trainable=True, dtype=DTYPE)
     xD = tf.Variable(initial_value=ChiDInitial, trainable=True, dtype=DTYPE)
     xA_best = tf.Variable(initial_value=0, dtype=DTYPE)
@@ -66,6 +65,8 @@ def train(ChiAInitial, ChiDInitial, constants=Constants()):
     counter = 0
     d_data = []
     a_data = []
+    a_error_count = 0
+    d_error_count = 0
 
     t0 = time.time()
     for epoch in range(max_iter):
@@ -92,12 +93,16 @@ def train(ChiAInitial, ChiDInitial, constants=Constants()):
             break
         
         if errorA < tol:
-            print('Stopped training because of xA_new-xA_old =', errorA)
-            break
+            a_error_count += 1
+            if a_error_count > 2:
+                print('Stopped training because of xA_new-xA_old =', errorA)
+                break
 
         if errorD < tol:
-            print('Stopped training because of xD_new-xD_old =', errorA)
-            break
+            d_error_count += 1
+            if d_error_count > 2:
+                print('Stopped training because of xD_new-xD_old =', errorA)
+                break
         
     t1 = time.time()
     dt = t1-t0
