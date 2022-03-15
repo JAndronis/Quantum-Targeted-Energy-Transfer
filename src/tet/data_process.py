@@ -7,14 +7,19 @@ from os.path import exists
 
 
 def writeData(data, destination, name_of_file):
+    data = np.array(data)
     _destination = os.path.join(destination, name_of_file)
 
+    if data.dtype.name[:3] == 'str':
+        fmt = '%s'
+    else: fmt = '%.18e'
+    
     if exists(_destination):
         #print('File exists, overwrite')
         with open(_destination, "a") as f:
-            np.savetxt(f, data)
+            np.savetxt(f, data, fmt=fmt)
     
-    else: np.savetxt(_destination, data)
+    else: np.savetxt(_destination, data, fmt=fmt)
 
 def write_min_N(xA, xD, min_n, destination, name_of_file):
     z = min_n.flatten(order='C')
