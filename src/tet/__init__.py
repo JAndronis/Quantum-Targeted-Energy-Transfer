@@ -1,5 +1,5 @@
 __all__ = ['Execute', 'saveFig', 'Hamiltonian', 'data_process',\
-    'AvgBosons', 'data_process', 'Constants']
+    'AvgBosons', 'data_process', 'constants']
 
 # Deprecated, only here for backwards compatibility
 from tet.Execute import Execute
