@@ -8,15 +8,16 @@ from tet.Optimizer import Optimizer
 from tet.data_process import read_1D_data
 from tet.saveFig import saveFig
 
+# Constants
 CONST = Constants()
 
-if __name__=="__main__":
-    NPointsxA = 4
-    NPointsxD = 4
-    ChiAInitials= np.linspace(-3, 3, NPointsxA)
-    ChiDInitials= np.linspace(-3, 3, NPointsxD)
+def solver(xmin_a, xmax_a, xmin_d, xmax_d, grid_size, case, iterations=500, create_plot=False):
+    NPointsxA = grid_size
+    NPointsxD = grid_size
+    ChiAInitials= np.linspace(xmin_a, xmax_a, NPointsxA)
+    ChiDInitials= np.linspace(xmin_d, xmax_d, NPointsxD)
     Combinations = list(product(ChiAInitials, ChiDInitials))
-    data_path = os.path.join(os.getcwd(), 'data_optimizer_avgn')
+    data_path = os.path.join(os.getcwd(), f'data_optimizer_avgn_{case}')
     
     # check if data exists
     if os.path.isdir(data_path):
@@ -27,51 +28,74 @@ if __name__=="__main__":
     else:
         data_exists = False
     
-    # Load Background
-    min_n_path = os.path.join(os.getcwd(), 'data/coupling-'+str(CONST.coupling)+'/tmax-'+
-    str(CONST.max_t)+'/avg_N/min_n_combinations')
-    test_array = np.loadtxt(min_n_path)
-    xA_plot = test_array[:,0].reshape(CONST.plot_res,CONST.plot_res)
-    xD_plot = test_array[:,1].reshape(CONST.plot_res,CONST.plot_res)
-    avg_n = test_array[:,2].reshape(CONST.plot_res,CONST.plot_res)
+    # Init an array to save initial chiAs/chiDs and resulting losses
+    all_losses = np.zeros((len(Combinations), 3))
     
-    figure2, ax2 = plt.subplots(figsize=(7,7))
-    plot2 = ax2.contourf(xD_plot, xA_plot, avg_n, levels=50, cmap='rainbow')
-    ax2.set_xlabel(r"$\chi_{D}$", fontsize=20)
-    ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
-    figure2.colorbar(plot2)
+    if create_plot:
+        # Load Background
+        min_n_path = os.path.join(os.getcwd(), 'data/coupling-'+str(CONST.coupling)+'/tmax-'+
+        str(CONST.max_t)+'/avg_N/min_n_combinations')
+        test_array = np.loadtxt(min_n_path)
+        xA_plot = test_array[:,0].reshape(CONST.plot_res,CONST.plot_res)
+        xD_plot = test_array[:,1].reshape(CONST.plot_res,CONST.plot_res)
+        avg_n = test_array[:,2].reshape(CONST.plot_res,CONST.plot_res)
+        
+        figure2, ax2 = plt.subplots(figsize=(7,7))
+        plot1 = ax2.contourf(xD_plot, xA_plot, avg_n, levels=50, cmap='rainbow')
+        ax2.set_xlabel(r"$\chi_{D}$", fontsize=20)
+        ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
+        figure2.colorbar(plot1)
     
-    for index,(ChiAInitial, ChiDInitial) in enumerate(Combinations):
+    for i,(ChiAInitial, ChiDInitial) in enumerate(Combinations):
         if not data_exists:
             print('-'*20+'Combination:{} out of {}, Initial (xA,xD):({:.3f},{:.3f})'.\
-                format(index, len(Combinations)-1, ChiAInitial, ChiDInitial) + '-'*20)
-        opt = Optimizer(ChiAInitial=ChiAInitial, ChiDInitial=ChiDInitial,\
-            DataExist=data_exists, Case = index, Plot=False)
+                format(i, len(Combinations)-1, ChiAInitial, ChiDInitial) + '-'*20)
+            
+        opt = Optimizer(ChiAInitial=ChiAInitial,
+                        ChiDInitial=ChiDInitial,
+                        DataExist=data_exists, 
+                        data_path=data_path,
+                        Case = i, 
+                        Plot=False, 
+                        iterations=iterations)
         opt()
         
-        CombinationPath = os.path.join(data_path,f'combination_{index}')
+        # Read Data from the i-th combination
+        CombinationPath = os.path.join(data_path,f'combination_{i}')
         
         # Load Data
         loss_data = read_1D_data(destination=CombinationPath, name_of_file='losses.txt')
-        a = read_1D_data(destination=CombinationPath, name_of_file='xAs Trajectory.txt')
-        d = read_1D_data(destination=CombinationPath, name_of_file='xDs Trajectory.txt')
         a_init = ChiAInitial
         d_init = ChiDInitial
+        all_losses[i] = np.array([a_init, d_init, np.min(loss_data)])
+        if create_plot:
+            a = read_1D_data(destination=CombinationPath, name_of_file='xAtrajectory.txt')
+            d = read_1D_data(destination=CombinationPath, name_of_file='xDtrajectory.txt')
         
-        #Plot heatmaps with optimizer predictions
-        # titl = f'N={CONST.max_N}, tmax={CONST.max_t}, Initial (χA, χD) = {a_init, d_init}, λ={CONST.coupling}, ωA={CONST.omegaA}, ωD={CONST.omegaD}'    
-        
-        x = np.array(np.array(d))
-        y = np.array(np.array(a))
-        ax2.plot(x, y, marker='o', color='black', label=f'Optimizer-{index} Predictions')
-        u = np.diff(x)
-        v = np.diff(y)
-        pos_x = x[:-1] + u/2
-        pos_y = y[:-1] + v/2
-        norm = np.sqrt(u**2+v**2)
-        ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy",pivot="mid")
-        ax2.scatter(d_init, a_init, color='green', edgecolors='black', s=94, label='Initial Value', zorder=3)
-        # ax2.legend(prop={'size': 15})
-        # ax2.set_title(titl, fontsize=20)
-        
-    saveFig(fig_id="contour_final", destination=data_path)
+        if create_plot:
+            # Plot trajectory and initial guess data
+            x = np.array(np.array(d))
+            y = np.array(np.array(a))
+            plot2 = ax2.plot(x, y, marker='o', color='black', label=f'Optimizer Predictions' if i == 0 else "")
+            u = np.diff(x)
+            v = np.diff(y)
+            pos_x = x[:-1] + u/2
+            pos_y = y[:-1] + v/2
+            norm = np.sqrt(u**2+v**2)
+            ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy",pivot="mid")
+            plot3 = ax2.scatter(d_init, a_init, color='green', edgecolors='black', s=94, label='Initial Guess' if i == 0 else "", zorder=3)
+            
+    if create_plot:
+        # Produce legend and save plot
+        ax2.legend()    
+        saveFig(fig_id="contour_final", destination=data_path)
+    
+    min_a_init, min_d_init = all_losses[np.argmin(all_losses[:,2]), 0], all_losses[np.argmin(all_losses[:,2]), 1]
+    min_loss = all_losses[np.argmin(all_losses[:,2]), 2]
+    return min_a_init, min_d_init, min_loss
+
+if __name__=="__main__":
+    min_a, min_d, loss = solver(xmin_a=-3, xmax_a=3, xmin_d=-3, xmax_d=3, grid_size=4, case=0, iterations=10)
+    a_min, a_max = min_a-0.5, min_a+0.5
+    d_min, d_max = min_d-0.5, min_d+0.5
+    xmin, xmax, loss = solver(xmin_a=a_min, xmax_a=a_max, xmin_d=d_min, xmax_d=d_max, grid_size=4, case=1, iterations=1000, create_plot=True)
