@@ -25,17 +25,26 @@ MAX_T = tf.constant(CONST.max_t, dtype=tf.int32)
 POINTSBACKGROUND = CONST.plot_res
 
 class Optimizer:
-    def __init__(self, ChiAInitial, ChiDInitial, DataExist, Case, Plot=False):
+    def __init__(self, 
+                 ChiAInitial, 
+                 ChiDInitial, 
+                 DataExist, 
+                 Case, 
+                 Plot=False, 
+                 iterations=200, 
+                 data_path=os.path.join(os.getcwd(), 'data_optimizer_avgn')):
+        
         self.DataExist = DataExist
         self.ChiAInitial = ChiAInitial
         self.ChiDInitial = ChiDInitial
-        self.data_path = os.path.join(os.getcwd(), 'data_optimizer_avgn')
-        self.CombinationPath = os.path.join(self.data_path,f'combination_{Case}')
+        self.data_path = data_path
+        self.CombinationPath = os.path.join(self.data_path, f'combination_{Case}')
         self.plot = Plot
+        self.iter = iterations
         
     def __call__(self):
         if self.DataExist and self.plot: self.PlotResults()
-        # If data exists according tot the user, dont do anything
+        # If data exists according to the user, dont do anything
         elif self.DataExist and not self.plot: pass
         
         else:
@@ -45,10 +54,12 @@ class Optimizer:
             if self.plot: self.PlotResults()
     
     def _train(self):
-        mylosses, a_data, d_data, xA_best, xD_best = train(self.ChiAInitial, self.ChiDInitial)
-        writeData(data=mylosses[1:],destination=self.CombinationPath,name_of_file='losses.txt')
-        writeData(data=a_data,destination=self.CombinationPath,name_of_file='xAs Trajectory.txt')
-        writeData(data=d_data,destination=self.CombinationPath,name_of_file='xDs Trajectory.txt')
+        mylosses, a_data, d_data, xA_best, xD_best = train(self.ChiAInitial, self.ChiDInitial, max_iter=self.iter)
+        writeData(data=mylosses[1:], destination=self.CombinationPath, name_of_file='losses.txt')
+        writeData(data=a_data, destination=self.CombinationPath, name_of_file='xAtrajectory.txt')
+        writeData(data=d_data, destination=self.CombinationPath, name_of_file='xDtrajectory.txt')
+        writeData(data=np.array([['xA', 'xD'],[str(xA_best), str(xD_best)]]),\
+            destination=self.CombinationPath, name_of_file='finalvalues.txt')
         
     def PlotResults(self):
         # Load Background
@@ -92,9 +103,6 @@ class Optimizer:
         ax2.legend(prop={'size': 15})
         ax2.set_title(titl, fontsize=20)
         saveFig(fig_id="contour", destination=self.CombinationPath)
-
-# EXAMPLE CALL    
+        
 if __name__=="__main__":
-    for i in range(2):
-        opt = Optimizer(i, 2, DataExist=False, Plot=False, Case=i)
-        opt()
+    Optimizer(ChiAInitial=-1, ChiDInitial=1, DataExist=False, Case=0)()
