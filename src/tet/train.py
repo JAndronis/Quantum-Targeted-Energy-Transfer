@@ -121,4 +121,4 @@ def train(ChiAInitial, ChiDInitial, constants=Constants(), max_iter=200):
         "| Coupling Lambda:",LAMBDA.numpy(),
         "\n"+40*"-")
     
-    return mylosses, a_data, d_data, xA_best, xD_best
+    return mylosses, a_data, d_data, xA_best.numpy(), xD_best.numpy()
