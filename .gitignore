@@ -20,7 +20,8 @@ tests/data/*
 tests/images/*
 tests/new_data/*
 tests/data-optimizer/*
-tests/data_optimizer_avgn/
+tests/data_optimizer_avgn/*
+tests/data_optimizer_avgn_*/*
 data_optimizer_avgn/*
 
 # pycache
