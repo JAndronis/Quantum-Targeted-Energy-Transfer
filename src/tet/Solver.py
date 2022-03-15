@@ -4,14 +4,14 @@ import matplotlib.pyplot as plt
 import os
 
 from tet.constants import Constants
-from tet.Optimizer import Optimizer
+from Optimizer import Optimizer
 from tet.data_process import read_1D_data
 from tet.saveFig import saveFig
 
 # Constants
 CONST = Constants()
 
-def solver(xmin_a, xmax_a, xmin_d, xmax_d, grid_size, case, iterations=500, create_plot=False):
+def solver(xmin_a, xmax_a, xmin_d, xmax_d, grid_size, case, iterations=500, learning_rate=0.01, create_plot=False):
     NPointsxA = grid_size
     NPointsxD = grid_size
     ChiAInitials= np.linspace(xmin_a, xmax_a, NPointsxA)
@@ -56,7 +56,8 @@ def solver(xmin_a, xmax_a, xmin_d, xmax_d, grid_size, case, iterations=500, crea
                         DataExist=data_exists, 
                         data_path=data_path,
                         Case = i, 
-                        Plot=False, 
+                        Plot=False,
+                        lr=learning_rate,
                         iterations=iterations)
         opt()
         
@@ -95,7 +96,9 @@ def solver(xmin_a, xmax_a, xmin_d, xmax_d, grid_size, case, iterations=500, crea
     return min_a_init, min_d_init, min_loss
 
 if __name__=="__main__":
-    min_a, min_d, loss = solver(xmin_a=-3, xmax_a=3, xmin_d=-3, xmax_d=3, grid_size=4, case=0, iterations=10)
-    a_min, a_max = min_a-0.5, min_a+0.5
-    d_min, d_max = min_d-0.5, min_d+0.5
-    xmin, xmax, loss = solver(xmin_a=a_min, xmax_a=a_max, xmin_d=d_min, xmax_d=d_max, grid_size=4, case=1, iterations=1000, create_plot=True)
+    # Make an initial search of the parameter space
+    min_a, min_d, loss = solver(xmin_a=-3, xmax_a=3, xmin_d=-3, xmax_d=3, grid_size=2, case=0, iterations=500, learning_rate=0.1, create_plot=True)
+    
+    a_min, a_max = min_a-1, min_a+1
+    d_min, d_max = min_d-1, min_d+1
+    xmin, xmax, loss = solver(xmin_a=a_min, xmax_a=a_max, xmin_d=d_min, xmax_d=d_max, grid_size=4, case=1, iterations=1000, learning_rate=0.01, create_plot=True)
