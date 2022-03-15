@@ -12,7 +12,7 @@ import keras.backend as K
 
 from tet.constants import Constants
 from tet.data_process import createDir, writeData, read_1D_data
-from tet.train import train
+from train import train
 from tet.saveFig import saveFig
 
 DTYPE = tf.float32
@@ -31,7 +31,8 @@ class Optimizer:
                  DataExist, 
                  Case, 
                  Plot=False, 
-                 iterations=200, 
+                 iterations=200,
+                 lr=0.1, 
                  data_path=os.path.join(os.getcwd(), 'data_optimizer_avgn')):
         
         self.DataExist = DataExist
@@ -41,6 +42,7 @@ class Optimizer:
         self.CombinationPath = os.path.join(self.data_path, f'combination_{Case}')
         self.plot = Plot
         self.iter = iterations
+        self.lr = lr
         
     def __call__(self):
         if self.DataExist and self.plot: self.PlotResults()
@@ -54,7 +56,7 @@ class Optimizer:
             if self.plot: self.PlotResults()
     
     def _train(self):
-        mylosses, a_data, d_data, xA_best, xD_best = train(self.ChiAInitial, self.ChiDInitial, max_iter=self.iter)
+        mylosses, a_data, d_data, xA_best, xD_best = train(self.ChiAInitial, self.ChiDInitial, max_iter=self.iter, lr=self.lr)
         writeData(data=mylosses[1:], destination=self.CombinationPath, name_of_file='losses.txt')
         writeData(data=a_data, destination=self.CombinationPath, name_of_file='xAtrajectory.txt')
         writeData(data=d_data, destination=self.CombinationPath, name_of_file='xDtrajectory.txt')

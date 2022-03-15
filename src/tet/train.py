@@ -22,7 +22,7 @@ if gpus:
     print(e)
 
 DTYPE = tf.float32
-OPT = tf.keras.optimizers.Adam(learning_rate=0.01)
+OPT = tf.keras.optimizers.Adam()
 
 @tf.function
 def compute_loss(xA, xD):
@@ -42,11 +42,12 @@ def apply_grads(xA, xD):
     OPT.apply_gradients(zip(grads, [xA, xD]))
     return loss
 
-def train(ChiAInitial, ChiDInitial, constants=Constants(), max_iter=200):
+def train(ChiAInitial, ChiDInitial, constants=Constants(), max_iter=200, lr=0.01):
     # Reset Optimizer
     K.clear_session()
     for var in OPT.variables():
         var.assign(tf.zeros_like(var))
+    K.set_value(OPT.learning_rate, lr)
     
     LAMBDA = tf.constant(constants.coupling, dtype=DTYPE)
     OMEGA_A = tf.constant(constants.omegaA, dtype=DTYPE)
