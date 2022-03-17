@@ -10,31 +10,34 @@ import tensorflow as tf
 assert tf.__version__ >= "2.0"
 import keras.backend as K
 
-from tet.constants import Constants
 from tet.data_process import createDir, writeData, read_1D_data
 from train import train
 from tet.saveFig import saveFig
+import constants
 
 DTYPE = tf.float32
-CONST = Constants()
-LAMBDA = tf.constant(CONST.coupling, dtype=DTYPE)
-OMEGA_A = tf.constant(CONST.omegaA, dtype=DTYPE)
-OMEGA_D = tf.constant(CONST.omegaD, dtype=DTYPE)
-MAX_N = tf.constant(CONST.max_N, dtype=DTYPE)
-MAX_T = tf.constant(CONST.max_t, dtype=tf.int32)
-POINTSBACKGROUND = CONST.plot_res
 
 class Optimizer:
     def __init__(self, 
                  ChiAInitial, 
                  ChiDInitial, 
                  DataExist, 
-                 Case, 
+                 Case,
+                 const=None,
                  Plot=False, 
                  iterations=200,
                  lr=0.1, 
                  data_path=os.path.join(os.getcwd(), 'data_optimizer_avgn')):
         
+        if const is None:
+            self.const = constants.loadConstants()
+        else: self.const = const
+        self.res = self.const['resolution']
+        self.coupling = self.const['coupling']
+        self.max_t = self.const['max_t']
+        self.max_n = self.const['max_N']
+        self.omegaA = self.const['omegaA']
+        self.omegaD = self.const['omegaD']
         self.DataExist = DataExist
         self.ChiAInitial = ChiAInitial
         self.ChiDInitial = ChiDInitial
@@ -43,6 +46,7 @@ class Optimizer:
         self.plot = Plot
         self.iter = iterations
         self.lr = lr
+        
         
     def __call__(self):
         if self.DataExist and self.plot: self.PlotResults()
@@ -56,7 +60,8 @@ class Optimizer:
             if self.plot: self.PlotResults()
     
     def _train(self):
-        mylosses, a_data, d_data, xA_best, xD_best = train(self.ChiAInitial, self.ChiDInitial, max_iter=self.iter, lr=self.lr)
+        mylosses, a_data, d_data, xA_best, xD_best = train(self.ChiAInitial, self.ChiDInitial, \
+            const=self.const, max_iter=self.iter, lr=self.lr)
         writeData(data=mylosses[1:], destination=self.CombinationPath, name_of_file='losses.txt')
         writeData(data=a_data, destination=self.CombinationPath, name_of_file='xAtrajectory.txt')
         writeData(data=d_data, destination=self.CombinationPath, name_of_file='xDtrajectory.txt')
@@ -65,12 +70,12 @@ class Optimizer:
         
     def PlotResults(self):
         # Load Background
-        min_n_path = os.path.join(os.getcwd(), 'data/coupling-'+str(LAMBDA.numpy())+'/tmax-'+
-        str(MAX_T.numpy())+'/avg_N/min_n_combinations')
+        min_n_path = os.path.join(os.getcwd(), 'data/coupling-'+str(self.coupling)+'/tmax-'+
+        str(self.max_n)+'/avg_N/min_n_combinations')
         test_array = np.loadtxt(min_n_path)
-        xA_plot = test_array[:,0].reshape(POINTSBACKGROUND,POINTSBACKGROUND)
-        xD_plot = test_array[:,1].reshape(POINTSBACKGROUND,POINTSBACKGROUND)
-        avg_n = test_array[:,2].reshape(POINTSBACKGROUND,POINTSBACKGROUND)
+        xA_plot = test_array[:,0].reshape(self.res, self.res)
+        xD_plot = test_array[:,1].reshape(self.res, self.res)
+        avg_n = test_array[:,2].reshape(self.res, self.res)
         
         # Load Data
         loss_data = read_1D_data(destination=self.CombinationPath,name_of_file='losses.txt')
@@ -85,7 +90,8 @@ class Optimizer:
         saveFig(fig_id="loss", destination=self.CombinationPath)
         
         #Plot heatmaps with optimizer predictions
-        titl = f'N={MAX_N.numpy()}, tmax={MAX_T.numpy()}, Initial (χA, χD) = {a_init, d_init}, λ={LAMBDA.numpy()}, ωA={OMEGA_A.numpy()}, ωD={OMEGA_D.numpy()}'    
+        titl = f'N={self.max_n}, tmax={self.max_t}, Initial (χA, χD) = {a_init, d_init},\
+            λ={self.coupling}, ωA={self.omegaA}, ωD={self.omegaD}'    
         
         x = np.array(np.array(d))
         y = np.array(np.array(a))
