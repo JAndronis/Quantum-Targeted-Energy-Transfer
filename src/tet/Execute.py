@@ -17,7 +17,9 @@ class Execute:
         self.return_data = return_data
 
         self.initial_state = np.zeros(max_N+1,dtype=float)
-        for n in range(max_N+1): self.initial_state[n] = np.exp(-(max_N-n)**2)
+        for n in range(max_N+1): 
+            if n<max_N: self.initial_state[n] = 0
+            else: self.initial_state[n] = max_N
         self.initial_state = self.initial_state / np.linalg.norm(self.initial_state)
 
     def __call__(self):
