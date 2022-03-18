@@ -1,20 +1,31 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import tet
+from tet.Execute import Execute
+from tet.data_process import createDir
+from tet.saveFig import saveFig
 from tet.data_process import write_min_N
-from tet.constants import Constants
+import tet.constants as const
+
+# set and save constants
+const.setConstant('max_N', 4)
+const.setConstant('max_t', 25)
+const.setConstant('omegaA', 2)
+const.setConstant('omegaD', 2)
+const.setConstant('coupling', 0.1)
+const.setConstant('resolution', 100)
+const.dumpConstants()
+
+CONST = const.loadConstants('constants.json')
 
 def main():
-    Constants().setConstant(key='max_N', value=4)
-    max_N = Constants().constants['max_N']
+    max_N = CONST['max_N']
 
-    omegaA, omegaD = Constants().omegaA, Constants().omegaD
-    # chiA, chiD = 1, -3
-    coupling_lambda = Constants().coupling
-    t_max = Constants().max_t
+    omegaA, omegaD = CONST['omegaA'], CONST['omegaD']
+    coupling_lambda = CONST['coupling']
+    t_max = CONST['max_t']
     
-    xA = np.linspace(-5,5, Constants().plot_res)
+    xA = np.linspace(-5,5, 100)
     xD = xA
     
     write_data=True
@@ -32,12 +43,12 @@ def main():
     data_dest = os.path.join(t_dir_path, "avg_N")
 
     if write_data:
-        tet.data_process.createDir(data, replace=False)
-        tet.data_process.createDir(coupling_dir_path, replace=False)
-        tet.data_process.createDir(t_dir_path)
-        tet.data_process.createDir(data_dest)
+        createDir(data, replace=False)
+        createDir(coupling_dir_path, replace=False)
+        createDir(t_dir_path)
+        createDir(data_dest)
         
-        test_data = tet.Execute(chiA=xA, 
+        test_data = Execute(chiA=xA, 
                                 chiD=xD, 
                                 coupling_lambda=coupling_lambda, 
                                 omegaA=omegaA, 
@@ -46,8 +57,9 @@ def main():
                                 max_t=t_max, 
                                 data_dir=data_dest,
                                 return_data=return_query)()
+        const.dumpConstants(path=data)
     else:
-        test_data = tet.Execute(chiA=xA, 
+        test_data = Execute(chiA=xA, 
                                 chiD=xD, 
                                 coupling_lambda=coupling_lambda, 
                                 omegaA=omegaA, 
@@ -76,7 +88,7 @@ def main():
         ax.set_ylabel(r"$\chi_{A}$", fontsize=20)
         figure.colorbar(plot)
         ax.set_title(titl, fontsize=20)
-        tet.saveFig(titl+' - 3dplot', t_dir_path)
+        saveFig(titl+' - 3dplot', t_dir_path)
     
         figure2, ax2 = plt.subplots(figsize=(12,12))
         plot2 = ax2.contourf(test_z,cmap = 'rainbow',extent=[min(xD),max(xD),min(xA),max(xA)], levels=50)
@@ -84,7 +96,7 @@ def main():
         ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
         figure2.colorbar(plot2)
         ax2.set_title(titl, fontsize=20)
-        tet.saveFig(titl+' - contourplot', t_dir_path)
+        saveFig(titl+' - contourplot', t_dir_path)
     else: print(np.min(test_data))
 
 if __name__=="__main__":

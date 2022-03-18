@@ -5,55 +5,42 @@ import tensorflow as tf
 assert tf.__version__ >= "2.0"
 import keras.backend as K
 
-from tet.constants import Constants
-from tet.loss import Loss
-
-# enable memory growth
-gpus = tf.config.list_physical_devices('GPU')
-if gpus:
-  try:
-    # Currently, memory growth needs to be the same across GPUs
-    for gpu in gpus:
-      tf.config.experimental.set_memory_growth(gpu, True)
-    logical_gpus = tf.config.list_logical_devices('GPU')
-    print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-  except RuntimeError as e:
-    # Memory growth must be set before GPUs have been initialized
-    print(e)
+import constants
+from loss import Loss
 
 DTYPE = tf.float32
 OPT = tf.keras.optimizers.Adam()
 
 @tf.function
-def compute_loss(xA, xD):
-    return Loss().loss(xA, xD)
+def compute_loss(xA, xD, const):
+    return Loss(const=const).loss(xA, xD)
 
-def get_grads(xA, xD):
+def get_grads(xA, xD, const):
     with tf.GradientTape() as t:
             t.watch([xA, xD])
-            loss = compute_loss(xA, xD)
+            loss = compute_loss(xA, xD, const)
     grads = t.gradient(loss, [xA, xD])
     del t
     return grads, loss
 
 @tf.function
-def apply_grads(xA, xD):
-    grads, loss = get_grads(xA, xD)
+def apply_grads(xA, xD, const):
+    grads, loss = get_grads(xA, xD, const)
     OPT.apply_gradients(zip(grads, [xA, xD]))
     return loss
 
-def train(ChiAInitial, ChiDInitial, constants=Constants(), max_iter=200, lr=0.01):
+def train(ChiAInitial, ChiDInitial, const, max_iter=200, lr=0.01):
     # Reset Optimizer
     K.clear_session()
     for var in OPT.variables():
         var.assign(tf.zeros_like(var))
     K.set_value(OPT.learning_rate, lr)
     
-    LAMBDA = tf.constant(constants.coupling, dtype=DTYPE)
-    OMEGA_A = tf.constant(constants.omegaA, dtype=DTYPE)
-    OMEGA_D = tf.constant(constants.omegaD, dtype=DTYPE)
-    MAX_N = tf.constant(constants.max_N, dtype=DTYPE)
-    MAX_T = tf.constant(constants.max_t, dtype=tf.int32)
+    LAMBDA = const['coupling']
+    OMEGA_A = const['omegaA']
+    OMEGA_D = const['omegaD']
+    MAX_N = const['max_N']
+    MAX_T = const['max_t']
     
     mylosses = []
     tol = 1e-8
@@ -62,7 +49,7 @@ def train(ChiAInitial, ChiDInitial, constants=Constants(), max_iter=200, lr=0.01
     xA_best = tf.Variable(initial_value=0, dtype=DTYPE)
     xD_best = tf.Variable(initial_value=0, dtype=DTYPE)
     mylosses.append(3.9)
-    best_loss = MAX_N.numpy()
+    best_loss = MAX_N
     counter = 0
     d_data = []
     a_data = []
@@ -73,7 +60,7 @@ def train(ChiAInitial, ChiDInitial, constants=Constants(), max_iter=200, lr=0.01
     for epoch in range(max_iter):
         xA_init = xA.numpy()
         xD_init = xD.numpy()
-        loss = apply_grads(xA, xD)
+        loss = apply_grads(xA, xD, const)
         if epoch%100 ==0: print(f'Loss:{loss.numpy()}, xA:{xA.numpy()}, xD:{xD.numpy()}, epoch:{epoch}')
         
         errorA = np.abs(xA.numpy() - xA_init)
@@ -115,11 +102,11 @@ def train(ChiAInitial, ChiDInitial, constants=Constants(), max_iter=200, lr=0.01
         "\nTraining Time:", dt,
         "\n"+40*"-",
         "\nParameters:",
-        "\nOmega_A:", OMEGA_A.numpy(),
-        "| Omega_D:", OMEGA_D.numpy(),
-        "| N:", MAX_N.numpy(),
-        "| Total timesteps:", MAX_T.numpy(),
-        "| Coupling Lambda:",LAMBDA.numpy(),
+        "\nOmega_A:", OMEGA_A,
+        "| Omega_D:", OMEGA_D,
+        "| N:", MAX_N,
+        "| Total timesteps:", MAX_T,
+        "| Coupling Lambda:",LAMBDA,
         "\n"+40*"-")
     
     return mylosses, a_data, d_data, xA_best.numpy(), xD_best.numpy()

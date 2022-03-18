@@ -3,19 +3,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-from tet.constants import Constants
+import constants
 from Optimizer import Optimizer
 from tet.data_process import read_1D_data
 from tet.saveFig import saveFig
 
-# Constants
-CONST = Constants()
-
-def solver(xmin_a, xmax_a, xmin_d, xmax_d, grid_size, case, iterations=500, learning_rate=0.01, create_plot=False):
+def solver(a_lims, d_lims, grid_size, case, iterations=500, learning_rate=0.01, create_plot=False):
+    const = constants.loadConstants()
     NPointsxA = grid_size
     NPointsxD = grid_size
-    ChiAInitials= np.linspace(xmin_a, xmax_a, NPointsxA)
-    ChiDInitials= np.linspace(xmin_d, xmax_d, NPointsxD)
+    ChiAInitials= np.linspace(a_lims[0], a_lims[1], NPointsxA)
+    ChiDInitials= np.linspace(d_lims[0], d_lims[1], NPointsxD)
     Combinations = list(product(ChiAInitials, ChiDInitials))
     data_path = os.path.join(os.getcwd(), f'data_optimizer_avgn_{case}')
     
@@ -33,12 +31,12 @@ def solver(xmin_a, xmax_a, xmin_d, xmax_d, grid_size, case, iterations=500, lear
     
     if create_plot:
         # Load Background
-        min_n_path = os.path.join(os.getcwd(), 'data/coupling-'+str(CONST.coupling)+'/tmax-'+
-        str(CONST.max_t)+'/avg_N/min_n_combinations')
+        min_n_path = os.path.join(os.getcwd(), 'data/coupling-'+str(const['coupling'])+'/tmax-'+
+        str(const['max_t'])+'/avg_N/min_n_combinations')
         test_array = np.loadtxt(min_n_path)
-        xA_plot = test_array[:,0].reshape(CONST.plot_res,CONST.plot_res)
-        xD_plot = test_array[:,1].reshape(CONST.plot_res,CONST.plot_res)
-        avg_n = test_array[:,2].reshape(CONST.plot_res,CONST.plot_res)
+        xA_plot = test_array[:,0].reshape(const['resolution'],const['resolution'])
+        xD_plot = test_array[:,1].reshape(const['resolution'],const['resolution'])
+        avg_n = test_array[:,2].reshape(const['resolution'],const['resolution'])
         
         figure2, ax2 = plt.subplots(figsize=(7,7))
         plot1 = ax2.contourf(xD_plot, xA_plot, avg_n, levels=50, cmap='rainbow')
@@ -55,7 +53,8 @@ def solver(xmin_a, xmax_a, xmin_d, xmax_d, grid_size, case, iterations=500, lear
                         ChiDInitial=ChiDInitial,
                         DataExist=data_exists, 
                         data_path=data_path,
-                        Case = i, 
+                        Case=i,
+                        const=const,
                         Plot=False,
                         lr=learning_rate,
                         iterations=iterations)
@@ -94,13 +93,3 @@ def solver(xmin_a, xmax_a, xmin_d, xmax_d, grid_size, case, iterations=500, lear
     min_a_init, min_d_init = all_losses[np.argmin(all_losses[:,2]), 0], all_losses[np.argmin(all_losses[:,2]), 1]
     min_loss = all_losses[np.argmin(all_losses[:,2]), 2]
     return min_a_init, min_d_init, min_loss
-
-if __name__=="__main__":
-    # Make an initial search of the parameter space
-    min_a, min_d, loss = solver(xmin_a=-3, xmax_a=3, xmin_d=-3, xmax_d=3,\
-        grid_size=2, case=0, iterations=500, learning_rate=0.1, create_plot=True)
-    
-    a_min, a_max = min_a-1, min_a+1
-    d_min, d_max = min_d-1, min_d+1
-    xmin, xmax, loss = solver(xmin_a=a_min, xmax_a=a_max, xmin_d=d_min, xmax_d=d_max,\
-        grid_size=4, case=1, iterations=1000, learning_rate=0.01, create_plot=True)

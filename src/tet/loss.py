@@ -1,31 +1,23 @@
 import tensorflow as tf
-from tet.constants import Constants
 assert tf.__version__ >= "2.0"
-
-const = Constants()
 
 DTYPE = tf.float32
 
-LAMBDA = tf.constant(const.coupling, dtype=DTYPE)
-OMEGA_A = tf.constant(const.omegaA, dtype=DTYPE)
-OMEGA_D = tf.constant(const.omegaD, dtype=DTYPE)
-MAX_N = tf.constant(const.max_N, dtype=DTYPE)
-MAX_T = tf.constant(const.max_t, dtype=tf.int32)
-
-DIM = int(tf.constant(MAX_N+1).numpy())
-
 class Loss:
-    def __init__(self):
-        self.coupling_lambda = LAMBDA
-        self.omegaA = OMEGA_A
-        self.omegaD = OMEGA_D
-        self.max_N = MAX_N
-        self.max_t = MAX_T
-        self.dim = DIM
+    def __init__(self, const):
+        self.coupling_lambda = tf.constant(const['coupling'], dtype=DTYPE)
+        self.omegaA = tf.constant(const['omegaA'], dtype=DTYPE)
+        self.omegaD = tf.constant(const['omegaD'], dtype=DTYPE)
+        self.max_N = tf.constant(const['max_N'], dtype=DTYPE)
+        self.max_t = tf.constant(const['max_t'], dtype=tf.int32)
+        self.dim = const['max_N']+1
 
         initial_state = tf.TensorArray(DTYPE, size=self.dim)
         for n in range(self.dim):
-            initial_state = initial_state.write(n, tf.exp(-tf.pow((self.max_N-n), 2)))
+            if n<self.dim-1: 
+                initial_state = initial_state.write(n, tf.constant(0, dtype=DTYPE))
+            else:
+                initial_state = initial_state.write(n, self.max_N)
         self.initial_state = initial_state.stack()
         self.initial_state = tf.divide(self.initial_state, tf.linalg.norm(self.initial_state))
 
@@ -75,7 +67,7 @@ class Loss:
         return coeff_c, coeff_b, eigvals
     
     def computeAverage(self, c, b, e):
-        _time = MAX_T+1
+        _time = self.max_t+1
         n = tf.TensorArray(DTYPE, size=_time)
         for t in range(_time):
             _t = tf.cast(t, dtype=tf.complex64)
@@ -97,3 +89,4 @@ class Loss:
         avg_N_list = self.computeAverage(coeff_c, coeff_b, vals)
         avg_N = tf.math.reduce_min(avg_N_list, name='Average_N')
         return avg_N
+    

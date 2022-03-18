@@ -1,0 +1,10 @@
+{
+ "xA": null,
+ "xD": null,
+ "max_N": 4,
+ "max_t": 25,
+ "omegaA": 2,
+ "omegaD": 2,
+ "coupling": 0.1,
+ "resolution": 100
+}
