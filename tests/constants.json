@@ -1,10 +1,10 @@
 {
- "xA": null,
- "xD": null,
- "max_N": 4,
+ "xA": "-0.60064316",
+ "xD": "0.6046178",
+ "max_N": 5,
  "max_t": 25,
- "omegaA": 2,
- "omegaD": 2,
+ "omegaA": 4,
+ "omegaD": 1,
  "coupling": 0.1,
  "resolution": 100
 }
