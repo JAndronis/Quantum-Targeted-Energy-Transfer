@@ -46,8 +46,8 @@ def solver(a_lims, d_lims, grid_size, case, iterations=500, learning_rate=0.01, 
     else:
         data_exists = False
     
-    # Init an array to save initial chiAs/chiDs and resulting losses
-    all_losses = np.zeros((len(Combinations), 3))
+    # Init an array to save chiAs/chiDs and resulting losses
+    all_losses = np.ones((len(Combinations), 3))*const['max_N']
     
     if create_plot:
         # Load Background
