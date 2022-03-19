@@ -2,6 +2,7 @@ from itertools import product
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import tensorflow as tf
 
 import constants
 from Optimizer import Optimizer
@@ -51,8 +52,8 @@ def solver(a_lims, d_lims, grid_size, case, iterations=500, learning_rate=0.01, 
     
     if create_plot:
         # Load Background
-        min_n_path = os.path.join(os.getcwd(), 'data/coupling-'+str(const['coupling'])+'/tmax-'+
-        str(const['max_t'])+'/avg_N/min_n_combinations')
+        min_n_path = os.path.join(os.getcwd(), 'data/coupling-'+str(const['coupling'])+'/tmax-'+\
+            str(const['max_t'])+'/avg_N/min_n_combinations')
         test_array = np.loadtxt(min_n_path)
         xA_plot = test_array[:,0].reshape(const['resolution'],const['resolution'])
         xD_plot = test_array[:,1].reshape(const['resolution'],const['resolution'])
@@ -66,28 +67,28 @@ def solver(a_lims, d_lims, grid_size, case, iterations=500, learning_rate=0.01, 
     
     for i,(ChiAInitial, ChiDInitial) in enumerate(Combinations):
         if not done:
-        if not data_exists:
-            print('-'*20+'Combination:{} out of {}, Initial (xA,xD):({:.3f},{:.3f})'.\
-                format(i, len(Combinations)-1, ChiAInitial, ChiDInitial) + '-'*20)
+            if not data_exists:
+                print('-'*20+'Combination:{} out of {}, Initial (xA,xD):({:.3f},{:.3f})'.\
+                    format(i, len(Combinations)-1, ChiAInitial, ChiDInitial) + '-'*20)
+                
+            opt = Optimizer(ChiAInitial=ChiAInitial,
+                            ChiDInitial=ChiDInitial,
+                            DataExist=data_exists, 
+                            data_path=data_path,
+                            Case=i,
+                            const=const,
+                            Plot=False,
+                            lr=learning_rate,
+                            iterations=iterations)
+            opt()
             
-        opt = Optimizer(ChiAInitial=ChiAInitial,
-                        ChiDInitial=ChiDInitial,
-                        DataExist=data_exists, 
-                        data_path=data_path,
-                        Case=i,
-                        const=const,
-                        Plot=False,
-                        lr=learning_rate,
-                        iterations=iterations)
-        opt()
-        
-        # Read Data from the i-th combination
-        CombinationPath = os.path.join(data_path,f'combination_{i}')
-        
-        # Load Data
-        loss_data = read_1D_data(destination=CombinationPath, name_of_file='losses.txt')
-        a_init = ChiAInitial
-        d_init = ChiDInitial
+            # Read Data from the i-th combination
+            CombinationPath = os.path.join(data_path,f'combination_{i}')
+            
+            # Load Data
+            loss_data = read_1D_data(destination=CombinationPath, name_of_file='losses.txt')
+            a_init = ChiAInitial
+            d_init = ChiDInitial
             a = const['xA']
             d = const['xD']
             all_losses[i] = np.array([a, d, np.min(loss_data)])
@@ -108,16 +109,71 @@ def solver(a_lims, d_lims, grid_size, case, iterations=500, learning_rate=0.01, 
             norm = np.sqrt(u**2+v**2)
             ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy",pivot="mid")
             plot3 = ax2.scatter(d_init, a_init, color='green', edgecolors='black', s=94, label='Initial Guess' if i == 0 else "", zorder=3)
-            
+        
         # Finish iteration if TET is found
         if np.min(loss_data)<0.1:
             done=True
             break
+
     if create_plot:
         # Produce legend and save plot
-        ax2.legend()    
+        ax2.legend()
         saveFig(fig_id="contour_final", destination=data_path)
     
-    min_a_init, min_d_init = all_losses[np.argmin(all_losses[:,2]), 0], all_losses[np.argmin(all_losses[:,2]), 1]
+    min_a, min_d = all_losses[np.argmin(all_losses[:,2]), 0], all_losses[np.argmin(all_losses[:,2]), 1]
     min_loss = all_losses[np.argmin(all_losses[:,2]), 2]
-    return min_a_init, min_d_init, min_loss
+    return min_a, min_d, min_loss
+
+if __name__=="__main__":
+    # enable memory growth
+    gpus = tf.config.list_physical_devices('GPU')
+    if gpus:
+        try:
+            # Currently, memory growth needs to be the same across GPUs
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+                logical_gpus = tf.config.list_logical_devices('GPU')
+                print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+        except RuntimeError as e:
+            # Memory growth must be set before GPUs have been initialized
+            print(e)
+
+    done = False
+    edge = 1
+    iteration = 0
+    grid = 2
+    # Make an initial search of the parameter space
+    min_a, min_d, loss = solver(a_lims=[-3, 3],
+                                d_lims=[-3, 3],
+                                grid_size=grid, 
+                                case=0, 
+                                iterations=500, 
+                                learning_rate=0.1, 
+                                create_plot=True)
+    iteration += 1
+    if loss<=0.1:
+        print('TET!')
+        print(min_a, min_d, loss)
+        done = True
+    else:
+        while not done:
+            if iteration>3:
+                done = True
+                break
+            edge /= iteration
+            if grid<6: grid += 2
+            else: continue
+            a_min, a_max = min_a-1, min_a+1
+            d_min, d_max = min_d-1, min_d+1
+            min_a, min_d, loss = solver(a_lims=[a_min, a_max], 
+                                        d_lims=[d_min, d_max], 
+                                        grid_size=grid, 
+                                        case=iteration, 
+                                        iterations=1000,
+                                        learning_rate=0.01, 
+                                        create_plot=True)
+            iteration += 1
+            if loss<=0.1:
+                print('TET!')
+                print(min_a, min_d, loss)
+                done = True
