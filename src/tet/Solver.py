@@ -65,6 +65,7 @@ def solver(a_lims, d_lims, grid_size, case, iterations=500, learning_rate=0.01, 
         figure2.colorbar(plot1)
     
     for i,(ChiAInitial, ChiDInitial) in enumerate(Combinations):
+        if not done:
         if not data_exists:
             print('-'*20+'Combination:{} out of {}, Initial (xA,xD):({:.3f},{:.3f})'.\
                 format(i, len(Combinations)-1, ChiAInitial, ChiDInitial) + '-'*20)
@@ -108,6 +109,10 @@ def solver(a_lims, d_lims, grid_size, case, iterations=500, learning_rate=0.01, 
             ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy",pivot="mid")
             plot3 = ax2.scatter(d_init, a_init, color='green', edgecolors='black', s=94, label='Initial Guess' if i == 0 else "", zorder=3)
             
+        # Finish iteration if TET is found
+        if np.min(loss_data)<0.1:
+            done=True
+            break
     if create_plot:
         # Produce legend and save plot
         ax2.legend()    
