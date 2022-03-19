@@ -2,10 +2,9 @@ from itertools import product
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-import tensorflow as tf
 
-import constants
-from Optimizer import Optimizer
+import tet.constants as constants
+from tet.Optimizer import Optimizer
 from tet.data_process import read_1D_data
 from tet.saveFig import saveFig
 
@@ -96,8 +95,6 @@ def solver(a_lims, d_lims, grid_size, case, iterations=500, learning_rate=0.01, 
         if create_plot:
             a = read_1D_data(destination=CombinationPath, name_of_file='xAtrajectory.txt')
             d = read_1D_data(destination=CombinationPath, name_of_file='xDtrajectory.txt')
-        
-        if create_plot:
             # Plot trajectory and initial guess data
             x = np.array(np.array(d))
             y = np.array(np.array(a))
@@ -123,57 +120,3 @@ def solver(a_lims, d_lims, grid_size, case, iterations=500, learning_rate=0.01, 
     min_a, min_d = all_losses[np.argmin(all_losses[:,2]), 0], all_losses[np.argmin(all_losses[:,2]), 1]
     min_loss = all_losses[np.argmin(all_losses[:,2]), 2]
     return min_a, min_d, min_loss
-
-if __name__=="__main__":
-    # enable memory growth
-    gpus = tf.config.list_physical_devices('GPU')
-    if gpus:
-        try:
-            # Currently, memory growth needs to be the same across GPUs
-            for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)
-                logical_gpus = tf.config.list_logical_devices('GPU')
-                print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-        except RuntimeError as e:
-            # Memory growth must be set before GPUs have been initialized
-            print(e)
-
-    done = False
-    edge = 1
-    iteration = 0
-    grid = 2
-    # Make an initial search of the parameter space
-    min_a, min_d, loss = solver(a_lims=[-3, 3],
-                                d_lims=[-3, 3],
-                                grid_size=grid, 
-                                case=0, 
-                                iterations=500, 
-                                learning_rate=0.1, 
-                                create_plot=True)
-    iteration += 1
-    if loss<=0.1:
-        print('TET!')
-        print(min_a, min_d, loss)
-        done = True
-    else:
-        while not done:
-            if iteration>3:
-                done = True
-                break
-            edge /= iteration
-            if grid<6: grid += 2
-            else: continue
-            a_min, a_max = min_a-1, min_a+1
-            d_min, d_max = min_d-1, min_d+1
-            min_a, min_d, loss = solver(a_lims=[a_min, a_max], 
-                                        d_lims=[d_min, d_max], 
-                                        grid_size=grid, 
-                                        case=iteration, 
-                                        iterations=1000,
-                                        learning_rate=0.01, 
-                                        create_plot=True)
-            iteration += 1
-            if loss<=0.1:
-                print('TET!')
-                print(min_a, min_d, loss)
-                done = True

@@ -13,8 +13,8 @@ import keras.backend as K
 
 from tet.data_process import createDir, writeData, read_1D_data
 from tet.saveFig import saveFig
-from loss import Loss
-import constants
+from tet.loss import Loss
+import tet.constants as constants
 
 DTYPE = tf.float32
 
