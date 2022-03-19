@@ -28,6 +28,7 @@ src/tet/data_optimizer_avgn_*/*
 tests/data_optimizer_avgn/*
 tests/data_optimizer_avgn_*/*
 constants.json
+*/constants.json
 
 # pycache
 __pycache__/*
