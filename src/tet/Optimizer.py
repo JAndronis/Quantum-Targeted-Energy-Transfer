@@ -65,8 +65,9 @@ class Optimizer:
         writeData(data=mylosses[1:], destination=self.CombinationPath, name_of_file='losses.txt')
         writeData(data=a_data, destination=self.CombinationPath, name_of_file='xAtrajectory.txt')
         writeData(data=d_data, destination=self.CombinationPath, name_of_file='xDtrajectory.txt')
-        writeData(data=np.array([['xA', 'xD'],[str(xA_best), str(xD_best)]]),\
-            destination=self.CombinationPath, name_of_file='finalvalues.txt')
+        self.const['xA'] = str(xA_best)
+        self.const['xD'] = str(xD_best)
+        constants.dumpConstants(dict=self.const)
         
     def PlotResults(self):
         # Load Background
