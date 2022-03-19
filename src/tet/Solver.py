@@ -87,7 +87,10 @@ def solver(a_lims, d_lims, grid_size, case, iterations=500, learning_rate=0.01, 
         loss_data = read_1D_data(destination=CombinationPath, name_of_file='losses.txt')
         a_init = ChiAInitial
         d_init = ChiDInitial
-        all_losses[i] = np.array([a_init, d_init, np.min(loss_data)])
+            a = const['xA']
+            d = const['xD']
+            all_losses[i] = np.array([a, d, np.min(loss_data)])
+        
         if create_plot:
             a = read_1D_data(destination=CombinationPath, name_of_file='xAtrajectory.txt')
             d = read_1D_data(destination=CombinationPath, name_of_file='xDtrajectory.txt')
