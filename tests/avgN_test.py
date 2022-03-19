@@ -8,10 +8,10 @@ from tet.data_process import write_min_N
 import tet.constants as const
 
 # set and save constants
-const.setConstant('max_N', 4)
+const.setConstant('max_N', 5)
 const.setConstant('max_t', 25)
-const.setConstant('omegaA', 2)
-const.setConstant('omegaD', 2)
+const.setConstant('omegaA', 4)
+const.setConstant('omegaD', 1)
 const.setConstant('coupling', 0.1)
 const.setConstant('resolution', 100)
 const.dumpConstants()
