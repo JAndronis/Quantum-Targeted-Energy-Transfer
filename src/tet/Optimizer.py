@@ -113,7 +113,9 @@ class Optimizer:
             if epoch%100 ==0: print(f'Loss:{loss.numpy()}, xA:{self.xA.numpy()}, xD:{self.xD.numpy()}, epoch:{epoch}')
             
             if loss.numpy()<=0.5:
-                K.set_value(self.opt.learning_rate, 0.01)
+                K.set_value(self.opt.learning_rate, 0.001)
+                self.xA.assign(value=xA_init)
+                self.xD.assign(value=xD_init)
             
             errorA = np.abs(self.xA.numpy() - xA_init)
             errorD = np.abs(self.xD.numpy() - xD_init)
