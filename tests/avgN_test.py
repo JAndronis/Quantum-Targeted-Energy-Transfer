@@ -8,12 +8,12 @@ from tet.data_process import write_min_N
 import tet.constants as const
 
 # set and save constants
-const.setConstant('max_N', 5)
+const.setConstant('max_N', 3)
 const.setConstant('max_t', 25)
-const.setConstant('omegaA', 4)
-const.setConstant('omegaD', 1)
+const.setConstant('omegaA', 15)
+const.setConstant('omegaD', -5)
 const.setConstant('coupling', 0.1)
-const.setConstant('resolution', 100)
+const.setConstant('resolution', 200)
 const.dumpConstants()
 
 CONST = const.loadConstants('constants.json')
@@ -25,8 +25,8 @@ def main():
     coupling_lambda = CONST['coupling']
     t_max = CONST['max_t']
     
-    xA = np.linspace(-5,5, 100)
-    xD = xA
+    xA = np.linspace(-10,10, CONST['resolution'])
+    xD = np.linspace(-10,10, CONST['resolution'])
     
     write_data=True
     return_query = True
@@ -95,7 +95,7 @@ def main():
         ax2.set_xlabel(r"$\chi_{D}$", fontsize=20)
         ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
         figure2.colorbar(plot2)
-        ax2.set_title(titl, fontsize=20)
+        ax2.set_title(f'N={max_N}, tmax = {t_max}, # points (χA, χD) = {len(xA), len(xD)},\nλ={coupling_lambda}, ωA={omegaA}, ωD={omegaD}', fontsize=20)
         saveFig(titl+' - contourplot', t_dir_path)
     else: print(np.min(test_data))
 
