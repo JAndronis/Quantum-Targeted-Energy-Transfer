@@ -117,8 +117,8 @@ class Loss:
         #Assign initially all the bosons at the donor
         self.InitialState = self.States[0]
         self.InitialState = dict.fromkeys(self.InitialState, 0)
-        self.InitialState[f'x{self.Sites-1}'] = self.maxN
-
+    
+        self.InitialState['x0'] = self.maxN
         #Find the index
         self.InitialStateIndex = list(self.StatesDict.keys())[list(self.StatesDict.values()).index(self.InitialState)]
         #Extra re-assign(;)
@@ -142,7 +142,7 @@ class Loss:
         for j in range(self.dim):
             sum_i = sum(self.ccoeffs*self.bcoeffs[j,:]*np.exp(-1j*self.eigvals*t))
             sum_k = sum(self.ccoeffs.conj()*self.bcoeffs[j,:].conj()*np.exp(1j*self.eigvals*t)*sum_i)
-            sum_j += sum_k*j
+            sum_j += sum_k*self.StatesDict[j]['x0']
         return sum_j.real
 
     def Execute(self):
