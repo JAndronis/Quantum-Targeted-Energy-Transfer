@@ -19,7 +19,7 @@ class Execute:
         self.initial_state = np.zeros(max_N+1,dtype=float)
         for n in range(max_N+1): 
             if n<max_N: self.initial_state[n] = 0
-            else: self.initial_state[n] = max_N
+            else: self.initial_state[n] = 1
         self.initial_state = self.initial_state / np.linalg.norm(self.initial_state)
 
     def __call__(self):
@@ -73,4 +73,14 @@ class Execute:
             title_file = f'ND_analytical-λ={self.coupling_lambda}-t_max={self.max_t}-χA={self.chiA}-χD={self.chiD}.txt'
             writeData(data=avg_ND_analytical, destination=self.data_dir, name_of_file=title_file)
 
+"""
+import os 
+from matplotlib import pyplot as plt
+maxt=5000
+data = Execute(chiA=-1,chiD=1,coupling_lambda=0.001,omegaA=3,omegaD=-3,max_N=6,
+
+max_t=maxt,data_dir=os.getcwd(),return_data=True)()
+plt.plot(np.arange(maxt+1),data)
+plt.show()
+"""
 
