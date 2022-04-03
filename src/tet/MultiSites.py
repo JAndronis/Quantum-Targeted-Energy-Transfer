@@ -3,9 +3,7 @@ import constraint
 import numpy as np
 from math import factorial
 from scipy.linalg import block_diag
-from sympy import HadamardPower
 from Hamiltonian import Hamiltonian
-import cmath
 from matplotlib import pyplot as plt
 
 #Solve the problem to find all the combinations
