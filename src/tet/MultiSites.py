@@ -221,20 +221,20 @@ if __name__=="__main__":
         elif i==f-1:
             name = 'Acceptor'
         elif i==1:
-            name = f'{i}-st level'
+            name = f'{i}-st in-between level'
         elif i==2:
-            name = f'{i}-nd level'
+            name = f'{i}-nd in-between level'
         elif i==3:
-            name = f'{i}-rd level'
+            name = f'{i}-rd in-between level'
         else:
-            name = f'{i}-th level'
+            name = f'{i}-th in-between level'
         plt.plot(np.arange(0, tmax+1), _data, label=name)
         
     # plt.plot(np.arange(0,tmax+1), Data1, label='Acceptor')
     # plt.plot(np.arange(0,tmax+1), Data2, label=name)
     # plt.plot(np.arange(0,tmax+1), Data3, label='Donor')
     plt.legend()
-    plt.title(f'Time Evolutiono of n for all levels')
+    plt.title(f'Time Evolution of n for all levels')
     plt.xlabel('Timestep')
     plt.ylabel('n')
     plt.show()
