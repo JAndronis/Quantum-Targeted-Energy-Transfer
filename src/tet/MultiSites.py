@@ -1,9 +1,9 @@
-from itertools import combinations
-import constraint
+from itertools import product
+# import constraint
 import numpy as np
 from math import factorial
-from scipy.linalg import block_diag
-from Hamiltonian import Hamiltonian
+# from scipy.linalg import block_diag
+# from Hamiltonian import Hamiltonian
 from matplotlib import pyplot as plt
 
 #Solve the problem to find all the combinations
@@ -12,24 +12,36 @@ class DeriveCombinations():
     def __init__(self,N,f):
         self.N = N
         self.f = f
+        self.range = [np.arange(N+1) for _ in range(f)]
+        self.dim = factorial(N+f-1)//(factorial(f-1)*factorial(N))
 
-    def SetConstraint(self,*args):
-        if sum(args) == self.N:return True
+    # def SetConstraint(self, *args):
+    #     if sum(args) == self.N: return True
 
+    def derive(self):
+        # #Set the problem
+        # problem = constraint.Problem()
+        # #Add the variables. In our case one variable per site
+        # variables = ["x{}".format(i) for i in range(f)]
 
-    def SetProblem(self):
-        #Set the problem
-        problem = constraint.Problem()
-        #Add the variables. In our case one variable per site
-        variables = ["x{}".format(i) for i in range(f)]
+        # for variable in variables: problem.addVariable(variable,np.arange(self.N+1))
+        # #Add the constraint
+        # problem.addConstraint(self.SetConstraint, variables)
+        # #Find the solution of the problem
+        # solutions = problem.getSolutions()
+        
+        values = [i for i in product(*self.range) if sum(i)==self.N]
+        keys = [f"x{i}" for i in range(self.f)]
+        solution = []
+        kv = []
+        for i in range(self.dim):
+            temp = []
+            for j in range(self.f):
+                temp.append([keys[j], values[i][j]])
+            kv.append(temp)
+            solution.append(dict(kv[i])) 
 
-        for variable in variables: problem.addVariable(variable,np.arange(self.N+1))
-        #Add the constraint
-        problem.addConstraint(self.SetConstraint, variables)
-        #Find the solution if the problem
-        solutions = problem.getSolutions()
-
-        return solutions
+        return solution
 
 
 class CreateHamiltonian:
@@ -40,25 +52,28 @@ class CreateHamiltonian:
         self.coupling_lambda = coupling_lambda
 
         self.Nstates = int( factorial(self.maxN+self.Sites-1)/( factorial(self.maxN)*factorial(self.Sites-1) ) )
-        self.CombinationsBosons = DeriveCombinations(N=self.maxN,f=self.Sites).SetProblem()
+        self.CombinationsBosons = DeriveCombinations(N=self.maxN,f=self.Sites).derive()
         self.StatesDictionary = dict(zip(np.arange(self.Nstates,dtype= int),self.CombinationsBosons))
         
-        self.omegas = [-3,3]
-        self.chis =[0.5,-0.5]
+        # self.omegas = np.random.randint(low=-5, high=5, size=self.Sites)
+        self.omegas = [-3, -1.5, 3]
+        # random sample in range Unif[a,b), b > a.
+        # self.chis = (3-(-3))*np.random.random_sample(size=self.Sites)+(-3)
+        self.chis = [1.5, 10, -1.5]
 
 
     #Find the Hnm element of the Hamiltonian
     def ConstructElement(self,n,m):
         #First Term. Contributions due to the kronecker(n,m) elements
         Term1 = 0
+        #Second Term. Various contributions
+        Term2a, Term2b = 0,0
+        
         if n==m:
             for k in range(self.Sites):
                 Term1 += self.omegas[k]*self.StatesDictionary[m]["x{}".format(k)] +\
                 0.5*self.chis[k]*(self.StatesDictionary[m]["x{}".format(k)])**2
 
-        #Second Term.Various contributions
-        
-        Term2a,Term2b = 0,0
         for k in range(self.Sites-1):
             #Find the number of bosons
             nk = self.StatesDictionary[m]["x{}".format(k)]
@@ -98,11 +113,12 @@ class CreateHamiltonian:
 
 class Loss:
 
-    def __init__(self,H,States,maxN):
+    def __init__(self, H, States, maxN, target_state='x0'):
         self.H = H
         self.States = States
         self.maxN = maxN
         self.Sites = len(self.States[0])
+        self.target_state = target_state
         
         self.dim = len(self.H)
         self.StatesDict = dict(zip(np.arange(self.dim,dtype= int),self.States))
@@ -140,7 +156,7 @@ class Loss:
         for j in range(self.dim):
             sum_i = sum(self.ccoeffs*self.bcoeffs[j,:]*np.exp(-1j*self.eigvals*t))
             sum_k = sum(self.ccoeffs.conj()*self.bcoeffs[j,:].conj()*np.exp(1j*self.eigvals*t)*sum_i)
-            sum_j += sum_k*self.StatesDict[j]['x0']
+            sum_j += sum_k*self.StatesDict[j][self.target_state]
         return sum_j.real
 
     def Execute(self):
@@ -153,45 +169,74 @@ class Loss:
 
         return Data
 
+if __name__=="__main__":
+    #----------------------------------------------------------------------------------
+    #np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
+    #H_final = block_diag(*Hdiagonals)
+    #CombinationsBosonsList = [item for sublist in CombinationsBosonsList for item in sublist]
+    #Parameters of the problem
+    maxN = 4
+    f = 3
+    coupling_lambda = 0.1
+    tmax = 300
 
-      
+    #Create the Hamiltonian of the problem
+    H, States = CreateHamiltonian(maxN=maxN,coupling_lambda=coupling_lambda,Sites=f).Execute()
+    eigenvalues, eigenvectors = np.linalg.eigh(H)
 
+    # problemHamiltonian = Hamiltonian(chiA=-0.5, chiD=0.5, coupling_lambda=coupling_lambda, 
+    #                                 omegaA = 3, omegaD = -3,max_N=maxN).createHamiltonian()
 
+    # eigenvalues1, eigenvectors1 = np.linalg.eigh(problemHamiltonian)
+
+    # proof that the hamiltonian has the correct shape
+    # plot the non-zero elements
+    # temp = np.zeros(H.shape)
+    # for i in range(len(H)):
+    #     for j in range(len(H)):
+    #         if H[i,j]!=0:
+    #             temp[i,j] = 10
+    # plt.imshow(temp, cmap='gray_r')
+    # plt.title(f'N={maxN}, f={f}')
+    # plt.show()
+
+    """
+    for i in range(len(eigenvalues1)):
+        print(eigenvalues[i],eigenvalues1[i])
+
+    for i in range(eigenvectors1.shape[0]):
+        for j in range(eigenvectors1.shape[0]):
+            print(eigenvectors1[i][j],eigenvectors[i][j])
+        print('--------------------------------')
+    """
+    # Data = Loss(H=problemHamiltonian,TotalCombinationsList=CombinationsBosonsList,maxN=maxN).Execute()
     
+    data = []
+    for i in range(f):
+        _data = Loss(H=H, States=States, maxN=maxN, target_state=f'x{i}').Execute()
+        data.append(_data)
         
-
-
-#----------------------------------------------------------------------------------
-#np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
-#H_final = block_diag(*Hdiagonals)
-#CombinationsBosonsList = [item for sublist in CombinationsBosonsList for item in sublist]
-#Parameters of the problem
-maxN=12
-f=2
-coupling_lambda = 0.001
-tmax = 30000
-
-#Create the Hamiltonian of the problem
-H,States = CreateHamiltonian(maxN=maxN,coupling_lambda=coupling_lambda,Sites=f).Execute()
-eigenvalues, eigenvectors = np.linalg.eigh(H)
-
-problemHamiltonian = Hamiltonian(chiA=-0.5, chiD=0.5, coupling_lambda=coupling_lambda, 
-                                omegaA = 3, omegaD = -3,max_N=maxN).createHamiltonian()
-
-eigenvalues1, eigenvectors1 = np.linalg.eigh(problemHamiltonian)
-
-"""
-for i in range(len(eigenvalues1)):
-    print(eigenvalues[i],eigenvalues1[i])
-
-for i in range(eigenvectors1.shape[0]):
-    for j in range(eigenvectors1.shape[0]):
-        print(eigenvectors1[i][j],eigenvectors[i][j])
-    print('--------------------------------')
-"""
-#Data = Loss(H=problemHamiltonian,TotalCombinationsList=CombinationsBosonsList,maxN=maxN).Execute()
-Data = Loss(H=H,States=States,maxN=maxN).Execute()
-plt.plot(np.arange(0,tmax+1),Data)
-plt.show()
+        if i==0:
+            name = 'Donor'
+        elif i==f-1:
+            name = 'Acceptor'
+        elif i==1:
+            name = f'{i}-st level'
+        elif i==2:
+            name = f'{i}-nd level'
+        elif i==3:
+            name = f'{i}-rd level'
+        else:
+            name = f'{i}-th level'
+        plt.plot(np.arange(0, tmax+1), _data, label=name)
+        
+    # plt.plot(np.arange(0,tmax+1), Data1, label='Acceptor')
+    # plt.plot(np.arange(0,tmax+1), Data2, label=name)
+    # plt.plot(np.arange(0,tmax+1), Data3, label='Donor')
+    plt.legend()
+    plt.title(f'Time Evolutiono of n for all levels')
+    plt.xlabel('Timestep')
+    plt.ylabel('n')
+    plt.show()
 
 
