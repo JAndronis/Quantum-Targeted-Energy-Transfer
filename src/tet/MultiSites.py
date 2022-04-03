@@ -46,7 +46,7 @@ class DeriveCombinations():
 
 class CreateHamiltonian:
 
-    def __init__(self,maxN,coupling_lambda,Sites):
+    def __init__(self, maxN, coupling_lambda, Sites, omegas, chis):
         self.maxN = maxN
         self.Sites = Sites
         self.coupling_lambda = coupling_lambda
@@ -56,10 +56,10 @@ class CreateHamiltonian:
         self.StatesDictionary = dict(zip(np.arange(self.Nstates,dtype= int),self.CombinationsBosons))
         
         # self.omegas = np.random.randint(low=-5, high=5, size=self.Sites)
-        self.omegas = [-3, -1.5, 3]
+        self.omegas = omegas
         # random sample in range Unif[a,b), b > a.
         # self.chis = (3-(-3))*np.random.random_sample(size=self.Sites)+(-3)
-        self.chis = [1.5, 10, -1.5]
+        self.chis = chis
 
 
     #Find the Hnm element of the Hamiltonian
@@ -177,11 +177,17 @@ if __name__=="__main__":
     #Parameters of the problem
     maxN = 4
     f = 3
-    coupling_lambda = 0.1
+    coupling = 0.1
     tmax = 300
+    omegas = [-3, 0.01, 3]
+    chis = [1.5, 4, -1.5]
 
     #Create the Hamiltonian of the problem
-    H, States = CreateHamiltonian(maxN=maxN,coupling_lambda=coupling_lambda,Sites=f).Execute()
+    H, States = CreateHamiltonian(maxN=maxN, 
+                                  coupling_lambda=coupling, 
+                                  Sites=f,
+                                  omegas=omegas,
+                                  chis=chis).Execute()
     eigenvalues, eigenvectors = np.linalg.eigh(H)
 
     # problemHamiltonian = Hamiltonian(chiA=-0.5, chiD=0.5, coupling_lambda=coupling_lambda, 
