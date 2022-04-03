@@ -175,20 +175,55 @@ if __name__=="__main__":
     #H_final = block_diag(*Hdiagonals)
     #CombinationsBosonsList = [item for sublist in CombinationsBosonsList for item in sublist]
     #Parameters of the problem
-    maxN = 4
+    max_N = 2
     f = 3
     coupling = 0.1
     tmax = 300
-    omegas = [-3, 0.01, 3]
-    chis = [1.5, 4, -1.5]
+    omegas = [-3, 1, 3]
+    chis = [1.5, 0, -1.5]
+    chis_md = np.zeros((3,50))
+    chis_md[0,:] = np.linspace(-10,10,50)
+    chis_md[1,:] = np.linspace(-10,10,50)
+    dim = factorial(max_N+f-1)//(factorial(f-1)*factorial(max_N))
+    
+    H = np.zeros((len(list(product(chis_md[0,:], chis_md[1,:]))), dim, dim))
+    # eigenvalues = np.zeros((len(list(product(chis_md[0,:], chis_md[1,:]))), dim))
+    # eigenvectors = np.zeros((len(list(product(chis_md[0,:], chis_md[1,:]))), dim, dim))
 
+    # avg_ND_analytical = np.zeros((eigenvalues.shape[0], tmax+1))
+    min_n = np.zeros(len(chis_md[0,:])*len(chis_md[1,:]))
+    counter = 0
+    param_id = []
+    for combination in product(chis_md[0,:], chis_md[1,:]):
+        x,y = combination
+        temp_H, temp_States = CreateHamiltonian(maxN=max_N,
+                                                coupling_lambda=coupling,
+                                                Sites=f,
+                                                omegas=omegas,
+                                                chis=[x, 0, y]).Execute()
+        H[counter] = temp_H
+        # eigenvalues[counter], eigenvectors[counter] = np.linalg.eigh(H[counter])
+        # min_n[counter] = min(Loss(H=temp_H, States=temp_States, maxN=max_N, target_state=f'x{0}').Execute())
+        counter += 1
+        param_id.append(temp_States)
+        print(f'H_{counter} of {len(list(product(chis_md[0,:], chis_md[1,:])))}', end='\r')
+    print("\n")
+    
+    counter = 0
+    for i in range(len(chis_md[0,:])):
+        for j in range(len(chis_md[1,:])):
+            min_n[i*50+j] = min(Loss(H=H[counter], States=param_id[counter], maxN=max_N, target_state=f'x{0}').Execute())
+            counter += 1
+            print(f'done with combination {counter} of {len(list(product(chis_md[0,:], chis_md[1,:])))}', end='\r')
+    print()
     #Create the Hamiltonian of the problem
-    H, States = CreateHamiltonian(maxN=maxN, 
-                                  coupling_lambda=coupling, 
-                                  Sites=f,
-                                  omegas=omegas,
-                                  chis=chis).Execute()
-    eigenvalues, eigenvectors = np.linalg.eigh(H)
+    # H[], States = CreateHamiltonian(maxN=max_N, 
+    #                               coupling_lambda=coupling, 
+    #                               Sites=f,
+    #                               omegas=omegas,
+    #                               chis=chis).Execute()
+    # eigenvalues, eigenvectors = np.linalg.eigh(H)
+    
 
     # problemHamiltonian = Hamiltonian(chiA=-0.5, chiD=0.5, coupling_lambda=coupling_lambda, 
     #                                 omegaA = 3, omegaD = -3,max_N=maxN).createHamiltonian()
@@ -206,43 +241,46 @@ if __name__=="__main__":
     # plt.title(f'N={maxN}, f={f}')
     # plt.show()
 
-    """
-    for i in range(len(eigenvalues1)):
-        print(eigenvalues[i],eigenvalues1[i])
+    # for i in range(len(eigenvalues1)):
+    #     print(eigenvalues[i],eigenvalues1[i])
 
-    for i in range(eigenvectors1.shape[0]):
-        for j in range(eigenvectors1.shape[0]):
-            print(eigenvectors1[i][j],eigenvectors[i][j])
-        print('--------------------------------')
-    """
+    # for i in range(eigenvectors1.shape[0]):
+    #     for j in range(eigenvectors1.shape[0]):
+    #         print(eigenvectors1[i][j],eigenvectors[i][j])
+    #     print('--------------------------------')
+    
     # Data = Loss(H=problemHamiltonian,TotalCombinationsList=CombinationsBosonsList,maxN=maxN).Execute()
     
-    data = []
-    for i in range(f):
-        _data = Loss(H=H, States=States, maxN=maxN, target_state=f'x{i}').Execute()
-        data.append(_data)
-        
-        if i==0:
-            name = 'Donor'
-        elif i==f-1:
-            name = 'Acceptor'
-        elif i==1:
-            name = f'{i}-st in-between level'
-        elif i==2:
-            name = f'{i}-nd in-between level'
-        elif i==3:
-            name = f'{i}-rd in-between level'
-        else:
-            name = f'{i}-th in-between level'
-        plt.plot(np.arange(0, tmax+1), _data, label=name)
-        
-    # plt.plot(np.arange(0,tmax+1), Data1, label='Acceptor')
-    # plt.plot(np.arange(0,tmax+1), Data2, label=name)
-    # plt.plot(np.arange(0,tmax+1), Data3, label='Donor')
-    plt.legend()
-    plt.title(f'Time Evolution of n for all levels')
-    plt.xlabel('Timestep')
-    plt.ylabel('n')
+    XA, XD = np.meshgrid(chis_md[0,:], chis_md[1,:])
+    figure, ax = plt.subplots(figsize=(7,7))
+    plot = ax.contourf(XD, XA, min_n.reshape(int(np.sqrt(len(min_n))), int(np.sqrt(len(min_n)))), levels=20, cmap='rainbow')
+    ax.set_xlabel(r"$\chi_{D}$", fontsize=20)
+    ax.set_ylabel(r"$\chi_{A}$", fontsize=20)
+    figure.colorbar(plot)
     plt.show()
+    
+    # data = []
+    # for i in range(f):
+    #     _data = Loss(H=H, States=States, maxN=max_N, target_state=f'x{i}').Execute()
+    #     data.append(_data)
+        
+    #     if i==0:
+    #         name = 'Donor'
+    #     elif i==f-1:
+    #         name = 'Acceptor'
+    #     elif i==1:
+    #         name = f'{i}-st in-between level'
+    #     elif i==2:
+    #         name = f'{i}-nd in-between level'
+    #     elif i==3:
+    #         name = f'{i}-rd in-between level'
+    #     else:
+    #         name = f'{i}-th in-between level'
+    #     plt.plot(np.arange(0, tmax+1), _data, label=name)
+    # plt.legend()
+    # plt.title(f'Time Evolution of n for all levels')
+    # plt.xlabel('Timestep')
+    # plt.ylabel('n')
+    # plt.show()
 
 
