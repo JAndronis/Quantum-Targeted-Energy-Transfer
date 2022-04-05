@@ -1,3 +1,4 @@
+from cProfile import label
 from itertools import combinations, count, product
 # import constraint
 import numpy as np
@@ -176,7 +177,7 @@ def CreateHeatmap(max_N,f,coupling,omegas,lims):
                                                 coupling_lambda=coupling,
                                                 Sites=f,
                                                 omegas=omegas,
-                                                chis = [xD,xA]).Execute()
+                                                chis = [xD,0,xA]).Execute()
 
         min_n[counter] = min(Loss(H=temp_H, States=temp_States, maxN=max_N, target_state=f'x{0}').Execute())
         
@@ -201,19 +202,44 @@ def CreateHeatmap(max_N,f,coupling,omegas,lims):
 
 if __name__=="__main__":
     #Parameters of the problem
-    max_N = 6
-    f = 2
+    max_N = 1
+    f = 3
     coupling = 0.1
-    tmax = 3
-    omegas = [-3,3]
-    chis = [1.5,-1.5]
+    tmax = 300
+    omegas = [-3,3,3]
+    chis = [6,0,-6]
     #Parameters of the grid
-    grid_size = 70
-    minxDgrid,maxXDgrid = -3,3
-    minxAgrid,maxXAgrid = -3,3
+    grid_size = 200
+    minxDgrid,maxXDgrid = -20,20
+    minxAgrid,maxXAgrid = -20,20
     lims = [minxDgrid,maxXDgrid,minxAgrid,maxXAgrid]
 
+
+    #Heatmap
     CreateHeatmap(max_N=max_N,f=f,coupling=coupling,omegas=omegas,lims=lims)
+    #Time evolution Donor 2 layers
+    evolve_donor = False
+    if evolve_donor:
+        H,States = CreateHamiltonian(maxN=max_N,coupling_lambda=coupling,Sites=f,omegas=omegas,chis=chis).Execute()
+        data = Loss(H=H, States=States, maxN=max_N, target_state=f'x{0}').Execute()
+        plt.plot(np.arange(0,tmax+1))
+        plt.show()
+    #Time evolution:Multisites
+    multi_sites_evolve = False
+    if multi_sites_evolve:
+        H,States = CreateHamiltonian(maxN=max_N,coupling_lambda=coupling,Sites=f,omegas=omegas,chis=chis).Execute()
+        Titles = [r"$<N_{D}(t)>$",r"$<N_{I}(t)>$",r"$<N_{A}(t)>$"]
+        for i in range(f):
+            data_case = Loss(H=H, States=States, maxN=max_N, target_state=f'x{i}').Execute()
+            plt.plot(np.arange(0,tmax+1),data_case,label=Titles[i])
+        plt.legend()
+        plt.xlabel('Time')
+        plt.ylabel(r"$<N(t)>$")
+        plt.title(f'[$x_D,x_I,x_A$]:{chis},[$\omega_D,\omega_I,\omega_A$]:{omegas},N:{max_N},coupling:{coupling}')
+        plt.show()
+            
+         
+
 
     
 
