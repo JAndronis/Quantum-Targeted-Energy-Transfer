@@ -1,35 +1,22 @@
-from itertools import product
+from itertools import combinations, count, product
 # import constraint
 import numpy as np
 from math import factorial
 # from scipy.linalg import block_diag
 # from Hamiltonian import Hamiltonian
 from matplotlib import pyplot as plt
+from tet import Hamiltonian
 
-#Solve the problem to find all the combinations
+#! Class for solving the problem of finding all the combinations
 class DeriveCombinations():
 
     def __init__(self,N,f):
         self.N = N
         self.f = f
-        self.range = [np.arange(N+1) for _ in range(f)]
-        self.dim = factorial(N+f-1)//(factorial(f-1)*factorial(N))
-
-    # def SetConstraint(self, *args):
-    #     if sum(args) == self.N: return True
+        self.range = [np.arange(self.N+1) for _ in range(self.f)]
+        self.dim = factorial(self.N+self.f-1)//(factorial(self.f-1)*factorial(self.N))
 
     def derive(self):
-        # #Set the problem
-        # problem = constraint.Problem()
-        # #Add the variables. In our case one variable per site
-        # variables = ["x{}".format(i) for i in range(f)]
-
-        # for variable in variables: problem.addVariable(variable,np.arange(self.N+1))
-        # #Add the constraint
-        # problem.addConstraint(self.SetConstraint, variables)
-        # #Find the solution of the problem
-        # solutions = problem.getSolutions()
-        
         values = [i for i in product(*self.range) if sum(i)==self.N]
         keys = [f"x{i}" for i in range(self.f)]
         solution = []
@@ -44,6 +31,7 @@ class DeriveCombinations():
         return solution
 
 
+#! Class for deriving the Hamiltonian of the problem 
 class CreateHamiltonian:
 
     def __init__(self, maxN, coupling_lambda, Sites, omegas, chis):
@@ -55,7 +43,6 @@ class CreateHamiltonian:
         self.CombinationsBosons = DeriveCombinations(N=self.maxN,f=self.Sites).derive()
         self.StatesDictionary = dict(zip(np.arange(self.Nstates,dtype= int),self.CombinationsBosons))
         
-        # self.omegas = np.random.randint(low=-5, high=5, size=self.Sites)
         self.omegas = omegas
         # random sample in range Unif[a,b), b > a.
         # self.chis = (3-(-3))*np.random.random_sample(size=self.Sites)+(-3)
@@ -135,10 +122,7 @@ class Loss:
         self.InitialState['x0'] = self.maxN
         #Find the index
         self.InitialStateIndex = list(self.StatesDict.keys())[list(self.StatesDict.values()).index(self.InitialState)]
-        #Extra re-assign(;)
         self.InitialState = self.Identity[self.InitialStateIndex]
-        #self.InitialState[self.InitialStateIndex] = self.maxN
-        self.InitialState =self.InitialState/np.linalg.norm(self.InitialState)
         
 
     def SetCoeffs(self):
@@ -162,103 +146,77 @@ class Loss:
     def Execute(self):
         Data = []
         self.SetCoeffs()
-        #print(self.bcoeffs)
         for t in range(tmax+1):
+            #print('\r t = {}'.format(t),end="")
             x = self._computeAverageCalculation(t)
             Data.append(x)
 
         return Data
 
-if __name__=="__main__":
-    #----------------------------------------------------------------------------------
-    #np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
-    #H_final = block_diag(*Hdiagonals)
-    #CombinationsBosonsList = [item for sublist in CombinationsBosonsList for item in sublist]
-    #Parameters of the problem
-    max_N = 2
-    f = 3
-    coupling = 0.1
-    tmax = 300
-    omegas = [-3, 1, 3]
-    chis = [1.5, 0, -1.5]
-    chis_md = np.zeros((3,50))
-    chis_md[0,:] = np.linspace(-10,10,50)
-    chis_md[1,:] = np.linspace(-10,10,50)
-    dim = factorial(max_N+f-1)//(factorial(f-1)*factorial(max_N))
-    
-    H = np.zeros((len(list(product(chis_md[0,:], chis_md[1,:]))), dim, dim))
-    # eigenvalues = np.zeros((len(list(product(chis_md[0,:], chis_md[1,:]))), dim))
-    # eigenvectors = np.zeros((len(list(product(chis_md[0,:], chis_md[1,:]))), dim, dim))
 
-    # avg_ND_analytical = np.zeros((eigenvalues.shape[0], tmax+1))
-    min_n = np.zeros(len(chis_md[0,:])*len(chis_md[1,:]))
-    counter = 0
+def CreateHeatmap(max_N,f,coupling,omegas,lims):
+    #Create a grid with various values of xA,xD given that the intermediate layer is linear.
+    chis_md = np.zeros(shape = (f,grid_size))
+    chis_md[0,:] = np.linspace(lims[0],lims[1],grid_size)
+    chis_md[1,:] = np.linspace(lims[2],lims[3],grid_size)
+    dim = factorial(max_N+f-1)//(factorial(f-1)*factorial(max_N))
+    combinations_grid = list(product(chis_md[0,:], chis_md[1,:]))
+
+    H = np.zeros(shape = ( len(combinations_grid), dim, dim) )
+    min_n = np.zeros(len(combinations_grid))
     param_id = []
-    for combination in product(chis_md[0,:], chis_md[1,:]):
-        x,y = combination
+
+    
+    for counter,combination in enumerate(combinations_grid):
+        print('Counter = {} out of {}'.format(counter,len(combinations_grid)), end='\r')
+        #Combinations of xA,xD
+        xD,xA = combination
+        #Derive temporal data
         temp_H, temp_States = CreateHamiltonian(maxN=max_N,
                                                 coupling_lambda=coupling,
                                                 Sites=f,
                                                 omegas=omegas,
-                                                chis=[x, 0, y]).Execute()
+                                                chis = [xD,xA]).Execute()
+
+        min_n[counter] = min(Loss(H=temp_H, States=temp_States, maxN=max_N, target_state=f'x{0}').Execute())
+        
+        #Store data
         H[counter] = temp_H
-        # eigenvalues[counter], eigenvectors[counter] = np.linalg.eigh(H[counter])
-        # min_n[counter] = min(Loss(H=temp_H, States=temp_States, maxN=max_N, target_state=f'x{0}').Execute())
-        counter += 1
         param_id.append(temp_States)
-        print(f'H_{counter} of {len(list(product(chis_md[0,:], chis_md[1,:])))}', end='\r')
-    print("\n")
-    
-    counter = 0
-    for i in range(len(chis_md[0,:])):
-        for j in range(len(chis_md[1,:])):
-            min_n[i*50+j] = min(Loss(H=H[counter], States=param_id[counter], maxN=max_N, target_state=f'x{0}').Execute())
-            counter += 1
-            print(f'done with combination {counter} of {len(list(product(chis_md[0,:], chis_md[1,:])))}', end='\r')
     print()
-    #Create the Hamiltonian of the problem
-    # H[], States = CreateHamiltonian(maxN=max_N, 
-    #                               coupling_lambda=coupling, 
-    #                               Sites=f,
-    #                               omegas=omegas,
-    #                               chis=chis).Execute()
-    # eigenvalues, eigenvectors = np.linalg.eigh(H)
-    
 
-    # problemHamiltonian = Hamiltonian(chiA=-0.5, chiD=0.5, coupling_lambda=coupling_lambda, 
-    #                                 omegaA = 3, omegaD = -3,max_N=maxN).createHamiltonian()
-
-    # eigenvalues1, eigenvectors1 = np.linalg.eigh(problemHamiltonian)
-
-    # proof that the hamiltonian has the correct shape
-    # plot the non-zero elements
-    # temp = np.zeros(H.shape)
-    # for i in range(len(H)):
-    #     for j in range(len(H)):
-    #         if H[i,j]!=0:
-    #             temp[i,j] = 10
-    # plt.imshow(temp, cmap='gray_r')
-    # plt.title(f'N={maxN}, f={f}')
-    # plt.show()
-
-    # for i in range(len(eigenvalues1)):
-    #     print(eigenvalues[i],eigenvalues1[i])
-
-    # for i in range(eigenvectors1.shape[0]):
-    #     for j in range(eigenvectors1.shape[0]):
-    #         print(eigenvectors1[i][j],eigenvectors[i][j])
-    #     print('--------------------------------')
-    
-    # Data = Loss(H=problemHamiltonian,TotalCombinationsList=CombinationsBosonsList,maxN=maxN).Execute()
-    
+   
     XA, XD = np.meshgrid(chis_md[0,:], chis_md[1,:])
-    figure, ax = plt.subplots(figsize=(7,7))
-    plot = ax.contourf(XD, XA, min_n.reshape(int(np.sqrt(len(min_n))), int(np.sqrt(len(min_n)))), levels=20, cmap='rainbow')
+
+    figure, ax = plt.subplots(figsize=(5.5,5.5))
+    plot = ax.contourf(XD, XA, min_n.reshape(grid_size,grid_size), levels=20, cmap='rainbow')
     ax.set_xlabel(r"$\chi_{D}$", fontsize=20)
     ax.set_ylabel(r"$\chi_{A}$", fontsize=20)
     figure.colorbar(plot)
+    if f==3:title = f'N:{max_N},[$\omega_D,\omega_I,\omega_A$]:{omegas},coupling:{coupling}'
+    else: title = f'N:{max_N},[$\omega_D,\omega_A$]:{omegas},coupling:{coupling}'
+    plt.title(title)
     plt.show()
+
+
+if __name__=="__main__":
+    #Parameters of the problem
+    max_N = 6
+    f = 2
+    coupling = 0.1
+    tmax = 3
+    omegas = [-3,3]
+    chis = [1.5,-1.5]
+    #Parameters of the grid
+    grid_size = 70
+    minxDgrid,maxXDgrid = -3,3
+    minxAgrid,maxXAgrid = -3,3
+    lims = [minxDgrid,maxXDgrid,minxAgrid,maxXAgrid]
+
+    CreateHeatmap(max_N=max_N,f=f,coupling=coupling,omegas=omegas,lims=lims)
+
     
+
     # data = []
     # for i in range(f):
     #     _data = Loss(H=H, States=States, maxN=max_N, target_state=f'x{i}').Execute()
@@ -284,3 +242,42 @@ if __name__=="__main__":
     # plt.show()
 
 
+"""
+#? Derive combinations with Constraint Method
+
+#Solve the problem to find all the combinations
+class DeriveCombinations():
+
+    def __init__(self,N,f):
+        self.N = N
+        self.f = f
+
+    def SetConstraint(self,*args):
+        if sum(args) == self.N:return True
+
+
+    def SetProblem(self):
+        #Set the problem
+        problem = constraint.Problem()
+        #Add the variables. In our case one variable per site
+        variables = ["x{}".format(i) for i in range(f)]
+
+        for variable in variables: problem.addVariable(variable,np.arange(self.N+1))
+        #Add the constraint
+        problem.addConstraint(self.SetConstraint, variables)
+        #Find the solution if the problem
+        solutions = problem.getSolutions()
+
+        return solutions
+"""
+
+#? proof that the hamiltonian has the correct shape
+# plot the non-zero elements
+# temp = np.zeros(H.shape)
+# for i in range(len(H)):
+#     for j in range(len(H)):
+#         if H[i,j]!=0:
+#             temp[i,j] = 10
+# plt.imshow(temp, cmap='gray_r')
+# plt.title(f'N={maxN}, f={f}')
+# plt.show()
