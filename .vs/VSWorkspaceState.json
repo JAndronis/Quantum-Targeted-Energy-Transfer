@@ -1,7 +1,9 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\src",
+    "\\src\\tet"
   ],
-  "SelectedNode": "\\C:\\Users\\Jason\\Source\\Repos\\Thesis",
+  "SelectedNode": "\\src\\tet\\Optimizer.py",
   "PreviewInSolutionExplorer": false
 }
