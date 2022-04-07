@@ -13,7 +13,7 @@ import keras.backend as K
 
 from tet.data_process import createDir, writeData, read_1D_data
 from tet.saveFig import saveFig
-from tet.loss import Loss
+from tet.loss import Loss, LossMultiSite
 import tet.constants as constants
 
 DTYPE = tf.float32
@@ -61,8 +61,8 @@ class Optimizer:
             if self.plot: self.PlotResults()
             
     @tf.function
-    def compute_loss(self, const):
-        return Loss(const=const).loss(self.xA, self.xD)
+    def compute_loss(self, lossClass, xA, xD):
+        return lossClass.loss(site='x0', xA=xA, xD=xD)
 
     def get_grads(self, const):
         with tf.GradientTape() as t:

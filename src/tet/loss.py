@@ -97,26 +97,33 @@ class Loss:
 class LossMultiSite:
     def __init__(self, n, t, coupling_lambda, sites, omegas):
         self.max_N = tf.constant(n, dtype=DTYPE)
-        self.max_t = tf.constant(t, dtype=tf.int32)
         self.max_N_np = n
+        self.max_t = tf.constant(t, dtype=tf.int32)
         self.coupling_lambda = tf.constant(coupling_lambda, dtype=DTYPE)
         self.sites = sites
         self.omegas = tf.constant(omegas, dtype=DTYPE)
 
-        self.dim = int( factorial(self.max_N_np+self.sites-1)/( factorial(self.max_N_np)*factorial(self.sites-1) ) )
+        self.dim = int( factorial(n+sites-1)/( factorial(n)*factorial(sites-1) ) )
         self.CombinationsBosons = self.derive()
         self.StatesDictionary = dict(zip(np.arange(self.dim, dtype=int), self.CombinationsBosons))
 
-        initial_state = tf.TensorArray(DTYPE, size=self.dim)
-        for n in range(self.dim):
-            if n<self.dim-1: 
-                initial_state = initial_state.write(n, tf.constant(0, dtype=DTYPE))
-            else:
-                initial_state = initial_state.write(n, tf.constant(1, dtype=DTYPE))
-        self.initial_state = initial_state.stack()
+        #Assign initially all the bosons at the donor
+        self.InitialState = self.StatesDictionary[0]
+        self.InitialState = dict.fromkeys(self.InitialState, 0)
+    
+        self.InitialState['x0'] = self.max_N
+        #Find the index
+        self.InitialStateIndex = list(self.StatesDictionary.keys())[list(self.StatesDictionary.values()).index(self.InitialState)]
+        self.Identity = np.identity(n=self.dim)
+        self.InitialState = self.Identity[self.InitialStateIndex]
+        self.initialState = tf.convert_to_tensor(self.InitialState, dtype=DTYPE)
 
-    def __call__(self, chis, site):
-        self.chis = chis
+    def __call__(self, site, xA, xD):
+        if self.sites>2:
+            zeros_list = [tf.constant(0, dtype=DTYPE) for _ in range(self.sites-1)]
+            self.chis = [xD] + zeros_list + [xA]
+        else: self.chis = [xD, xA]
+        self.chis = [xD, 0, xA]
         self.targetState = site
         return self.loss()
 
@@ -134,10 +141,10 @@ class LossMultiSite:
             for j in range(self.sites):
                 temp.append([keys[j], values[i][j]])
             kv.append(temp)
-            solution.append(dict(kv[i])) 
+            solution.append(dict(kv[i]))
 
         return solution
-    
+
     #Find the Hnm element of the Hamiltonian
     def ConstructElement(self, n, m):
         #First Term. Contributions due to the kronecker(n,m) elements
@@ -180,7 +187,7 @@ class LossMultiSite:
         return Term1 + Term2a + Term2b
 
     def createHamiltonian(self):
-        h = tf.TensorArray(dtype=tf.float32, size=self.dim*self.dim)
+        h = tf.TensorArray(dtype=DTYPE, size=self.dim*self.dim)
         for n in range(self.dim):
             for m in range(self.dim):
                 h = h.write(n*self.dim+m, self.ConstructElement(n, m))
@@ -191,11 +198,13 @@ class LossMultiSite:
     def setCoeffs(self):
         problemHamiltonian = self.createHamiltonian()
         eigvals, eigvecs = tf.linalg.eigh(problemHamiltonian)
+
         self.eigvals = tf.cast(eigvals, dtype=DTYPE)
         eigvecs = tf.cast(eigvecs, dtype=DTYPE)
+
         coeff_c = tf.TensorArray(DTYPE, size=self.dim)
         for i in range(self.dim):
-            coeff_c = coeff_c.write(i, tf.tensordot(tf.cast(eigvecs[:,i], dtype=DTYPE), self.initial_state, 1))
+            coeff_c = coeff_c.write(i, tf.tensordot(tf.cast(eigvecs[:,i], dtype=DTYPE), tf.cast(self.InitialState, dtype=DTYPE), 1))
         
         coeff_c = coeff_c.stack()
         coeff_b = eigvecs
@@ -229,6 +238,6 @@ if __name__=="__main__":
     loss = LossMultiSite(3, 100, 0.1, 3, [-3,3,3])
     @tf.function
     def test():
-        n = loss([1.5, 0,-1.5], 'x0')
+        n = loss(site='x0', xD=0.5, xA=1)
         return n
     print(test())
