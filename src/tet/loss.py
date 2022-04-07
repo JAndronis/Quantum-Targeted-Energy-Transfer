@@ -154,9 +154,10 @@ class LossMultiSite:
                 #Find the number of bosons
                 nk = self.StatesDictionary[m]["x{}".format(k)]
                 nkplusone = self.StatesDictionary[m]["x{}".format(k+1)]
-                
+                _maxN = tf.get_static_value(self.max_N)
+
                 #Term 2a/Important check
-                if (nkplusone != self.max_N) and (nk != 0): 
+                if (nkplusone != _maxN) and (nk != 0): 
                     m1TildaState = self.StatesDictionary[m].copy()
                     m1TildaState["x{}".format(k)] = nk-1
                     m1TildaState["x{}".format(k+1)] = nkplusone+1
@@ -166,7 +167,7 @@ class LossMultiSite:
                     if m1TildaIndex == n: Term2a += -self.coupling_lambda*np.sqrt((nkplusone+1)*nk)
                 
                 #Term 2b/Important check
-                if (nkplusone != 0) and (nk != self.max_N): 
+                if (nkplusone != 0) and (nk != _maxN): 
                     #Find the new state/vol2
                     m2TildaState = self.StatesDictionary[m].copy()
                     m2TildaState["x{}".format(k)] = nk+1
@@ -226,7 +227,6 @@ class LossMultiSite:
     
 if __name__=="__main__":
     loss = LossMultiSite(3, 100, 0.1, 3, [-3,3,3])
-    tf.config.run_functions_eagerly(False)
     @tf.function
     def test():
         n = loss([1.5, 0,-1.5], 'x0')
