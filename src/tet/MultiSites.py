@@ -60,7 +60,7 @@ class CreateHamiltonian:
         if n==m:
             for k in range(self.Sites):
                 Term1 += self.omegas[k]*self.StatesDictionary[m]["x{}".format(k)] +\
-                0.5*self.chis[k]*(self.StatesDictionary[m]["x{}".format(k)])**2
+                    0.5*self.chis[k]*(self.StatesDictionary[m]["x{}".format(k)])**2
 
         for k in range(self.Sites-1):
             #Find the number of bosons
@@ -98,7 +98,6 @@ class CreateHamiltonian:
                 H[n][m] = self.ConstructElement(n=n,m=m)
         return H,self.CombinationsBosons 
 
-
 class Loss:
 
     def __init__(self, H, States, maxN, target_state='x0'):
@@ -125,7 +124,6 @@ class Loss:
         self.InitialStateIndex = list(self.StatesDict.keys())[list(self.StatesDict.values()).index(self.InitialState)]
         self.InitialState = self.Identity[self.InitialStateIndex]
         
-
     def SetCoeffs(self):
         self.DeriveInitialState()
         
@@ -134,7 +132,6 @@ class Loss:
         self.bcoeffs = self.eigvecs
         #c coeffs
         for i in range(self.dim):self.ccoeffs[i] = np.vdot(self.eigvecs[:,i],self.InitialState)
-
 
     def _computeAverageCalculation(self, t):
         sum_j = 0

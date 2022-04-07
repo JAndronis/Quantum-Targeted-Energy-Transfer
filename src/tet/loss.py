@@ -1,5 +1,8 @@
 import tensorflow as tf
 assert tf.__version__ >= "2.0"
+from math import factorial
+from itertools import product
+import numpy as np
 
 DTYPE = tf.float32
 
@@ -58,6 +61,7 @@ class Loss:
         problemHamiltonian = self.createHamiltonian(xA, xD)
         eigvals, eigvecs = tf.linalg.eigh(problemHamiltonian)
         
+        eigvecs = tf.cast(eigvecs, dtype=DTYPE)
         coeff_c = tf.TensorArray(DTYPE, size=self.dim)
         for i in range(self.dim):
             coeff_c = coeff_c.write(i, tf.tensordot(eigvecs[:,i], self.initial_state, 1))
@@ -89,4 +93,142 @@ class Loss:
         avg_N_list = self.computeAverage(coeff_c, coeff_b, vals)
         avg_N = tf.math.reduce_min(avg_N_list, name='Average_N')
         return avg_N
+
+class LossMultiSite:
+    def __init__(self, n, t, coupling_lambda, sites, omegas):
+        self.max_N = tf.constant(n, dtype=DTYPE)
+        self.max_t = tf.constant(t, dtype=tf.int32)
+        self.max_N_np = n
+        self.coupling_lambda = tf.constant(coupling_lambda, dtype=DTYPE)
+        self.sites = sites
+        self.omegas = tf.constant(omegas, dtype=DTYPE)
+
+        self.dim = int( factorial(self.max_N_np+self.sites-1)/( factorial(self.max_N_np)*factorial(self.sites-1) ) )
+        self.CombinationsBosons = self.derive()
+        self.StatesDictionary = dict(zip(np.arange(self.dim, dtype=int), self.CombinationsBosons))
+
+        initial_state = tf.TensorArray(DTYPE, size=self.dim)
+        for n in range(self.dim):
+            if n<self.dim-1: 
+                initial_state = initial_state.write(n, tf.constant(0, dtype=DTYPE))
+            else:
+                initial_state = initial_state.write(n, tf.constant(1, dtype=DTYPE))
+        self.initial_state = initial_state.stack()
+
+    def __call__(self, chis, site):
+        self.chis = chis
+        self.targetState = site
+        return self.loss()
+
+    def getCombinations(self):
+        return self.CombinationsBosons
+
+    def derive(self):
+        space = [np.arange(self.max_N_np+1) for _ in range(self.sites)]
+        values = [i for i in product(*space) if sum(i)==self.max_N_np]
+        keys = [f"x{i}" for i in range(self.sites)]
+        solution = []
+        kv = []
+        for i in range(self.dim):
+            temp = []
+            for j in range(self.sites):
+                temp.append([keys[j], values[i][j]])
+            kv.append(temp)
+            solution.append(dict(kv[i])) 
+
+        return solution
     
+    #Find the Hnm element of the Hamiltonian
+    def ConstructElement(self, n, m):
+        #First Term. Contributions due to the kronecker(n,m) elements
+        Term1 = tf.constant(0, dtype=DTYPE)
+        #Second Term. Various contributions
+        Term2a, Term2b = tf.constant(0, dtype=DTYPE), tf.constant(0, dtype=DTYPE)
+        
+        if n==m:
+            for k in range(self.sites):
+                Term1 += self.omegas[k] * self.StatesDictionary[m]["x{}".format(k)] +\
+                    0.5 * self.chis[k] * (self.StatesDictionary[m]["x{}".format(k)])**2
+        else:
+            for k in range(self.sites-1):
+                #Find the number of bosons
+                nk = self.StatesDictionary[m]["x{}".format(k)]
+                nkplusone = self.StatesDictionary[m]["x{}".format(k+1)]
+                
+                #Term 2a/Important check
+                if (nkplusone != self.max_N) and (nk != 0): 
+                    m1TildaState = self.StatesDictionary[m].copy()
+                    m1TildaState["x{}".format(k)] = nk-1
+                    m1TildaState["x{}".format(k+1)] = nkplusone+1
+
+                    m1TildaIndex = list(self.StatesDictionary.keys())[list(self.StatesDictionary.values()).index(m1TildaState)]
+                
+                    if m1TildaIndex == n: Term2a += -self.coupling_lambda*np.sqrt((nkplusone+1)*nk)
+                
+                #Term 2b/Important check
+                if (nkplusone != 0) and (nk != self.max_N): 
+                    #Find the new state/vol2
+                    m2TildaState = self.StatesDictionary[m].copy()
+                    m2TildaState["x{}".format(k)] = nk+1
+                    m2TildaState["x{}".format(k+1)] = nkplusone-1
+
+                    m2TildaIndex = list(self.StatesDictionary.keys())[list(self.StatesDictionary.values()).index(m2TildaState)]
+
+                    if m2TildaIndex == n: Term2b += -self.coupling_lambda*np.sqrt(nkplusone*(nk+1))
+                
+        return Term1 + Term2a + Term2b
+
+    def createHamiltonian(self):
+        h = tf.TensorArray(dtype=tf.float32, size=self.dim*self.dim)
+        for n in range(self.dim):
+            for m in range(self.dim):
+                h = h.write(n*self.dim+m, self.ConstructElement(n, m))
+        h = h.stack()
+        h = tf.reshape(h, shape=[self.dim, self.dim])
+        return h
+
+    def setCoeffs(self):
+        problemHamiltonian = self.createHamiltonian()
+        eigvals, eigvecs = tf.linalg.eigh(problemHamiltonian)
+        self.eigvals = tf.cast(eigvals, dtype=DTYPE)
+        eigvecs = tf.cast(eigvecs, dtype=DTYPE)
+        coeff_c = tf.TensorArray(DTYPE, size=self.dim)
+        for i in range(self.dim):
+            coeff_c = coeff_c.write(i, tf.tensordot(tf.cast(eigvecs[:,i], dtype=DTYPE), self.initial_state, 1))
+        
+        coeff_c = coeff_c.stack()
+        coeff_b = eigvecs
+        self.ccoeffs = coeff_c
+        self.bcoeffs = coeff_b
+
+    def _computeAverageCalculation(self, t):
+        sum_j = tf.TensorArray(dtype=tf.complex64, size=self.dim)
+        for j in range(self.dim):
+            c = tf.cast(self.ccoeffs, dtype=tf.complex64)
+            b = tf.cast(self.bcoeffs, dtype=tf.complex64)
+            e = tf.cast(self.eigvals, dtype=tf.complex64)
+            _t = tf.cast(t, dtype=tf.complex64)
+            sum_i = tf.reduce_sum(c*b[j,:]*tf.exp(tf.complex(0.,-1.)*e*_t))
+            sum_k = tf.reduce_sum(tf.math.conj(c)*tf.math.conj(b[j,:])*tf.exp(tf.complex(0.,1.)*e*_t)*sum_i)
+            sum_j = sum_j.write(j, value=sum_k*self.StatesDictionary[j][self.targetState])
+        sum_j = tf.reduce_sum(sum_j.stack())
+        return tf.math.real(sum_j)
+
+    def loss(self):
+        Data = tf.TensorArray(DTYPE, size=self.max_t+1)
+        self.setCoeffs()
+        for t in range(self.max_t+1):
+            #print('\r t = {}'.format(t),end="")
+            x = self._computeAverageCalculation(t)
+            Data = Data.write(t, value=x)
+        Data = Data.stack()
+        return tf.reduce_min(Data)
+    
+if __name__=="__main__":
+    loss = LossMultiSite(3, 100, 0.1, 3, [-3,3,3])
+    tf.config.run_functions_eagerly(False)
+    @tf.function
+    def test():
+        n = loss([1.5, 0,-1.5], 'x0')
+        return n
+    print(test())
