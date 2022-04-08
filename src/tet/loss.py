@@ -102,7 +102,7 @@ class LossMultiSite:
         self.coupling_lambda = tf.constant(coupling_lambda, dtype=DTYPE)
         self.sites = sites
         self.omegas = tf.constant(omegas, dtype=DTYPE)
-
+        
         self.dim = int( factorial(n+sites-1)/( factorial(n)*factorial(sites-1) ) )
         self.CombinationsBosons = self.derive()
         self.StatesDictionary = dict(zip(np.arange(self.dim, dtype=int), self.CombinationsBosons))
@@ -125,7 +125,7 @@ class LossMultiSite:
         else: self.chis = [xD, xA]
         self.chis = [xD, 0, xA]
         self.targetState = site
-        return self.loss()
+        return self.loss(site)
 
     def getCombinations(self):
         return self.CombinationsBosons
@@ -224,7 +224,7 @@ class LossMultiSite:
         sum_j = tf.reduce_sum(sum_j.stack())
         return tf.math.real(sum_j)
 
-    def loss(self):
+    def loss(self, site):
         Data = tf.TensorArray(DTYPE, size=self.max_t+1)
         self.setCoeffs()
         for t in range(self.max_t+1):
@@ -232,12 +232,15 @@ class LossMultiSite:
             x = self._computeAverageCalculation(t)
             Data = Data.write(t, value=x)
         Data = Data.stack()
-        return tf.reduce_min(Data)
+        if not site==f'{list(self.StatesDictionary[0].keys())[-1]}':
+            return tf.reduce_min(Data)
+        else:
+            return self.max_N - tf.reduce_max(Data)
     
 if __name__=="__main__":
     loss = LossMultiSite(3, 100, 0.1, 3, [-3,3,3])
     @tf.function
     def test():
-        n = loss(site='x0', xD=0.5, xA=1)
+        n = loss(site='x2', xD=0.5, xA=1)
         return n
     print(test())
