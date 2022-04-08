@@ -1,12 +1,9 @@
-from cProfile import label
-from itertools import combinations, count, product
-# import constraint
+from itertools import product
 import numpy as np
 from math import factorial
-# from scipy.linalg import block_diag
-# from Hamiltonian import Hamiltonian
 from matplotlib import pyplot as plt
-from tet import Hamiltonian
+from tet import constants
+from tet.saveFig import saveFig
 
 #! Class for solving the problem of finding all the combinations
 class DeriveCombinations():
@@ -199,21 +196,29 @@ def CreateHeatmap(max_N,f,coupling,omegas,lims):
 
 if __name__=="__main__":
     #Parameters of the problem
-    max_N = 1
+    max_N = 4
     f = 3
     coupling = 0.1
-    tmax = 300
-    omegas = [-3,3,3]
-    chis = [6,0,-6]
+    tmax = 3000
+    omegas = [3,3,-3]
+    chis = [-1.5,0,1.5]
     #Parameters of the grid
-    grid_size = 200
+    grid_size = 50
     minxDgrid,maxXDgrid = -20,20
     minxAgrid,maxXAgrid = -20,20
     lims = [minxDgrid,maxXDgrid,minxAgrid,maxXAgrid]
 
+    constants.setConstant('max_N', max_N)
+    constants.setConstant('max_t', tmax)
+    constants.setConstant('omegaA', omegas[0])
+    constants.setConstant('omegaD', omegas[-1])
+    constants.setConstant('coupling', 0.1)
+    constants.setConstant('sites', 3)
+    constants.setConstant('resolution', grid_size)
+    constants.dumpConstants()
 
     #Heatmap
-    CreateHeatmap(max_N=max_N,f=f,coupling=coupling,omegas=omegas,lims=lims)
+    #CreateHeatmap(max_N=max_N,f=f,coupling=coupling,omegas=omegas,lims=lims)
     #Time evolution Donor 2 layers
     evolve_donor = False
     if evolve_donor:
@@ -222,7 +227,7 @@ if __name__=="__main__":
         plt.plot(np.arange(0,tmax+1))
         plt.show()
     #Time evolution:Multisites
-    multi_sites_evolve = False
+    multi_sites_evolve = True
     if multi_sites_evolve:
         H,States = CreateHamiltonian(maxN=max_N,coupling_lambda=coupling,Sites=f,omegas=omegas,chis=chis).Execute()
         Titles = [r"$<N_{D}(t)>$",r"$<N_{I}(t)>$",r"$<N_{A}(t)>$"]
