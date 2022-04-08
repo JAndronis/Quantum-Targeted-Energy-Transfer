@@ -3,10 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-import tet.constants as constants
-from tet.Optimizer import Optimizer
-from tet.data_process import read_1D_data
-from tet.saveFig import saveFig
+import constants as constants
+from Optimizer import Optimizer
+from data_process import read_1D_data
+from saveFig import saveFig
 
 def solver(a_lims, d_lims, grid_size, case, iterations=500, learning_rate=0.01, create_plot=False):
     const = constants.loadConstants()

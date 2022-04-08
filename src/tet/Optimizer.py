@@ -11,10 +11,10 @@ import tensorflow as tf
 assert tf.__version__ >= "2.0"
 import keras.backend as K
 
-from tet.data_process import createDir, writeData, read_1D_data
-from tet.saveFig import saveFig
-from tet.loss import Loss, LossMultiSite
-import tet.constants as constants
+from data_process import createDir, writeData, read_1D_data
+from saveFig import saveFig
+from loss import Loss, LossMultiSite
+import constants as constants
 
 DTYPE = tf.float32
 
@@ -39,6 +39,7 @@ class Optimizer:
         self.max_n = self.const['max_N']
         self.omegaA = self.const['omegaA']
         self.omegaD = self.const['omegaD']
+        self.sites = self.const['sites']
         self.DataExist = DataExist
         self.ChiAInitial = ChiAInitial
         self.ChiDInitial = ChiDInitial
@@ -61,20 +62,20 @@ class Optimizer:
             if self.plot: self.PlotResults()
             
     @tf.function
-    def compute_loss(self, lossClass, xA, xD):
-        return lossClass.loss(site='x0', xA=xA, xD=xD)
+    def compute_loss(self, lossClass):
+        return lossClass(site='x2', xA=self.xA, xD=self.xD)
 
-    def get_grads(self, const):
+    def get_grads(self, lossClass):
         with tf.GradientTape() as t:
                 t.watch([self.xA, self.xD])
-                loss = self.compute_loss(const)
+                loss = self.compute_loss(lossClass)
         grads = t.gradient(loss, [self.xA, self.xD])
         del t
         return grads, loss
 
     @tf.function
-    def apply_grads(self, const):
-        grads, loss = self.get_grads(const)
+    def apply_grads(self, lossClass):
+        grads, loss = self.get_grads(lossClass)
         self.opt.apply_gradients(zip(grads, [self.xA, self.xD]))
         return loss
 
@@ -85,11 +86,13 @@ class Optimizer:
             var.assign(tf.zeros_like(var))
         K.set_value(self.opt.learning_rate, lr)
         
-        LAMBDA = const['coupling']
-        OMEGA_A = const['omegaA']
-        OMEGA_D = const['omegaD']
-        MAX_N = const['max_N']
-        MAX_T = const['max_t']
+        LAMBDA = self.const['coupling']
+        OMEGA_A = self.const['omegaA']
+        OMEGA_D = self.const['omegaD']
+        MAX_N = self.const['max_N']
+        MAX_T = self.const['max_t']
+        SITES = self.const['sites']
+        loss_ms = LossMultiSite(n=MAX_N, t=MAX_T, coupling_lambda=LAMBDA, sites=SITES, omegas=[OMEGA_D, 3, OMEGA_D])
         
         mylosses = []
         tol = 1e-8
@@ -109,7 +112,7 @@ class Optimizer:
         for epoch in range(max_iter):
             xA_init = self.xA.numpy()
             xD_init = self.xD.numpy()
-            loss = self.apply_grads(const)
+            loss = self.apply_grads(loss_ms)
             if epoch%100 ==0: print(f'Loss:{loss.numpy()}, xA:{self.xA.numpy()}, xD:{self.xD.numpy()}, epoch:{epoch}')
             
             if loss.numpy()<=0.5:
@@ -159,6 +162,7 @@ class Optimizer:
             "\nOmega_A:", OMEGA_A,
             "| Omega_D:", OMEGA_D,
             "| N:", MAX_N,
+            "| Sites: ", SITES,
             "| Total timesteps:", MAX_T,
             "| Coupling Lambda:",LAMBDA,
             "\n"+40*"-")
@@ -178,7 +182,7 @@ class Optimizer:
     def PlotResults(self):
         # Load Background
         min_n_path = os.path.join(os.getcwd(), 'data/coupling-'+str(self.coupling)+'/tmax-'+
-        str(self.max_n)+'/avg_N/min_n_combinations')
+        str(self.max_t)+'/avg_N/min_n_combinations')
         test_array = np.loadtxt(min_n_path)
         xA_plot = test_array[:,0].reshape(self.res, self.res)
         xD_plot = test_array[:,1].reshape(self.res, self.res)
@@ -186,8 +190,8 @@ class Optimizer:
         
         # Load Data
         loss_data = read_1D_data(destination=self.CombinationPath,name_of_file='losses.txt')
-        a = read_1D_data(destination=self.CombinationPath,name_of_file='xAs Trajectory.txt')
-        d = read_1D_data(destination=self.CombinationPath,name_of_file='xDs Trajectory.txt')
+        a = read_1D_data(destination=self.CombinationPath,name_of_file='xAtrajectory.txt')
+        d = read_1D_data(destination=self.CombinationPath,name_of_file='xDtrajectory.txt')
         a_init = self.ChiAInitial
         d_init = self.ChiDInitial
         
@@ -196,10 +200,10 @@ class Optimizer:
         ax1.plot(loss_data[1:])
         saveFig(fig_id="loss", destination=self.CombinationPath)
         
-        #Plot heatmaps with optimizer predictions
+        # Plot heatmaps with optimizer predictions
         titl = f'N={self.max_n}, tmax={self.max_t}, Initial (χA, χD) = {a_init, d_init},\
-            λ={self.coupling}, ωA={self.omegaA}, ωD={self.omegaD}'    
-        
+            λ={self.coupling}, ωA={self.omegaA}, ωD={self.omegaD}'
+
         x = np.array(np.array(d))
         y = np.array(np.array(a))
         figure2, ax2 = plt.subplots(figsize=(12,12))
@@ -218,3 +222,7 @@ class Optimizer:
         ax2.legend(prop={'size': 15})
         ax2.set_title(titl, fontsize=20)
         saveFig(fig_id="contour", destination=self.CombinationPath)
+
+if __name__=="__main__":
+    opt = Optimizer(ChiAInitial=3, ChiDInitial=3, DataExist=False, Case=0, Plot=False, iterations=500)
+    opt()
