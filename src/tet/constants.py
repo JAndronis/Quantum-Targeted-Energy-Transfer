@@ -3,7 +3,7 @@ import json
 
 constants = {'xA': None, 'xD': None, 'max_N': None,\
     'max_t': None, 'omegaA': None, 'omegaD': None,\
-    'coupling': None, 'resolution': None}
+    'coupling': None, 'sites': None, 'resolution': None}
 
 def setConstant(key, value):
     constants[key] = value
