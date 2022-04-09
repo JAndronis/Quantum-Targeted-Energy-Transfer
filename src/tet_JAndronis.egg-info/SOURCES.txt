@@ -13,6 +13,7 @@ src/tet/constants.py
 src/tet/data_process.py
 src/tet/loss.py
 src/tet/saveFig.py
+src/tet/solver_mp.py
 src/tet_JAndronis.egg-info/PKG-INFO
 src/tet_JAndronis.egg-info/SOURCES.txt
 src/tet_JAndronis.egg-info/dependency_links.txt
