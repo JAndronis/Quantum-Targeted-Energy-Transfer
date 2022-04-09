@@ -21,6 +21,20 @@ if __name__=="__main__":
     #        # Memory growth must be set before GPUs have been initialized
     #        print(e)
     
+    # Set constants
+    constants.setConstant('max_N', 3)
+    constants.setConstant('max_t', 300)
+    constants.setConstant('omegaA', 3)
+    constants.setConstant('omegaD', -3)
+    constants.setConstant('coupling', 0.1)
+    constants.setConstant('xMid', 0)
+    constants.setConstant('sites', 3)
+    constants.setConstant('omegaMid', 3)
+    constants.setConstant('resolution', 100)
+    const = constants.constants
+    constants.dumpConstants()
+    done = False
+
     done = False
     edge = 1
     iteration = 0
@@ -37,20 +51,6 @@ if __name__=="__main__":
     
     a_lims = [-6,6]
     d_lims = [-6,6]
-
-    # Set constants
-    constants.setConstant('max_N', 3)
-    constants.setConstant('max_t', 300)
-    constants.setConstant('omegaA', 3)
-    constants.setConstant('omegaD', -3)
-    constants.setConstant('coupling', 0.1)
-    constants.setConstant('xMid', 10)
-    constants.setConstant('sites', 3)
-    constants.setConstant('omegaMid', 1)
-    constants.setConstant('resolution', 200)
-    const = constants.constants
-    constants.dumpConstants()
-    done = False
 
     # make random initial guesses according to the number of bins
     xa = np.linspace(a_lims[0], a_lims[1], const['resolution'])
@@ -79,8 +79,8 @@ if __name__=="__main__":
     
     t0 = time.time()
     pool = mp.Pool(mp.cpu_count()//2)
-    d = [(i, ChiAInitial, ChiDInitial, data_path2, const) for i, (ChiAInitial, ChiDInitial) in enumerate(Combinations)]
-    all_losses = pool.starmap_async(mp_opt, d).get()
+    args = [(i, ChiAInitial, ChiDInitial, data_path2, const, 'x2', 0.1, 400) for i, (ChiAInitial, ChiDInitial) in enumerate(Combinations)]
+    all_losses = pool.starmap_async(mp_opt, args).get()
     pool.close()
     t1 = time.time()
     dt = t1-t0
@@ -143,8 +143,8 @@ if __name__=="__main__":
             
             t0 = time.time()
             pool = mp.Pool(mp.cpu_count()//2)
-            d = [(i, ChiAInitial, ChiDInitial, data_path2, const) for i, (ChiAInitial, ChiDInitial) in enumerate(Combinations)]
-            all_losses = pool.starmap_async(mp_opt, d).get()
+            args = [(i, ChiAInitial, ChiDInitial, data_path2, const, 'x2', 0.1, 400) for i, (ChiAInitial, ChiDInitial) in enumerate(Combinations)]
+            all_losses = pool.starmap_async(mp_opt, args).get()
             pool.close()
             t1 = time.time()
             dt = t1-t0

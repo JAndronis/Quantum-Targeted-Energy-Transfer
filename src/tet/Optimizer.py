@@ -21,7 +21,8 @@ DTYPE = tf.float32
 class Optimizer:
     def __init__(self, 
                  ChiAInitial, 
-                 ChiDInitial, 
+                 ChiDInitial,
+                 target_site, 
                  DataExist, 
                  Case=0,
                  const=None,
@@ -43,6 +44,7 @@ class Optimizer:
         self.omegaM = self.const['omegaMid']
         self.xMid = self.const['xMid']
         self.sites = self.const['sites']
+        self.target_site = target_site
         self.DataExist = DataExist
         self.ChiAInitial = ChiAInitial
         self.ChiDInitial = ChiDInitial
@@ -70,7 +72,7 @@ class Optimizer:
             
     @tf.function
     def compute_loss(self, lossClass):
-        return lossClass(site='x2', xA=self.xA, xD=self.xD)
+        return lossClass(site=self.target_site, xA=self.xA, xD=self.xD)
 
     def get_grads(self, lossClass):
         with tf.GradientTape() as t:
@@ -107,8 +109,8 @@ class Optimizer:
         
         mylosses = []
         tol = 1e-8
-        self.xA = tf.Variable(initial_value=ChiAInitial, trainable=True, dtype=DTYPE)
-        self.xD = tf.Variable(initial_value=ChiDInitial, trainable=True, dtype=DTYPE)
+        self.xA = tf.Variable(initial_value=ChiAInitial, trainable=True, dtype=DTYPE, name='xA')
+        self.xD = tf.Variable(initial_value=ChiDInitial, trainable=True, dtype=DTYPE, name='xD')
         xA_best = tf.Variable(initial_value=0, dtype=DTYPE, trainable=False)
         xD_best = tf.Variable(initial_value=0, dtype=DTYPE, trainable=False)
         mylosses.append(MAX_N)
@@ -237,18 +239,19 @@ class Optimizer:
         ax2.set_title(titl, fontsize=20)
         saveFig(fig_id="contour", destination=self.CombinationPath)
 
-def mp_opt(i, ChiAInitial, ChiDInitial, iteration_path, const):
+def mp_opt(i, ChiAInitial, ChiDInitial, iteration_path, const, target_site, lr, iterations):
     const = constants.loadConstants()
     data_path = os.path.join(os.getcwd(), f'{iteration_path}/data_optimizer_avgn_{i}')
     opt = Optimizer(ChiAInitial=0,
                     ChiDInitial=0,
+                    target_site=target_site,
                     DataExist=False,
                     const=const,
                     data_path=data_path,
                     Plot=False,
                     Print=False,
-                    lr=0.1,
-                    iterations=300)
+                    lr=lr,
+                    iterations=iterations)
     opt(ChiAInitial, ChiDInitial, i)
     # Load Data
     loss_data = read_1D_data(destination=data_path, name_of_file='losses.txt')
