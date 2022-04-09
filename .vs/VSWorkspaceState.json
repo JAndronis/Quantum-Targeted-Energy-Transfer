@@ -2,9 +2,8 @@
   "ExpandedNodes": [
     "",
     "\\src",
-    "\\src\\tet",
-    "\\tests"
+    "\\src\\tet"
   ],
-  "SelectedNode": "\\src\\tet\\MultiSites.py",
+  "SelectedNode": "\\src\\tet\\Optimizer.py",
   "PreviewInSolutionExplorer": false
 }
