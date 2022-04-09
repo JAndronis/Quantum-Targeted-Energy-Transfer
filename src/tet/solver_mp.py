@@ -49,8 +49,8 @@ if __name__=="__main__":
 
     # Make an initial search of the parameter space
     
-    a_lims = [-6,6]
-    d_lims = [-6,6]
+    a_lims = [-10,10]
+    d_lims = [-10,10]
 
     # make random initial guesses according to the number of bins
     xa = np.linspace(a_lims[0], a_lims[1], const['resolution'])
