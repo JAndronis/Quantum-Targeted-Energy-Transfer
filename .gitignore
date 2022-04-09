@@ -3,7 +3,7 @@
 Untitled.ipynb
 
 # visual studio files
-.vs/*
+.vs/
 
 # vscode local settings
 .vscode/
