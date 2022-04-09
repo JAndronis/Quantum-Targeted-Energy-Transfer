@@ -2,10 +2,12 @@
 .ipynb_checkpoints 
 Untitled.ipynb
 
+# visual studio files
+.vs/*
+
 # vscode local settings
 .vscode/
 settings.json
-
 .vscode/settings.json
 
 # Local History for Visual Studio Code
