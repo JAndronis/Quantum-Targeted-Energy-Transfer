@@ -1,8 +1,8 @@
 import os
 import json
 
-constants = {'xA': None, 'xD': None, 'max_N': None,\
-    'max_t': None, 'omegaA': None, 'omegaD': None,\
+constants = {'xA': None, 'xD': None, 'xMid': None,'max_N': None,\
+    'max_t': None, 'omegaA': None, 'omegaMid': None,'omegaD': None,\
     'coupling': None, 'sites': None, 'resolution': None}
 
 def setConstant(key, value):
