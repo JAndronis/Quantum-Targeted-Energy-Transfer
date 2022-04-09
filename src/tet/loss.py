@@ -95,15 +95,16 @@ class Loss:
         return avg_N
 
 class LossMultiSite:
-    def __init__(self, n, t, coupling_lambda, sites, omegas):
-        self.max_N = tf.constant(n, dtype=DTYPE)
-        self.max_N_np = n
-        self.max_t = tf.constant(t, dtype=tf.int32)
-        self.coupling_lambda = tf.constant(coupling_lambda, dtype=DTYPE)
-        self.sites = sites
+    def __init__(self, const, omegas):
+        self.max_N = tf.constant(const['max_N'], dtype=DTYPE)
+        self.max_N_np = const['max_N']
+        self.max_t = tf.constant(const['max_t'], dtype=tf.int32)
+        self.coupling_lambda = tf.constant(const['coupling'], dtype=DTYPE)
+        self.sites = const['sites']
         self.omegas = tf.constant(omegas, dtype=DTYPE)
+        self.xM = const['xMid']
         
-        self.dim = int( factorial(n+sites-1)/( factorial(n)*factorial(sites-1) ) )
+        self.dim = int( factorial(self.max_N_np+self.sites-1)/( factorial(self.max_N_np)*factorial(self.sites-1) ) )
         self.CombinationsBosons = self.derive()
         self.StatesDictionary = dict(zip(np.arange(self.dim, dtype=int), self.CombinationsBosons))
 
@@ -120,10 +121,10 @@ class LossMultiSite:
 
     def __call__(self, site, xA, xD):
         if self.sites>2:
-            zeros_list = [tf.constant(0, dtype=DTYPE) for _ in range(self.sites-1)]
-            self.chis = [xD] + zeros_list + [xA]
+            x = [tf.constant(self.xM, dtype=DTYPE) for _ in range(self.sites-2)]
+            self.chis = [xD] + x + [xA]
         else: self.chis = [xD, xA]
-        self.chis = [xD, 0, xA]
+        #self.chis = [xD, 0, xA]
         self.targetState = site
         return self.loss(site)
 
@@ -228,7 +229,6 @@ class LossMultiSite:
         Data = tf.TensorArray(DTYPE, size=self.max_t+1)
         self.setCoeffs()
         for t in range(self.max_t+1):
-            #print('\r t = {}'.format(t),end="")
             x = self._computeAverageCalculation(t)
             Data = Data.write(t, value=x)
         Data = Data.stack()
@@ -236,11 +236,3 @@ class LossMultiSite:
             return tf.reduce_min(Data)
         else:
             return self.max_N - tf.reduce_max(Data)
-    
-if __name__=="__main__":
-    loss = LossMultiSite(3, 100, 0.1, 3, [-3,3,3])
-    @tf.function
-    def test():
-        n = loss(site='x2', xD=0.5, xA=1)
-        return n
-    print(test())

@@ -196,12 +196,12 @@ def CreateHeatmap(max_N,f,coupling,omegas,lims):
 
 if __name__=="__main__":
     #Parameters of the problem
-    max_N = 4
+    max_N = 2
     f = 3
     coupling = 0.1
-    tmax = 3000
-    omegas = [3,3,-3]
-    chis = [-1.5,0,1.5]
+    tmax = 200
+    omegas = [-3,3,3]
+    chis = [1.1287,0,4.3631]
     #Parameters of the grid
     grid_size = 50
     minxDgrid,maxXDgrid = -20,20

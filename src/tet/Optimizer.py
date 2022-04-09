@@ -23,9 +23,10 @@ class Optimizer:
                  ChiAInitial, 
                  ChiDInitial, 
                  DataExist, 
-                 Case,
+                 Case=0,
                  const=None,
                  Plot=False, 
+                 Print=True,
                  iterations=200,
                  lr=0.1, 
                  data_path=os.path.join(os.getcwd(), 'data_optimizer_avgn')):
@@ -39,6 +40,8 @@ class Optimizer:
         self.max_n = self.const['max_N']
         self.omegaA = self.const['omegaA']
         self.omegaD = self.const['omegaD']
+        self.omegaM = self.const['omegaMid']
+        self.xMid = self.const['xMid']
         self.sites = self.const['sites']
         self.DataExist = DataExist
         self.ChiAInitial = ChiAInitial
@@ -49,15 +52,19 @@ class Optimizer:
         self.iter = iterations
         self.lr = lr
         self.opt = tf.keras.optimizers.Adam()
+        self.Print = Print
         
-    def __call__(self):
+    def __call__(self, ChiAInitial, ChiDInitial, case):
+        self.ChiAInitial = ChiAInitial
+        self.ChiDInitial = ChiDInitial
+
         if self.DataExist and self.plot: self.PlotResults()
         # If data exists according to the user, dont do anything
         elif self.DataExist and not self.plot: pass
         
         else:
             createDir(self.data_path, replace=False)
-            createDir(destination=self.CombinationPath,replace=True)
+            #createDir(destination=self.CombinationPath,replace=True)
             self._train()
             if self.plot: self.PlotResults()
             
@@ -79,7 +86,7 @@ class Optimizer:
         self.opt.apply_gradients(zip(grads, [self.xA, self.xD]))
         return loss
 
-    def train(self, ChiAInitial, ChiDInitial, const, max_iter=200, lr=0.01):
+    def train(self, ChiAInitial, ChiDInitial, max_iter=200, lr=0.01):
         # Reset Optimizer
         K.clear_session()
         for var in self.opt.variables():
@@ -92,7 +99,11 @@ class Optimizer:
         MAX_N = self.const['max_N']
         MAX_T = self.const['max_t']
         SITES = self.const['sites']
-        loss_ms = LossMultiSite(n=MAX_N, t=MAX_T, coupling_lambda=LAMBDA, sites=SITES, omegas=[OMEGA_D, 3, OMEGA_D])
+        if SITES>2:
+            omegas_list = [OMEGA_D] + [self.omegaM for _ in range(SITES-2)] + [OMEGA_A]
+        else:
+            omegas_list = [OMEGA_D, OMEGA_A]
+        loss_ms = LossMultiSite(const=self.const, omegas=omegas_list)
         
         mylosses = []
         tol = 1e-8
@@ -113,7 +124,8 @@ class Optimizer:
             xA_init = self.xA.numpy()
             xD_init = self.xD.numpy()
             loss = self.apply_grads(loss_ms)
-            if epoch%100 ==0: print(f'Loss:{loss.numpy()}, xA:{self.xA.numpy()}, xD:{self.xD.numpy()}, epoch:{epoch}')
+            if self.Print:
+                if epoch%100 ==0: print(f'Loss:{loss.numpy()}, xA:{self.xA.numpy()}, xD:{self.xD.numpy()}, epoch:{epoch}')
             
             if loss.numpy()<=0.5:
                 K.set_value(self.opt.learning_rate, 0.001)
@@ -140,41 +152,43 @@ class Optimizer:
             if errorA < tol:
                 a_error_count += 1
                 if a_error_count > 2:
-                    print('Stopped training because of xA_new-xA_old =', errorA)
+                    if self.Print:
+                        print('Stopped training because of xA_new-xA_old =', errorA)
                     break
 
             if errorD < tol:
                 d_error_count += 1
                 if d_error_count > 2:
-                    print('Stopped training because of xD_new-xD_old =', errorA)
+                    if self.Print:
+                        print('Stopped training because of xD_new-xD_old =', errorA)
                     break
             
         t1 = time.time()
         dt = t1-t0
-
-        print("\nApproximate value of chiA:", xA_best.numpy(), 
-            "\nApproximate value of chiD:", xD_best.numpy(),
-            "\nLoss - min #bosons on donor:", best_loss,
-            "\nOptimizer Iterations:", self.opt.iterations.numpy(), 
-            "\nTraining Time:", dt,
-            "\n"+40*"-",
-            "\nParameters:",
-            "\nOmega_A:", OMEGA_A,
-            "| Omega_D:", OMEGA_D,
-            "| N:", MAX_N,
-            "| Sites: ", SITES,
-            "| Total timesteps:", MAX_T,
-            "| Coupling Lambda:",LAMBDA,
-            "\n"+40*"-")
+        
+        if self.Print:
+            print("\nApproximate value of chiA:", xA_best.numpy(), 
+                "\nApproximate value of chiD:", xD_best.numpy(),
+                "\nLoss - min #bosons on donor:", best_loss,
+                "\nOptimizer Iterations:", self.opt.iterations.numpy(), 
+                "\nTraining Time:", dt,
+                "\n"+40*"-",
+                "\nParameters:",
+                "\nOmega_A:", OMEGA_A,
+                "| Omega_D:", OMEGA_D,
+                "| N:", MAX_N,
+                "| Sites: ", SITES,
+                "| Total timesteps:", MAX_T,
+                "| Coupling Lambda:",LAMBDA,
+                "\n"+40*"-")
         
         return mylosses, a_data, d_data, xA_best.numpy(), xD_best.numpy()
     
     def _train(self):
-        mylosses, a_data, d_data, xA_best, xD_best = self.train(self.ChiAInitial, self.ChiDInitial, \
-            const=self.const, max_iter=self.iter, lr=self.lr)
-        writeData(data=mylosses[1:], destination=self.CombinationPath, name_of_file='losses.txt')
-        writeData(data=a_data, destination=self.CombinationPath, name_of_file='xAtrajectory.txt')
-        writeData(data=d_data, destination=self.CombinationPath, name_of_file='xDtrajectory.txt')
+        mylosses, a_data, d_data, xA_best, xD_best = self.train(self.ChiAInitial, self.ChiDInitial, max_iter=self.iter, lr=self.lr)
+        writeData(data=mylosses[1:], destination=self.data_path, name_of_file='losses.txt')
+        writeData(data=a_data, destination=self.data_path, name_of_file='xAtrajectory.txt')
+        writeData(data=d_data, destination=self.data_path, name_of_file='xDtrajectory.txt')
         self.const['xA'] = str(xA_best)
         self.const['xD'] = str(xD_best)
         constants.dumpConstants(dict=self.const)
@@ -196,7 +210,7 @@ class Optimizer:
         d_init = self.ChiDInitial
         
         # Plot Loss
-        figure1, ax1 = plt.subplots()
+        _, ax1 = plt.subplots()
         ax1.plot(loss_data[1:])
         saveFig(fig_id="loss", destination=self.CombinationPath)
         
@@ -222,6 +236,27 @@ class Optimizer:
         ax2.legend(prop={'size': 15})
         ax2.set_title(titl, fontsize=20)
         saveFig(fig_id="contour", destination=self.CombinationPath)
+
+def mp_opt(i, ChiAInitial, ChiDInitial, iteration_path, const):
+    const = constants.loadConstants()
+    data_path = os.path.join(os.getcwd(), f'{iteration_path}/data_optimizer_avgn_{i}')
+    opt = Optimizer(ChiAInitial=0,
+                    ChiDInitial=0,
+                    DataExist=False,
+                    const=const,
+                    data_path=data_path,
+                    Plot=False,
+                    Print=False,
+                    lr=0.1,
+                    iterations=300)
+    opt(ChiAInitial, ChiDInitial, i)
+    # Load Data
+    loss_data = read_1D_data(destination=data_path, name_of_file='losses.txt')
+    a = const['xA']
+    d = const['xD']
+    print(f'Job {i}: Done')
+    return np.array([a, d, np.min(loss_data)])
+
 
 if __name__=="__main__":
     opt = Optimizer(ChiAInitial=3, ChiDInitial=3, DataExist=False, Case=0, Plot=False, iterations=500)
