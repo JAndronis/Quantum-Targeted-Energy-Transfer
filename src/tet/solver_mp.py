@@ -22,6 +22,20 @@ CONST = constants.constants
 constants.dumpConstants()
 
 def getCombinations(a_lims, d_lims, method='bins', grid=2):
+    """
+    Creates a list of initial guess pairs to be fed to an optimizer call.
+
+    Args:
+        a_lims (list): list of 2 elements that contains the minimum 
+                       and maximum xA's to use.
+        d_lims (list): list of 2 elements that contains the minimum 
+                       and maximum xD's to use.
+        method (str, optional): Method to use for creating Combinations list. Defaults to 'bins'.
+        grid (int, optional): Number of times to split the parameter space. Defaults to 2.
+
+    Returns:
+        list: A list of tuples, of all the initial guesses to try.
+    """
     
     if method=='bins':
         xa = np.linspace(a_lims[0], a_lims[1], 100)
@@ -116,28 +130,32 @@ if __name__=="__main__":
             if grid_choice:
                 # if this method has already been picked increase grid size
                 CONST['resolution'] *= 2
+                a_min, a_max = min_a-1, min_a+1
+                d_min, d_max = min_d-1, min_d+1
+                a_lims = [a_min,a_max]
+                d_lims = [d_min,d_max]
             bin_choice = False
-            a_lims = [-10,10]
-            d_lims = [-10,10]
             Combinations = getCombinations(a_lims, d_lims, method='grid')
             iter = 200
             grid_choice = True
             print(10*'-',f'Iteration: {iteration}, Method: Grid, Jobs: {len(Combinations)}', 10*'-')
 
-        # initialize processing pool
         t2 = time.time()
         try:
-            pool = mp.Pool()
+            # initialize processing pool
+            pool = mp.Pool(mp.cpu_count()//2)
 
             # set input arg list for mp_opt() function
             args = [(i, ChiAInitial, ChiDInitial, data_path2, CONST, 'x1', 0.1, iter) for i, (ChiAInitial, ChiDInitial) in enumerate(Combinations)]
 
             # run multiprocess map 
             all_losses = pool.starmap_async(mp_opt, args).get()
+
         finally:
             pool.close()    # make sure to close pool so no more processes start
             pool.join()
-            gc.collect()
+            gc.collect()    # garbage collector
+
         t3 = time.time()
         dt = t3-t2  # collect code run time for optimization
 
