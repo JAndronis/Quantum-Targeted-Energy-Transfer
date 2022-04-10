@@ -3,6 +3,7 @@ from itertools import product
 import numpy as np
 import os
 import gc
+import sys
 import time
 import multiprocessing as mp
 from Optimizer import mp_opt
@@ -10,7 +11,7 @@ from data_process import createDir
 
 # Set globals
 constants.setConstant('max_N', 3)
-constants.setConstant('max_t', 25)
+constants.setConstant('max_t', 250)
 constants.setConstant('omegaA', 3)
 constants.setConstant('omegaD', -3)
 constants.setConstant('omegaMid', 0)
@@ -80,13 +81,13 @@ if __name__=="__main__":
 
     # create data directory to save results
     data_path1 = os.path.join(os.getcwd(),'data')
-    createDir(destination=data_path1, replace_query=False)
+    createDir(destination=data_path1, replace_query=True)
 
     # initialize helper parameters
     a_lims = [-10,10]   # limits of xA guesses
     d_lims = [-10,10]   # limits of xD guesses
     grid = 2
-    edge = 1
+    _edge = [5, 4, 3, 2, 1, 0.5, 0.1]
     iteration = 0
     counter = 0
     done = False
@@ -101,14 +102,14 @@ if __name__=="__main__":
 
         # create directory of current iteration
         data_path2 = os.path.join(data_path1, f'iteration_{iteration}')
-        createDir(destination=data_path2, replace_query=False)
+        createDir(destination=data_path2, replace_query=True)
 
         # if min loss is not small enough do a general search with the bin method
         if grid<=6 and min_loss>=CONST['max_N']-1.5:
             if bin_choice and min_loss<=CONST['max_N']-0.1:
                 # if this method has already been picked increase bin number
                 if not grid==6:
-                    edge /= iteration
+                    edge = _edge[iteration]
                     grid += 2
                     a_min, a_max = min_a-edge, min_a+edge
                     d_min, d_max = min_d-edge, min_d+edge
@@ -123,7 +124,7 @@ if __name__=="__main__":
             Combinations = getCombinations(a_lims, d_lims, method='bins', grid=grid)
             iter = 1000
             bin_choice = True
-            print(10*'-',f'Iteration: {iteration}, Method: Bins, Jobs: {len(Combinations)}', 10*'-')
+            print(10*'-',f'Iteration: {iteration}, Method: Bins({grid*2}), Jobs: {len(Combinations)}, a_lim: {a_lims}, d_lim: {d_lims}', 10*'-')
 
         # else if min loss is suffeciently small do an exact search with the grid method
         elif min_loss<=CONST['max_N']-1.5:
@@ -138,7 +139,7 @@ if __name__=="__main__":
             Combinations = getCombinations(a_lims, d_lims, method='grid')
             iter = 200
             grid_choice = True
-            print(10*'-',f'Iteration: {iteration}, Method: Grid, Jobs: {len(Combinations)}', 10*'-')
+            print(10*'-',f'Iteration: {iteration}, Method: Grid, Jobs: {len(Combinations)}, a_lim: {a_lims}, d_lim: {d_lims}', 10*'-')
 
         t2 = time.time()
         try:
@@ -149,7 +150,11 @@ if __name__=="__main__":
             args = [(i, ChiAInitial, ChiDInitial, data_path2, CONST, 'x1', 0.1, iter) for i, (ChiAInitial, ChiDInitial) in enumerate(Combinations)]
 
             # run multiprocess map 
-            all_losses = pool.starmap_async(mp_opt, args).get()
+            all_losses = pool.starmap_async(mp_opt, args).get(timeout=500)
+
+        except KeyboardInterrupt:
+            print('Keyboard Interrupt.')
+            sys.exit(1)
 
         finally:
             pool.close()    # make sure to close pool so no more processes start
