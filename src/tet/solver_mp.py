@@ -25,8 +25,6 @@ constants.dumpConstants()
 def getCombinations(a_lims, d_lims, method='bins', grid=2):
     
     if method=='bins':
-        
-        # make random initial guesses according to the number of bins
         xa = np.linspace(a_lims[0], a_lims[1], 100)
         xd = np.linspace(d_lims[0], d_lims[1], 100)
         data = np.array(list(product(xa,xd)))
