@@ -1,11 +1,13 @@
+from ast import Raise
 import constants
 from itertools import product
 import numpy as np
 import os
+import gc
 import time
 import multiprocessing as mp
 from Optimizer import mp_opt
-from tet.data_process import createDir
+from data_process import createDir
 
 # Set globals
 constants.setConstant('max_N', 3)
@@ -13,7 +15,7 @@ constants.setConstant('max_t', 25)
 constants.setConstant('omegaA', 3)
 constants.setConstant('omegaD', -3)
 constants.setConstant('omegaMid', 0)
-constants.setConstant('coupling', 0.1)
+constants.setConstant('coupling', 0.01)
 constants.setConstant('xMid', 0)
 constants.setConstant('sites', 2)
 constants.setConstant('resolution', 5)
@@ -21,12 +23,13 @@ CONST = constants.constants
 constants.dumpConstants()
 
 def getCombinations(a_lims, d_lims, method='bins', grid=2):
+    
     if method=='bins':
         
         # make random initial guesses according to the number of bins
-        xa = np.linspace(a_lims[0], a_lims[1], CONST['resolution'])
-        xd = np.linspace(d_lims[0], d_lims[1], CONST['resolution'])
-        data = np.array((list(product(xa,xd))))
+        xa = np.linspace(a_lims[0], a_lims[1], 100)
+        xd = np.linspace(d_lims[0], d_lims[1], 100)
+        data = np.array(list(product(xa,xd)))
         
         # extent of bins needs to be a bit smaller than parameter range
         extenti = (a_lims[0]-0.1, a_lims[1]+0.1)
@@ -66,46 +69,55 @@ if __name__=="__main__":
 
     # create data directory to save results
     data_path1 = os.path.join(os.getcwd(),'data')
-    createDir(destination=data_path1, replace=True)
+    createDir(destination=data_path1, replace_query=False)
 
     # initialize helper parameters
-    a_lims = [-10,10]
-    d_lims = [-10,10]
+    a_lims = [-10,10]   # limits of xA guesses
+    d_lims = [-10,10]   # limits of xD guesses
     grid = 2
+    edge = 1
+    iteration = 0
+    counter = 0
+    done = False
     bin_choice = False
     grid_choice = False
     min_a, min_d, min_loss = 0, 0, CONST['max_N']   # initializing min_loss to the maximum number
                                                     # ensures that the initial combinations of initial
                                                     # guesses will be done with the bin method
 
-    while not done and iteration<=3:
+    t0 = time.time()
+    while not done and iteration<=5:
 
         # create directory of current iteration
         data_path2 = os.path.join(data_path1, f'iteration_{iteration}')
-        createDir(destination=data_path2)
-        print('Iteration: ', iteration)
+        createDir(destination=data_path2, replace_query=False)
 
         # if min loss is not small enough do a general search with the bin method
-        if grid<6 and min_loss>=CONST['max_N']-1.5:
-            if bin_choice:
-                # if this method has already been picked
-                # increase bin number
-                grid += 2
-            edge /= iteration
-            a_min, a_max = min_a-edge, min_a+edge
-            d_min, d_max = min_d-edge, min_d+edge
-            a_lims = [a_min,a_max]
-            d_lims = [d_min,d_max]
-            grid_size = grid
+        if grid<=6 and min_loss>=CONST['max_N']-1.5:
+            if bin_choice and min_loss<=CONST['max_N']-0.1:
+                # if this method has already been picked increase bin number
+                if not grid==6:
+                    edge /= iteration
+                    grid += 2
+                    a_min, a_max = min_a-edge, min_a+edge
+                    d_min, d_max = min_d-edge, min_d+edge
+                    a_lims = [a_min,a_max]
+                    d_lims = [d_min,d_max]
+                else:
+                    grid = 2
+                    edge = 1
+                    iteration = 0
+                    a_lims = [-10,10]
+                    d_lims = [-10,10]
             Combinations = getCombinations(a_lims, d_lims, method='bins', grid=grid)
             iter = 1000
             bin_choice = True
+            print(10*'-',f'Iteration: {iteration}, Method: Bins, Jobs: {len(Combinations)}', 10*'-')
 
         # else if min loss is suffeciently small do an exact search with the grid method
-        elif grid<6 and min_loss<=CONST['max_N']-1.5:
+        elif min_loss<=CONST['max_N']-1.5:
             if grid_choice:
-                # if this method has already been picked
-                # increase grid size
+                # if this method has already been picked increase grid size
                 CONST['resolution'] *= 2
             bin_choice = False
             a_lims = [-10,10]
@@ -113,19 +125,24 @@ if __name__=="__main__":
             Combinations = getCombinations(a_lims, d_lims, method='grid')
             iter = 200
             grid_choice = True
+            print(10*'-',f'Iteration: {iteration}, Method: Grid, Jobs: {len(Combinations)}', 10*'-')
 
         # initialize processing pool
-        t0 = time.time()
-        pool = mp.Pool()
+        t2 = time.time()
+        try:
+            pool = mp.Pool()
 
-        # set input arg list for mp_opt() function
-        args = [(i, ChiAInitial, ChiDInitial, data_path2, CONST, 'x1', 0.1, iter) for i, (ChiAInitial, ChiDInitial) in enumerate(Combinations)]
-        
-        # run multiprocess map 
-        all_losses = pool.starmap_async(mp_opt, args).get()
-        pool.close()    # make sure to close pool so no more processes start
-        t1 = time.time()
-        dt = t1-t0  # collect code run time for optimization
+            # set input arg list for mp_opt() function
+            args = [(i, ChiAInitial, ChiDInitial, data_path2, CONST, 'x1', 0.1, iter) for i, (ChiAInitial, ChiDInitial) in enumerate(Combinations)]
+
+            # run multiprocess map 
+            all_losses = pool.starmap_async(mp_opt, args).get()
+        finally:
+            pool.close()    # make sure to close pool so no more processes start
+            pool.join()
+            gc.collect()
+        t3 = time.time()
+        dt = t3-t2  # collect code run time for optimization
 
         # gather results
         all_losses = np.array(all_losses)
@@ -138,6 +155,11 @@ if __name__=="__main__":
 
         # advance iteration
         iteration += 1
+        counter += 1
+
+        if counter>=5 and min_loss>=CONST['max_N']/2:
+            print('Couldnt find TET')
+            break
         
         # tet has been achieved no need to continue
         if float(min_loss)<=0.1:
@@ -146,5 +168,7 @@ if __name__=="__main__":
             done = True
             break
 
+    t1 = time.time()
+    print('Total solver run time: ', t1-t0)
     # end of main
     exit(0)
