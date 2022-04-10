@@ -65,7 +65,7 @@ class Optimizer:
         elif self.DataExist and not self.plot: pass
         
         else:
-            createDir(self.data_path, replace=False)
+            createDir(self.data_path, replace_query=False)
             #createDir(destination=self.CombinationPath,replace=True)
             self._train()
             if self.plot: self.PlotResults()

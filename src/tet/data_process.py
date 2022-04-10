@@ -71,8 +71,8 @@ def compress(zip_files, destination):
         shutil.rmtree(path=destination)
 
 
-def createDir(destination, replace=True):
-    if replace:    
+def createDir(destination, replace_query=True):
+    if replace_query:    
         try:
             os.mkdir(destination)
         except OSError as error:
