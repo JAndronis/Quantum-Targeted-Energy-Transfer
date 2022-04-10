@@ -22,7 +22,7 @@ if __name__=="__main__":
     #        print(e)
     
     # Set constants
-    constants.setConstant('max_N', 3)
+    constants.setConstant('max_N', 1)
     constants.setConstant('max_t', 300)
     constants.setConstant('omegaA', 3)
     constants.setConstant('omegaD', -3)

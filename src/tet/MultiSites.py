@@ -173,7 +173,7 @@ def CreateHeatmap(max_N,f,coupling,omegas,lims):
                                                 omegas=omegas,
                                                 chis = [xD,0,xA]).Execute()
 
-        min_n[counter] = min(Loss(H=temp_H, States=temp_States, maxN=max_N, target_state=f'x{0}').Execute())
+        min_n[counter] = max(Loss(H=temp_H, States=temp_States, maxN=max_N, target_state=f'x{f-1}').Execute())
         
         #Store data
         H[counter] = temp_H
@@ -181,7 +181,7 @@ def CreateHeatmap(max_N,f,coupling,omegas,lims):
     print()
 
    
-    XA, XD = np.meshgrid(chis_md[0,:], chis_md[1,:])
+    XD, XA = np.meshgrid(chis_md[0,:], chis_md[1,:])
 
     figure, ax = plt.subplots(figsize=(5.5,5.5))
     plot = ax.contourf(XD, XA, min_n.reshape(grid_size,grid_size), levels=20, cmap='rainbow')
@@ -196,16 +196,16 @@ def CreateHeatmap(max_N,f,coupling,omegas,lims):
 
 if __name__=="__main__":
     #Parameters of the problem
-    max_N = 2
+    max_N = 1
     f = 3
     coupling = 0.1
-    tmax = 200
+    tmax = 300
     omegas = [-3,3,3]
     chis = [1.1287,0,4.3631]
     #Parameters of the grid
-    grid_size = 50
-    minxDgrid,maxXDgrid = -20,20
-    minxAgrid,maxXAgrid = -20,20
+    grid_size = 70
+    minxDgrid,maxXDgrid = -5,5
+    minxAgrid,maxXAgrid = -5,5
     lims = [minxDgrid,maxXDgrid,minxAgrid,maxXAgrid]
 
     constants.setConstant('max_N', max_N)
@@ -218,7 +218,7 @@ if __name__=="__main__":
     constants.dumpConstants()
 
     #Heatmap
-    #CreateHeatmap(max_N=max_N,f=f,coupling=coupling,omegas=omegas,lims=lims)
+    CreateHeatmap(max_N=max_N,f=f,coupling=coupling,omegas=omegas,lims=lims)
     #Time evolution Donor 2 layers
     evolve_donor = False
     if evolve_donor:
@@ -227,7 +227,7 @@ if __name__=="__main__":
         plt.plot(np.arange(0,tmax+1))
         plt.show()
     #Time evolution:Multisites
-    multi_sites_evolve = True
+    multi_sites_evolve = False
     if multi_sites_evolve:
         H,States = CreateHamiltonian(maxN=max_N,coupling_lambda=coupling,Sites=f,omegas=omegas,chis=chis).Execute()
         Titles = [r"$<N_{D}(t)>$",r"$<N_{I}(t)>$",r"$<N_{A}(t)>$"]
