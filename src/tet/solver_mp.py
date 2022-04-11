@@ -10,15 +10,14 @@ from tet.Optimizer import mp_opt
 from tet.data_process import createDir
 from tet import constants
 
-def getCombinations(a_lims, d_lims, method='bins', grid=2, const=constants.loadConstants()):
+def getCombinations(a_lims, d_lims, const, method='bins', grid=2):
     """
     Creates a list of initial guess pairs to be fed to an optimizer call.
 
     Args:
-        * a_lims (list): list of 2 elements that contains the minimum 
-                       and maximum xA's to use.
-        * d_lims (list): list of 2 elements that contains the minimum 
-                       and maximum xD's to use.
+        * a_lims (list): List of 2 elements that contains the minimum and maximum xA's to use.
+        * d_lims (list): List of 2 elements that contains the minimum and maximum xD's to use.
+        * const (dict): Dictionary of problem parameters.
         * method (str, optional): Method to use for creating Combinations list. Defaults to 'bins'.
         grid (int, optional): Number of times to split the parameter space. Defaults to 2.
 
@@ -65,7 +64,7 @@ def getCombinations(a_lims, d_lims, method='bins', grid=2, const=constants.loadC
 
     return Combinations
 
-def solver_mp(xa_lims, xd_lims, const=constants.loadConstants(), grid=2, lr=0.1,\
+def solver_mp(xa_lims, xd_lims, const, grid=2, lr=0.1,\
      epochs_bins=1000, epochs_grid=200, target_site='x0', data_path=os.path.join(os.getcwd(),'data')):
     """
     Function that utilizes multiple workers on the cpu to optimize the non linearity parameters for TET.
@@ -74,8 +73,7 @@ def solver_mp(xa_lims, xd_lims, const=constants.loadConstants(), grid=2, lr=0.1,
     Args:
         * xa_lims (list): List of 2 elements. Contains the limits of the xA parameter space to search in.
         * xd_lims (list): List of 2 elements. Contains the limits of the xD parameter space to search in.
-        * const (dict): Dictionary of system parameters that follows the convention used by the
-                        tet.constants() module. Defaults to constants.loadConstants().
+        * const (dict): Dictionary of system parameters that follows the convention used by the tet.constants() module.
         * grid (int, optional): Integer representing the number of times to split the parameter space. Defaults to 2.
         * lr (float, optional): Learning rate of the optimizer. Defaults to 0.1.
         * epochs_bins (int, optional): Epochs that the optimizer is going to run for using the bins method for initial guesses. Defaults to 1000.
