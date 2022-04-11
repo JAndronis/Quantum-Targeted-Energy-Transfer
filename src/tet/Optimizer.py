@@ -11,10 +11,10 @@ import tensorflow as tf
 assert tf.__version__ >= "2.0"
 import keras.backend as K
 
-from data_process import createDir, writeData, read_1D_data
-from saveFig import saveFig
-from loss import Loss, LossMultiSite
-import constants as constants
+from tet.data_process import createDir, writeData, read_1D_data
+from tet.saveFig import saveFig
+from tet.loss import Loss, LossMultiSite
+import tet.constants as constants
 
 DTYPE = tf.float32
 
