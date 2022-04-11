@@ -1,5 +1,6 @@
 import numpy as np
 from itertools import product
+
 from tet.Hamiltonian import Hamiltonian
 from tet.AvgBosons import AvgBosons
 from tet.data_process import writeData

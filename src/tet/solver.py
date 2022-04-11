@@ -4,10 +4,12 @@ import matplotlib.pyplot as plt
 import os
 import multiprocessing as mp
 
-import constants as constants
-from Optimizer import Optimizer, mp_opt
-from data_process import read_1D_data
-from saveFig import saveFig
+from tet import constants
+from tet.Optimizer import Optimizer, mp_opt
+from tet.data_process import read_1D_data
+from tet.saveFig import saveFig
+
+
 
 def solver(a_lims, d_lims, grid_size, case, iterations=500, learning_rate=0.01, create_plot=False, multi=False):
     const = constants.loadConstants()
@@ -120,51 +122,4 @@ def solver(a_lims, d_lims, grid_size, case, iterations=500, learning_rate=0.01, 
 
     min_a, min_d = all_losses[np.argmin(all_losses[:,2]), 0], all_losses[np.argmin(all_losses[:,2]), 1]
     min_loss = all_losses[np.argmin(all_losses[:,2]), 2]
-    return min_a, min_d, min_loss
-
-def solver_mp(a_lims, d_lims, grid_size, case, iterations=500, learning_rate=0.01):
-    a_lims = [-6,6]
-    d_lims = [-6,6]
-    grid_size = 2
-
-    const = constants.loadConstants()
-    done = False
-    # make random initial guesses according to the number of bins
-    xa = np.linspace(a_lims[0], a_lims[1], const['resolution'])
-    xd = np.linspace(d_lims[0], d_lims[1], const['resolution'])
-    data = np.array((list(product(xa,xd))))
-    extenti = (a_lims[0]-0.1, a_lims[1]+0.1)
-    extentj = (d_lims[0]-0.1, d_lims[1]+0.1)
-    bins = grid_size
-    _, *edges = np.histogram2d(data[:,0], data[:,1], bins=bins, range=(extenti, extentj))
-    hitx = np.digitize(data[:, 0], edges[0])
-    hity = np.digitize(data[:, 1], edges[1])
-    hitbins = list(zip(hitx, hity))
-    data_and_bins = list(zip(data, hitbins))
-    it = range(1, bins+1)
-
-    Combinations = []
-    for bin in list(product(it,it)):
-        test_item = []
-        for item in data_and_bins:
-            if item[1]==bin:
-                test_item.append(item[0])
-        choice = np.random.choice(list(range(len(test_item))))
-        Combinations.append(test_item[choice])
-    
-    # where to save the data
-    data_path = os.path.join(os.getcwd(), f'data_optimizer_avgn_{0}')
-
-    # mp ---------------------------------------------------------------------------- #
-    
-    pool = mp.Pool()
-    d = [(i, ChiAInitial, ChiDInitial) for i, (ChiAInitial, ChiDInitial) in enumerate(Combinations)]
-    all_losses = pool.starmap_async(mp_opt, d).get()
-    pool.close()
-
-    # mp ---------------------------------------------------------------------------- #
-
-    min_a, min_d = all_losses[np.argmin(all_losses[:,2]), 0], all_losses[np.argmin(all_losses[:,2]), 1]
-    min_loss = all_losses[np.argmin(all_losses[:,2]), 2]
-    
     return min_a, min_d, min_loss
