@@ -134,13 +134,13 @@ def solver_mp(xa_lims, xd_lims, const, grid=2, lr=0.1,\
 
         # else if min loss is suffeciently small do an exact search with the grid method
         elif min_loss<=const['max_N']-1.5:
-            if grid_choice:
-                # if this method has already been picked increase grid size
-                const['resolution'] *= 2
-                a_min, a_max = min_a-1, min_a+1
-                d_min, d_max = min_d-1, min_d+1
-                a_lims = [a_min,a_max]
-                d_lims = [d_min,d_max]
+            # if grid_choice:
+            #     # if this method has already been picked increase grid size
+            #     const['resolution'] *= 2
+            #     a_min, a_max = min_a-1, min_a+1
+            #     d_min, d_max = min_d-1, min_d+1
+            #     a_lims = [a_min,a_max]
+            #     d_lims = [d_min,d_max]
             bin_choice = False
             Combinations = getCombinations(a_lims, d_lims, method='grid', const=const)
             iter = epochs_grid
@@ -197,3 +197,22 @@ def solver_mp(xa_lims, xd_lims, const, grid=2, lr=0.1,\
 
     t1 = time.time()
     print('Total solver run time: ', t1-t0)
+
+
+if __name__=="__main__":
+
+    # Set globals
+    constants.setConstant('max_N', 2)
+    constants.setConstant('max_t', 200)
+    constants.setConstant('omegaA', 3)
+    constants.setConstant('omegaD', -3)
+    constants.setConstant('omegaMid', 3)
+    constants.setConstant('coupling', 1)
+    constants.setConstant('xMid', 0)
+    constants.setConstant('sites', 3)
+    constants.setConstant('resolution', 5)
+    CONST = constants.constants
+    constants.dumpConstants()
+
+    solver_mp(xa_lims=[-5,5], xd_lims=[-5,5], const=CONST, target_site='x2')
+    exit(0)
