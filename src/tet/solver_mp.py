@@ -127,7 +127,7 @@ def solver_mp(xa_lims, xd_lims, const, grid=2, lr=0.1,\
                     iteration = 0
                     a_lims = xa_lims
                     d_lims = xd_lims
-            Combinations = getCombinations(a_lims, d_lims, method='bins', grid=grid)
+            Combinations = getCombinations(a_lims, d_lims, method='bins', grid=grid, const=const)
             iter = epochs_bins
             bin_choice = True
             print(10*'-',f'Iteration: {iteration}, Method: Bins({grid*2}), Jobs: {len(Combinations)}, a_lim: {a_lims}, d_lim: {d_lims}', 10*'-')
@@ -142,7 +142,7 @@ def solver_mp(xa_lims, xd_lims, const, grid=2, lr=0.1,\
                 a_lims = [a_min,a_max]
                 d_lims = [d_min,d_max]
             bin_choice = False
-            Combinations = getCombinations(a_lims, d_lims, method='grid')
+            Combinations = getCombinations(a_lims, d_lims, method='grid', const=const)
             iter = epochs_grid
             grid_choice = True
             print(10*'-',f'Iteration: {iteration}, Method: Grid, Jobs: {len(Combinations)}, a_lim: {a_lims}, d_lim: {d_lims}', 10*'-')
