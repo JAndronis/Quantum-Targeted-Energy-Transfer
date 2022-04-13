@@ -196,16 +196,16 @@ def CreateHeatmap(max_N,f,coupling,omegas,lims):
 
 if __name__=="__main__":
     #Parameters of the problem
-    max_N = 1
+    max_N = 2
     f = 3
-    coupling = 0.1
-    tmax = 300
+    coupling = 1
+    tmax = 200
     omegas = [-3,3,3]
-    chis = [1.1287,0,4.3631]
+    chis = [9.122885,0,3.0365481]
     #Parameters of the grid
-    grid_size = 70
-    minxDgrid,maxXDgrid = -5,5
-    minxAgrid,maxXAgrid = -5,5
+    grid_size = 50
+    minxDgrid,maxXDgrid = -7,7
+    minxAgrid,maxXAgrid = -7,7
     lims = [minxDgrid,maxXDgrid,minxAgrid,maxXAgrid]
 
     constants.setConstant('max_N', max_N)
@@ -215,10 +215,10 @@ if __name__=="__main__":
     constants.setConstant('coupling', 0.1)
     constants.setConstant('sites', 3)
     constants.setConstant('resolution', grid_size)
-    constants.dumpConstants()
+    # constants.dumpConstants()
 
     #Heatmap
-    CreateHeatmap(max_N=max_N,f=f,coupling=coupling,omegas=omegas,lims=lims)
+    # CreateHeatmap(max_N=max_N,f=f,coupling=coupling,omegas=omegas,lims=lims)
     #Time evolution Donor 2 layers
     evolve_donor = False
     if evolve_donor:
@@ -227,7 +227,7 @@ if __name__=="__main__":
         plt.plot(np.arange(0,tmax+1))
         plt.show()
     #Time evolution:Multisites
-    multi_sites_evolve = False
+    multi_sites_evolve = True
     if multi_sites_evolve:
         H,States = CreateHamiltonian(maxN=max_N,coupling_lambda=coupling,Sites=f,omegas=omegas,chis=chis).Execute()
         Titles = [r"$<N_{D}(t)>$",r"$<N_{I}(t)>$",r"$<N_{A}(t)>$"]
