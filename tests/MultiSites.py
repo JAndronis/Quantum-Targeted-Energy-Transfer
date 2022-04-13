@@ -181,10 +181,10 @@ def CreateHeatmap(max_N,f,coupling,omegas,lims):
     print()
 
    
-    XD, XA = np.meshgrid(chis_md[0,:], chis_md[1,:])
+    XA, XD = np.meshgrid(chis_md[0,:], chis_md[1,:])
 
     figure, ax = plt.subplots(figsize=(5.5,5.5))
-    plot = ax.contourf(XD, XA, min_n.reshape(grid_size,grid_size), levels=20, cmap='rainbow')
+    plot = ax.contourf(XD, XA, max_N-min_n.reshape(grid_size,grid_size), levels=20, cmap='rainbow')
     ax.set_xlabel(r"$\chi_{D}$", fontsize=20)
     ax.set_ylabel(r"$\chi_{A}$", fontsize=20)
     figure.colorbar(plot)
@@ -196,16 +196,16 @@ def CreateHeatmap(max_N,f,coupling,omegas,lims):
 
 if __name__=="__main__":
     #Parameters of the problem
-    max_N = 2
+    max_N = 3
     f = 3
     coupling = 1
-    tmax = 200
+    tmax = 100
     omegas = [-3,3,3]
     chis = [9.122885,0,3.0365481]
     #Parameters of the grid
     grid_size = 50
-    minxDgrid,maxXDgrid = -7,7
-    minxAgrid,maxXAgrid = -7,7
+    minxDgrid,maxXDgrid = -10,10
+    minxAgrid,maxXAgrid = -10,10
     lims = [minxDgrid,maxXDgrid,minxAgrid,maxXAgrid]
 
     constants.setConstant('max_N', max_N)
@@ -218,7 +218,7 @@ if __name__=="__main__":
     # constants.dumpConstants()
 
     #Heatmap
-    # CreateHeatmap(max_N=max_N,f=f,coupling=coupling,omegas=omegas,lims=lims)
+    CreateHeatmap(max_N=max_N,f=f,coupling=coupling,omegas=omegas,lims=lims)
     #Time evolution Donor 2 layers
     evolve_donor = False
     if evolve_donor:
@@ -227,7 +227,7 @@ if __name__=="__main__":
         plt.plot(np.arange(0,tmax+1))
         plt.show()
     #Time evolution:Multisites
-    multi_sites_evolve = True
+    multi_sites_evolve = False
     if multi_sites_evolve:
         H,States = CreateHamiltonian(maxN=max_N,coupling_lambda=coupling,Sites=f,omegas=omegas,chis=chis).Execute()
         Titles = [r"$<N_{D}(t)>$",r"$<N_{I}(t)>$",r"$<N_{A}(t)>$"]
