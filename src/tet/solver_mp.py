@@ -6,7 +6,7 @@ import sys
 import time
 import multiprocessing as mp
 
-from tet.Optimizer import mp_opt
+from Optimizer import mp_opt
 from tet.data_process import createDir
 from tet import constants
 
@@ -103,36 +103,35 @@ def solver_mp(xa_lims, xd_lims, const,
                                                     # guesses will be done with the bin method
 
     t0 = time.time()
-    while not done and iteration<=5:
+    while not done and iteration < 1:
 
         # create directory of current iteration
         data_path2 = os.path.join(data_path, f'iteration_{iteration}')
         createDir(destination=data_path2, replace_query=True)
 
         # if min loss is not small enough do a general search with the bin method
-        #? Why do we need the grid condition?
-        if grid<=6 and min_loss>=const['max_N']-1.5:
-            if bin_choice:
-                # if this method has already been picked increase bin number
-                if not grid==6:
-                    edge = _edge[iteration]
-                    grid += 2
-                    a_min, a_max = min_a-edge, min_a+edge
-                    d_min, d_max = min_d-edge, min_d+edge
-                    a_lims = [a_min,a_max]
-                    d_lims = [d_min,d_max]
-                else:
-                    grid = 2
-                    iteration = 0
-                    a_lims = xa_lims
-                    d_lims = xd_lims
-            Combinations = getCombinations(a_lims, d_lims, method='bins', grid=grid, const=const)
-            iter = epochs_bins
-            bin_choice = True
-            print(10*'-',f'Iteration: {iteration}, Method: Bins({grid*2}), Jobs: {len(Combinations)}, a_lim: {a_lims}, d_lim: {d_lims}', 10*'-')
+        # if grid<=6 and min_loss>=const['max_N']-1.5:
+        #     if bin_choice:
+        #         # if this method has already been picked increase bin number
+        #         if not grid==6:
+        #             edge = _edge[iteration]
+        #             grid += 2
+        #             a_min, a_max = min_a-edge, min_a+edge
+        #             d_min, d_max = min_d-edge, min_d+edge
+        #             a_lims = [a_min,a_max]
+        #             d_lims = [d_min,d_max]
+        #         else:
+        #             grid = 2
+        #             iteration = 0
+        #             a_lims = xa_lims
+        #             d_lims = xd_lims
+        #     Combinations = getCombinations(a_lims, d_lims, method='bins', grid=grid, const=const)
+        #     iter = epochs_bins
+        #     bin_choice = True
+        #     print(10*'-',f'Iteration: {iteration}, Method: Bins({grid*2}), Jobs: {len(Combinations)}, a_lim: {a_lims}, d_lim: {d_lims}', 10*'-')
 
         # else if min loss is suffeciently small do an exact search with the grid method
-        elif min_loss<=const['max_N']-1.5:
+        # elif min_loss<=const['max_N']-1.5:
             # if grid_choice:
             #     # if this method has already been picked increase grid size
             #     const['resolution'] *= 2
@@ -140,26 +139,29 @@ def solver_mp(xa_lims, xd_lims, const,
             #     d_min, d_max = min_d-1, min_d+1
             #     a_lims = [a_min,a_max]
             #     d_lims = [d_min,d_max]
-            bin_choice = False
-            Combinations = getCombinations(a_lims, d_lims, method='grid', const=const)
-            iter = epochs_grid
-            #? Why do we need this?
-            grid_choice = True
-            print(10*'-',f'Iteration: {iteration}, Method: Grid, Jobs: {len(Combinations)}, a_lim: {a_lims}, d_lim: {d_lims}', 10*'-')
+        bin_choice = False
+        Combinations = getCombinations(a_lims, d_lims, method='grid', const=const)
+        iter = epochs_grid
+        #? Why do we need this?
+        grid_choice = True
+        print(10*'-',f'Iteration: {iteration}, Method: Grid, Jobs: {len(Combinations)}, a_lim: {a_lims}, d_lim: {d_lims}', 10*'-')
 
         t2 = time.time()
+        # initialize processing pool
+        pool = mp.Pool(mp.cpu_count()//4)
+
+        # set input arg list for mp_opt() function
+        args = [(i, ChiAInitial, ChiDInitial, data_path2, const, target_site, lr, iter) for i, (ChiAInitial, ChiDInitial) in enumerate(Combinations)]
+
         try:
-            # initialize processing pool
-            pool = mp.Pool(mp.cpu_count()//2)
-
-            # set input arg list for mp_opt() function
-            args = [(i, ChiAInitial, ChiDInitial, data_path2, const, target_site, lr, iter) for i, (ChiAInitial, ChiDInitial) in enumerate(Combinations)]
-
             # run multiprocess map 
             all_losses = pool.starmap_async(mp_opt, args).get(timeout=500)
 
         except KeyboardInterrupt:
             print('Keyboard Interrupt.')
+            pool.close()    # make sure to close pool so no more processes start
+            pool.join()
+            gc.collect()
             sys.exit(1)
 
         finally:
@@ -201,8 +203,8 @@ def solver_mp(xa_lims, xd_lims, const,
 
 if __name__=="__main__":
 
-    # Set globals
-    constants.setConstant('max_N', 2)
+    # Set constants
+    constants.setConstant('max_N', 3)
     constants.setConstant('max_t', 200)
     constants.setConstant('omegaA', -3)
     constants.setConstant('omegaD', 3)
@@ -210,9 +212,8 @@ if __name__=="__main__":
     constants.setConstant('coupling', 1)
     constants.setConstant('xMid', 0)
     constants.setConstant('sites', 3)
-    constants.setConstant('resolution', 5)
+    constants.setConstant('resolution', 6)
     CONST = constants.constants
-    #? Why do we need that?
     constants.dumpConstants()
 
     solver_mp(xa_lims=[-5,5], xd_lims=[-5,5], const=CONST, target_site='x2')
