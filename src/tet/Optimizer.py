@@ -19,22 +19,19 @@ import tet.constants as constants
 DTYPE = tf.float32
 
 class Optimizer:
-    def __init__(self, 
-                 ChiAInitial, 
-                 ChiDInitial,
+    def __init__(self,
                  target_site, 
-                 DataExist, 
-                 Case=0,
+                 DataExist,
                  const=None,
                  Plot=False, 
                  Print=True,
                  iterations=200,
                  lr=0.1, 
-                 data_path=os.path.join(os.getcwd(), 'data_optimizer_avgn')):
+                 data_path=os.path.join(os.getcwd(), 'data_optimizer')):
         
-        if const is None:
-            self.const = constants.loadConstants()
+        if const is None: self.const = constants.loadConstants()
         else: self.const = const
+
         self.res = self.const['resolution']
         self.coupling = self.const['coupling']
         self.max_t = self.const['max_t']
@@ -44,29 +41,32 @@ class Optimizer:
         self.omegaM = self.const['omegaMid']
         self.xMid = self.const['xMid']
         self.sites = self.const['sites']
+
         self.target_site = target_site
         self.DataExist = DataExist
-        self.ChiAInitial = ChiAInitial
-        self.ChiDInitial = ChiDInitial
         self.data_path = data_path
-        self.CombinationPath = os.path.join(self.data_path, f'combination_{Case}')
         self.plot = Plot
         self.iter = iterations
         self.lr = lr
         self.opt = tf.keras.optimizers.Adam()
         self.Print = Print
+
+        self.xA = None
+        self.xD = None
+
+        # createDir(self.data_path, replace_query=True)
         
-    def __call__(self, ChiAInitial, ChiDInitial, case):
+    def __call__(self, ChiAInitial, ChiDInitial):
         self.ChiAInitial = ChiAInitial
         self.ChiDInitial = ChiDInitial
+        # self.CombinationPath = os.path.join(self.data_path, f'combination_{case}')
 
         if self.DataExist and self.plot: self.PlotResults()
         # If data exists according to the user, dont do anything
         elif self.DataExist and not self.plot: pass
         
         else:
-            createDir(self.data_path, replace_query=False)
-            #createDir(destination=self.CombinationPath,replace=True)
+            createDir(self.data_path, replace_query=True)
             self._train()
             if self.plot: self.PlotResults()
             
@@ -109,8 +109,12 @@ class Optimizer:
         
         mylosses = []
         tol = 1e-8
-        self.xA = tf.Variable(initial_value=ChiAInitial, trainable=True, dtype=DTYPE, name='xA')
-        self.xD = tf.Variable(initial_value=ChiDInitial, trainable=True, dtype=DTYPE, name='xD')
+    
+        if self.xA is None:
+            self.xA = tf.Variable(initial_value=ChiAInitial, trainable=True, dtype=DTYPE, name='xA')
+        if self.xD is None:
+            self.xD = tf.Variable(initial_value=ChiDInitial, trainable=True, dtype=DTYPE, name='xD')
+    
         xA_best = tf.Variable(initial_value=0, dtype=DTYPE, trainable=False)
         xD_best = tf.Variable(initial_value=0, dtype=DTYPE, trainable=False)
         mylosses.append(MAX_N)
@@ -241,26 +245,18 @@ class Optimizer:
 
 def mp_opt(i, ChiAInitial, ChiDInitial, iteration_path, const, target_site, lr, iterations):
     const = constants.loadConstants()
-    data_path = os.path.join(os.getcwd(), f'{iteration_path}/data_optimizer_avgn_{i}')
-    opt = Optimizer(ChiAInitial=0,
-                    ChiDInitial=0,
-                    target_site=target_site,
+    data_path = os.path.join(os.getcwd(), f'{iteration_path}/data_optimizer_{i}')
+    opt = Optimizer(target_site=target_site,
                     DataExist=False,
-                    const=const,
-                    data_path=data_path,
-                    Plot=False,
                     Print=False,
+                    data_path=data_path,
+                    const=const,
                     lr=lr,
                     iterations=iterations)
-    opt(ChiAInitial, ChiDInitial, i)
+    opt(ChiAInitial, ChiDInitial)
     # Load Data
     loss_data = read_1D_data(destination=data_path, name_of_file='losses.txt')
     a = const['xA']
     d = const['xD']
     print(f'Job {i}: Done')
     return np.array([a, d, np.min(loss_data)])
-
-
-if __name__=="__main__":
-    opt = Optimizer(ChiAInitial=3, ChiDInitial=3, DataExist=False, Case=0, Plot=False, iterations=500)
-    opt()
