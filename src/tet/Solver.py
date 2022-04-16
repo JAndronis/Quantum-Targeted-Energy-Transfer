@@ -60,7 +60,7 @@ def solver(a_lims, d_lims, iterations=500, learning_rate=0.01, create_plot=False
                     format(i, len(Combinations)-1, ChiAInitial, ChiDInitial) + '-'*20)
             
             opt = Optimizer(target_site='x2',
-                            DataExist=False,
+                            DataExist=data_exists,
                             data_path=data_path,
                             const=const,
                             lr=learning_rate,
