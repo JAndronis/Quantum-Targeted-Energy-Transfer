@@ -103,7 +103,7 @@ def solver_mp(xa_lims, xd_lims, const,
                                                     # guesses will be done with the bin method
 
     t0 = time.time()
-    while not done and iteration < 1:
+    while not done and iteration < 5:
 
         # create directory of current iteration
         data_path2 = os.path.join(data_path, f'iteration_{iteration}')
@@ -139,23 +139,22 @@ def solver_mp(xa_lims, xd_lims, const,
             #     d_min, d_max = min_d-1, min_d+1
             #     a_lims = [a_min,a_max]
             #     d_lims = [d_min,d_max]
-        bin_choice = False
+        #bin_choice = False
         Combinations = getCombinations(a_lims, d_lims, method='grid', const=const)
         iter = epochs_grid
-        #? Why do we need this?
         grid_choice = True
         print(10*'-',f'Iteration: {iteration}, Method: Grid, Jobs: {len(Combinations)}, a_lim: {a_lims}, d_lim: {d_lims}', 10*'-')
 
         t2 = time.time()
         # initialize processing pool
-        pool = mp.Pool(mp.cpu_count()//4)
+        pool = mp.Pool(max(mp.cpu_count()//2, 1))
 
         # set input arg list for mp_opt() function
         args = [(i, ChiAInitial, ChiDInitial, data_path2, const, target_site, lr, iter) for i, (ChiAInitial, ChiDInitial) in enumerate(Combinations)]
 
         try:
             # run multiprocess map 
-            all_losses = pool.starmap_async(mp_opt, args).get(timeout=500)
+            all_losses = pool.starmap_async(mp_opt, args).get(timeout=1000)
 
         except KeyboardInterrupt:
             print('Keyboard Interrupt.')
@@ -181,9 +180,20 @@ def solver_mp(xa_lims, xd_lims, const,
         print(f"Best parameters of tries: loss={min_loss}, xA={min_a}, xD={min_d}")
         print("Code run time: ", dt, " s")
 
+        if min_loss<=const["max_N"]/2:
+            counter += 1
+            edge = _edge[iteration]
+            #grid += 2
+            a_min, a_max = min_a-edge, min_a+edge
+            d_min, d_max = min_d-edge, min_d+edge
+            a_lims = [a_min,a_max]
+            d_lims = [d_min,d_max]
+        else:
+            const['resolution'] += 1
+            lr += 0.1
+
         # advance iteration
         iteration += 1
-        counter += 1
 
         # if loss has not been reduced for more than 5 iterations stop
         if counter>=5 and min_loss>=CONST['max_N']/2:
