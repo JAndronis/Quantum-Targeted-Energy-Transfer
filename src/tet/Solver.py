@@ -63,13 +63,6 @@ def solver(a_lims, d_lims, iterations=500, learning_rate=0.01, create_plot=False
             #* Path for svaing the data for the ith iteration
             data_path = os.path.join(p, f'data_{i}')
             
-            opt = Optimizer(target_site='x2',
-                            DataExist=False,
-                            data_path=data_path,
-                            const=const,
-                            lr=learning_rate,
-                            iterations=iterations)
-
             # # Read Data from the i-th combination
             # CombinationPath = os.path.join(data_path,f'combination_{i}')
 
@@ -85,7 +78,13 @@ def solver(a_lims, d_lims, iterations=500, learning_rate=0.01, create_plot=False
             if not data_exists:
                 print('-'*20+'Combination:{} out of {}, Initial (xA,xD):({:.3f},{:.3f})'.\
                     format(i, len(Combinations)-1, ChiAInitial, ChiDInitial) + '-'*20)
-                
+            
+            opt = Optimizer(target_site='x2',
+                            DataExist=data_exists,
+                            data_path=data_path,
+                            const=const,
+                            lr=learning_rate,
+                            iterations=iterations)
             opt(ChiAInitial, ChiDInitial)
             
             # Load Data
