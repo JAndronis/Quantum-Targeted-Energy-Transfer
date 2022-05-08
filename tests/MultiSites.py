@@ -196,29 +196,50 @@ def CreateHeatmap(max_N,f,coupling,omegas,lims):
 
 if __name__=="__main__":
     #Parameters of the problem
-    max_N = 3
-    f = 3
-    coupling = 1
-    tmax = 100
-    omegas = [-3,3,3]
-    chis = [9.122885,0,3.0365481]
+    max_N = 4
+    f = 2
+    coupling = 0.01
+    tmax = int(3e+2)
+    omegas = [-3, 3]
+    chis = [1.5, -1.5]
     #Parameters of the grid
     grid_size = 50
     minxDgrid,maxXDgrid = -10,10
     minxAgrid,maxXAgrid = -10,10
     lims = [minxDgrid,maxXDgrid,minxAgrid,maxXAgrid]
 
+    import os
+    cwd = os.getcwd()
+    data = f"{cwd}/data"
+
+    coupling_dir = f"coupling-{coupling}"
+    coupling_dir_path = os.path.join(data, coupling_dir)
+
+    t_dir = f"tmax-{tmax}"
+    t_dir_path = os.path.join(coupling_dir_path, t_dir)
+
+    data_dest = os.path.join(t_dir_path, "avg_N")
+
+    from tet.data_process import createDir
+    createDir(data, replace_query=True)
+    createDir(coupling_dir_path, replace_query=True)
+    createDir(t_dir_path)
+    createDir(data_dest)
+
     constants.setConstant('max_N', max_N)
     constants.setConstant('max_t', tmax)
-    constants.setConstant('omegaA', omegas[0])
-    constants.setConstant('omegaD', omegas[-1])
-    constants.setConstant('coupling', 0.1)
-    constants.setConstant('sites', 3)
+    constants.setConstant('omegaA', omegas[-1])
+    constants.setConstant('omegaD', omegas[0])
+    constants.setConstant('xA', chis[-1])
+    constants.setConstant('xD', chis[0])
+    constants.setConstant('coupling', coupling)
+    constants.setConstant('sites', f)
     constants.setConstant('resolution', grid_size)
-    # constants.dumpConstants()
+    constants.dumpConstants()
 
     #Heatmap
-    CreateHeatmap(max_N=max_N,f=f,coupling=coupling,omegas=omegas,lims=lims)
+    # CreateHeatmap(max_N=max_N, f=f,coupling=coupling,omegas=omegas,lims=lims)
+
     #Time evolution Donor 2 layers
     evolve_donor = False
     if evolve_donor:
@@ -226,24 +247,39 @@ if __name__=="__main__":
         data = Loss(H=H, States=States, maxN=max_N, target_state=f'x{0}').Execute()
         plt.plot(np.arange(0,tmax+1))
         plt.show()
+
     #Time evolution:Multisites
     multi_sites_evolve = False
+    plt.rcParams.update({'font.size': 8})
     if multi_sites_evolve:
-        H,States = CreateHamiltonian(maxN=max_N,coupling_lambda=coupling,Sites=f,omegas=omegas,chis=chis).Execute()
-        Titles = [r"$<N_{D}(t)>$",r"$<N_{I}(t)>$",r"$<N_{A}(t)>$"]
+        H, States = CreateHamiltonian(maxN=max_N,coupling_lambda=coupling,Sites=f,omegas=omegas,chis=chis).Execute()
+        Titles = [r"$\langle N_{D}(t) \rangle$", r"$\langle N_{I}(t) \rangle$", r"$\langle N_{A}(t) \rangle$"]
+        
+        fig, ax = plt.subplots(figsize=(3+3/8,2+3/8))
+        dashesStyles = [[3,1],
+                        [1000,1],
+                        [2,1,10,1],
+                        [4, 1, 1, 1, 1, 1]]
         for i in range(f):
+            if i==0:
+                name = r"$\langle N_{D}(t) \rangle$"
+            elif i==f-1:
+                name = r"$\langle N_{A}(t) \rangle$"
+            else:
+                name = r"$\langle N_{%d}}(t) \rangle$".format(i)
             data_case = Loss(H=H, States=States, maxN=max_N, target_state=f'x{i}').Execute()
-            plt.plot(np.arange(0,tmax+1),data_case,label=Titles[i])
-        plt.legend()
-        plt.xlabel('Time')
-        plt.ylabel(r"$<N(t)>$")
-        plt.title(f'[$x_D,x_I,x_A$]:{chis},[$\omega_D,\omega_I,\omega_A$]:{omegas},N:{max_N},coupling:{coupling}')
+            ax.plot(np.arange(0, tmax+1), data_case, label=name, dashes=dashesStyles[i%len(dashesStyles)], c='black')
+        # ax.legend(loc='right')
+        x_ticks = [i for i in range(tmax+1) if i%100==0]
+        y_ticks = [i for i in range(max_N+1) if i%2==0]
+        ax.set_xticks(x_ticks)
+        ax.set_yticks(y_ticks)
+        ax.grid(linestyle='--')
+        ax.set_xlabel('Time')
+        ax.set_ylabel(r"$\langle N(t) \rangle$")
+        saveFig(fig_id='time_evol_dimer', destination='', fig_extension='eps')
+        # plt.title(f'[$x_D,x_I,x_A$]:{chis},[$\omega_D,\omega_I,\omega_A$]:{omegas},N:{max_N},coupling:{coupling}')
         plt.show()
-            
-         
-
-
-    
 
     # data = []
     # for i in range(f):
