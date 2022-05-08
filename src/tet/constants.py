@@ -1,23 +1,28 @@
 import os
 import json
 import tensorflow as tf
-
+#
 constants = {'max_N': 4,
              'max_t': 25, 
              'omegas': [-3, 3],
              'chis': [.5, -.5],
              'coupling': 0.1, 
              'sites': 2, 
-             'Npoints': 5}
+             }
 
 # Parameters of tensorflow
 TensorflowParams = {'DTYPE': tf.float32, 
                     'lr': 0.1, 
-                    'iterations': 200}
+                    'iterations': 200,
+                    'tol':1e-8,
+                    }
 
 # Solver Parameters
 solver_params = {'methods': ['grid', 'bins'],
-                'target': 'x{}'.format(constants['sites'][-1])}
+                'target': 'x{}'.format(constants['sites']-1),
+                'Npoints': 5,
+                'epochs_grid':200,
+                'epochs_bins':1000}
 
 # -------------- Helper Functions -------------- #
 
