@@ -4,11 +4,14 @@ import tensorflow as tf
 #
 constants = {'max_N': 4,
              'max_t': 25, 
-             'omegas': [-3, 3],
-             'chis': [.5, -.5],
+             'omegas': [-3,3],
+             'chis': [0.5,-0.5],
              'coupling': 0.1, 
-             'sites': 2, 
+             'sites': 2,
+             #ATTENTION!!!! Begin counting from 0
+             'LayersToTrain':[0,1] 
              }
+
 
 # Parameters of tensorflow
 TensorflowParams = {'DTYPE': tf.float32, 
