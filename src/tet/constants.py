@@ -1,12 +1,28 @@
 import os
 import json
+import tensorflow as tf
 
-constants = {'xA': None, 'xD': None, 'xMid': None,'max_N': None,\
-    'max_t': None, 'omegaA': None, 'omegaMid': None,'omegaD': None,\
-    'coupling': None, 'sites': None, 'resolution': None}
+constants = {'max_N': 4,
+             'max_t': 25, 
+             'omegas': [-3, 3],
+             'chis': [.5, -.5],
+             'coupling': 0.1, 
+             'sites': 2, 
+             'Npoints': 5}
 
-def setConstant(key, value):
-    constants[key] = value
+# Parameters of tensorflow
+TensorflowParams = {'DTYPE': tf.float32, 
+                    'lr': 0.1, 
+                    'iterations': 200}
+
+# Solver Parameters
+solver_params = {'methods': ['grid', 'bins'],
+                'target': 'x{}'.format(constants['sites'][-1])}
+
+# -------------- Helper Functions -------------- #
+
+def setConstant(dict, key, value):
+    dict[key] = value
     
 def getConstant(key):
     return constants[key]
