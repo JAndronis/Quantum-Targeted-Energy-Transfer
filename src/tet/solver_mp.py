@@ -6,15 +6,15 @@ import sys
 import time
 import multiprocessing as mp
 
+from sympy import solve_linear
+
 from Optimizer import mp_opt
 from data_process import createDir
 import constants
-from constants import solver_params
-
+from constants import solver_params,TensorflowParams
+#!Creates a list of initial guess pairs to be fed to an optimizer call
 def getCombinations(a_lims, d_lims, const, method='bins', grid=2):
     """
-    Creates a list of initial guess pairs to be fed to an optimizer call.
-
     Args:
         * a_lims (list): List of 2 elements that contains the minimum and maximum xA's to use.
         * d_lims (list): List of 2 elements that contains the minimum and maximum xD's to use.
@@ -27,6 +27,7 @@ def getCombinations(a_lims, d_lims, const, method='bins', grid=2):
     """
     
     method_list = solver_params['methods']
+
     if method not in method_list:
         raise ValueError('Provided method not in list of supported methods [\'grid\', \'bins\']')
 
@@ -35,11 +36,11 @@ def getCombinations(a_lims, d_lims, const, method='bins', grid=2):
         xd = np.linspace(d_lims[0], d_lims[1], 100)
         data = np.array(list(product(xa,xd)))
         
-        # extent of bins needs to be a bit smaller than parameter range
+        # Extent of bins needs to be a bit smaller than parameter range
         extenti = (a_lims[0]-0.1, a_lims[1]+0.1)
         extentj = (d_lims[0]-0.1, d_lims[1]+0.1)
         
-        # produce bin edges.Default returning: H,xedges,yedges.
+        # Produce bin edges.Default returning: H,xedges,yedges.
         _, *edges = np.histogram2d(data[:,0], data[:,1], bins=grid, range=(extenti, extentj))
         
         # create an indexed list of possible choices for initial guess
@@ -49,7 +50,6 @@ def getCombinations(a_lims, d_lims, const, method='bins', grid=2):
         data_and_bins = list(zip(data, hitbins))
         it = range(1, grid+1)
         Combinations = []
-        #? Didn't get that
         for bin in list(product(it,it)):
             test_item = []
             for item in data_and_bins:
@@ -61,15 +61,15 @@ def getCombinations(a_lims, d_lims, const, method='bins', grid=2):
 
     elif method=='grid':
         # make a grid of uniformly distributed initial parameter guesses
-        xa = np.linspace(a_lims[0], a_lims[1], const['Npoints'])
-        xd = np.linspace(d_lims[0], d_lims[1], const['Npoints'])
+        xa = np.linspace(a_lims[0], a_lims[1], solver_params['Npoints'])
+        xd = np.linspace(d_lims[0], d_lims[1], solver_params['Npoints'])
         Combinations = list(product(xa,xd))
 
     return Combinations
 
 def solver_mp(xa_lims, xd_lims, const, 
-              grid=2, lr=0.1,
-              epochs_bins=1000, epochs_grid=200, 
+              grid=2, lr=TensorflowParams['lr'],
+              epochs_bins=solver_params['epochs_bins'], epochs_grid=solver_params['epochs_grid'], 
               target_site='x0', 
               data_path=os.path.join(os.getcwd(),'data')):
     """
@@ -89,7 +89,7 @@ def solver_mp(xa_lims, xd_lims, const,
     """
 
     # use cpu since we are doing parallelization on the cpu
-    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+    #os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
     # create data directory to save results
     createDir(destination=data_path, replace_query=True)
@@ -217,6 +217,7 @@ def solver_mp(xa_lims, xd_lims, const,
     const['xD'] = str(min_d)
     constants.dumpConstants(dict=const)
     print('Total solver run time: ', t1-t0)
+    print(all_losses)
 
 if __name__=="__main__":
 
@@ -235,3 +236,4 @@ if __name__=="__main__":
 
     solver_mp(xa_lims=[-5,5], xd_lims=[-5,5], const=CONST, target_site=solver_params['target'])
     exit(0)
+
