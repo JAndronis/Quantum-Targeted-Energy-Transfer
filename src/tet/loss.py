@@ -3,175 +3,18 @@ assert tf.__version__ >= "2.0"
 from math import factorial
 from itertools import product
 import numpy as np
+from constants import TensorflowParams
 
-DTYPE = tf.float32
+DTYPE = TensorflowParams['DTYPE']
 
 class Loss:
-    """
-    Class that contains functions to compute the average number of bosons on the donor site in a dimer system.
-    """
     def __init__(self, const):
-
-        # Initialize the parameters of the problem from the provided dict.
-        self.coupling_lambda = tf.constant(const['coupling'], dtype=DTYPE)
-        self.omegaA = tf.constant(const['omegaA'], dtype=DTYPE)
-        self.omegaD = tf.constant(const['omegaD'], dtype=DTYPE)
-        self.max_N = tf.constant(const['max_N'], dtype=DTYPE)
-        self.max_t = tf.constant(const['max_t'], dtype=tf.int32)
-        self.dim = const['max_N']+1
-
-        # Initialize the initial state of the dimer.
-        initial_state = tf.TensorArray(DTYPE, size=self.dim)
-        for n in range(self.dim):
-            if n<self.dim-1: 
-                initial_state = initial_state.write(n, tf.constant(0, dtype=DTYPE))
-            else:
-                initial_state = initial_state.write(n, tf.constant(1, dtype=DTYPE))
-        self.initial_state = initial_state.stack()
-
-    def __call__(self, xA, xD):
-        return self.loss(xA, xD)
-
-    def createHamiltonian(self, xA, xD):
-        """
-        Function to create a system's Hamiltonian. 
-
-        Args:
-            * xA (tf.Variable()): The non linearity parameter of the acceptor site.
-            * xD (tf.Variable()): The non linearity parameter of the donor site.
-
-        Returns:
-            * tf.Tensor(): The Hamiltonian of the system in a tf.Tensor format.
-        """
-
-        h = tf.zeros((self.dim, self.dim), dtype=DTYPE)
-        
-        diag_indices = []
-        upper_diag_indices = []
-        lower_diag_indices = []
-        
-        diag_updates = []
-        upper_diag_updates = []
-        lower_diag_updates = []
-        
-        for i in range(self.dim):
-            n = tf.cast(i, dtype=DTYPE) # i bosons at the donor
-            for j in range(self.dim):
-
-                # Term coming from the two independent Hamiltonians
-                if i==j:
-                    diag_indices.append([i,j])
-                    diag_updates.append(self.omegaD * n + 0.5 * xD * n ** 2\
-                            + self.omegaA * (self.max_N - n) + 0.5 * xA * (self.max_N - n) ** 2)
-                
-                # First term from interaction
-                if i==j-1:
-                    lower_diag_indices.append([i,j])
-                    lower_diag_updates.append(-self.coupling_lambda * tf.sqrt((n + 1) * (self.max_N - n)))
-                
-                # Second term from interaction
-                if i==j+1:
-                    upper_diag_indices.append([i,j])
-                    upper_diag_updates.append(-self.coupling_lambda * tf.sqrt(n * (self.max_N - n + 1)))
-
-        # Assign values to correct indeces of the tensor
-        h = tf.tensor_scatter_nd_update(h, diag_indices, diag_updates)
-        h = tf.tensor_scatter_nd_update(h, upper_diag_indices, upper_diag_updates)
-        h = tf.tensor_scatter_nd_update(h, lower_diag_indices, lower_diag_updates)
-        return h
-    
-    def coeffs(self, xA, xD):
-        """
-        Function that calculates the probability coefficients for the basis states and eigenstates.
-
-        Args:
-            * xA (tf.Variable()): The non linearity parameter of the acceptor site.
-            * xD (tf.Variable()): The non linearity parameter of the donor site.
-
-        Returns:
-            * tf.Tensor(), tf.Tensor(), tf.Tensor(): Tuple of the required values as tf.Tensors 
-                                                    for the average number of bosons computation.
-                                                    The first value represents the C coefficients, 
-                                                    the second the b coefficients and the last one,
-                                                    the eigenvalues of the Hamiltonian.
-        """
-
-        # Compute the Hamiltonian and diagonalize it to find its eigenstates and eigenvalues.
-        problemHamiltonian = self.createHamiltonian(xA, xD)
-        eigvals, eigvecs = tf.linalg.eigh(problemHamiltonian)
-        
-        # Cast variables to correct DTYPE for following operations
-        eigvecs = tf.cast(eigvecs, dtype=DTYPE)
-
-        coeff_c = tf.TensorArray(DTYPE, size=self.dim)
-        for i in range(self.dim):
-            coeff_c = coeff_c.write(i, tf.tensordot(eigvecs[:,i], self.initial_state, 1))
-        
-        coeff_c = coeff_c.stack()
-        coeff_b = eigvecs
-        return coeff_c, coeff_b, eigvals
-    
-    def computeAverage(self, c, b, e):
-        """
-        Function that computes the time evolution of the average number of bosons observable.
-
-        Args:
-            * c (tf.Tensor()): tf.Tensor containing the values of the C probability coefficient.
-            * b (tf.Tensor()): tf.Tensor containing the values of the b probability coefficient.
-            * e (tf.Tensor()): tf.Tensor containing the eigenvalues of the Hamiltonian.
-
-        Returns:
-            * tf.Tensor(): The average number of bosons after time max_t as defined in the class initialization.
-                           Returns a tf.Tensor().
-        """
-        
-        _time = self.max_t+1
-        n = tf.TensorArray(DTYPE, size=_time)
-        for t in range(_time):
-            _t = tf.cast(t, dtype=tf.complex64) # cast a helper variable at the current timestep for complex calculations
-            sum_j = tf.cast(0, dtype=tf.complex64)
-            for j in range(self.dim):
-
-                # initialize helper variables as the correct type.
-                temp_b = tf.cast(b[j,:], dtype=tf.complex64)
-                temp_c = tf.cast(c, dtype=tf.complex64)
-                temp_e = tf.cast(e, dtype=tf.complex64)
-
-                # compute the sum
-                sum_i = tf.reduce_sum(temp_c*temp_b*tf.exp(-tf.complex(0.0,1.0)*temp_e*_t), 0)
-                sum_k = tf.reduce_sum(temp_c*temp_b*tf.exp(tf.complex(0.0,1.0)*temp_e*_t)*sum_i, 0)
-                j = tf.cast(j, dtype=tf.complex64)
-                sum_j = sum_j+sum_k*j
-            sum_j = tf.math.real(sum_j)
-            n = n.write(t, sum_j)
-        return n.stack()
-        
-    def loss(self, xA, xD):
-        """
-        Function that calls the necessery functions to compute the minimum value of the time evolved observable N.
-
-        Args:
-            * xA (tf.Variable()): The non linearity parameter of the acceptor site.
-            * xD (tf.Variable()): The non linearity parameter of the donor site.
-
-        Returns:
-            * tf.Tensor(): tf.Tensor with shape=() containing only a single value of the minimum number of bosons on the donor
-                           after time evolution of the observable for time max_t, defined in __init__.
-        """
-        coeff_c, coeff_b, vals = self.coeffs(xA, xD)
-        avg_N_list = self.computeAverage(coeff_c, coeff_b, vals)
-        avg_N = tf.math.reduce_min(avg_N_list, name='Average_N')
-        return avg_N
-
-class LossMultiSite:
-    def __init__(self, const, omegas):
         self.max_N = tf.constant(const['max_N'], dtype=DTYPE)
         self.max_N_np = const['max_N']
         self.max_t = tf.constant(const['max_t'], dtype=tf.int32)
         self.coupling_lambda = tf.constant(const['coupling'], dtype=DTYPE)
         self.sites = const['sites']
-        self.omegas = tf.constant(omegas, dtype=DTYPE)
-        self.xM = const['xMid']
+        self.omegas = tf.constant(const['omegas'], dtype=DTYPE)
         
         self.dim = int( factorial(const['max_N']+const['sites']-1)/( factorial(const['max_N'])*factorial(const['sites']-1) ) )
         self.CombinationsBosons = self.derive()
@@ -180,21 +23,18 @@ class LossMultiSite:
         #Assign initially all the bosons at the donor
         self.InitialState = self.StatesDictionary[0]
         self.InitialState = dict.fromkeys(self.InitialState, 0)
-    
         self.InitialState['x0'] = self.max_N
+
         #Find the index
         self.InitialStateIndex = list(self.StatesDictionary.keys())[list(self.StatesDictionary.values()).index(self.InitialState)]
-        self.Identity = np.identity(n=self.dim)
-        self.InitialState = self.Identity[self.InitialStateIndex]
+        I = np.identity(n=self.dim)
+        self.InitialState = I[self.InitialStateIndex]   # Choose Fock state that matches the initial state
         self.initialState = tf.convert_to_tensor(self.InitialState, dtype=DTYPE)
 
-    def __call__(self, site, xA, xD):
-        if self.sites>2:
-            xs = [tf.constant(self.xM, dtype=DTYPE) for _ in range(self.sites-2)]
-            self.chis = [xD] + xs + [xA]
-        else: self.chis = [xD, xA]
+    def __call__(self, *args, site=str()):
+        self.chis = list(args)
         self.targetState = site
-        return self.loss(site)
+        return self.loss()
 
     def getCombinations(self):
         return self.CombinationsBosons
@@ -223,20 +63,20 @@ class LossMultiSite:
         
         if n==m:
             for k in range(self.sites):
-                Term1 += self.omegas[k] * self.StatesDictionary[m]["x{}".format(k)] +\
-                    0.5 * self.chis[k] * (self.StatesDictionary[m]["x{}".format(k)])**2
+                Term1 += self.omegas[k] * self.StatesDictionary[m][f"x{k}"] +\
+                    0.5 * self.chis[k] * (self.StatesDictionary[m][f"x{k}"])**2
         else:
             for k in range(self.sites-1):
                 #Find the number of bosons
-                nk = self.StatesDictionary[m]["x{}".format(k)]
-                nkplusone = self.StatesDictionary[m]["x{}".format(k+1)]
+                nk = self.StatesDictionary[m][f"x{k}"]
+                nkplusone = self.StatesDictionary[m][f"x{k+1}"]
                 _maxN = tf.get_static_value(self.max_N)
 
                 #Term 2a/Important check
                 if (nkplusone != _maxN) and (nk != 0): 
                     m1TildaState = self.StatesDictionary[m].copy()
-                    m1TildaState["x{}".format(k)] = nk-1
-                    m1TildaState["x{}".format(k+1)] = nkplusone+1
+                    m1TildaState[f"x{k}"] = nk-1
+                    m1TildaState[f"x{k+1}"] = nkplusone+1
 
                     m1TildaIndex = list(self.StatesDictionary.keys())[list(self.StatesDictionary.values()).index(m1TildaState)]
                 
@@ -246,8 +86,8 @@ class LossMultiSite:
                 if (nkplusone != 0) and (nk != _maxN): 
                     #Find the new state/vol2
                     m2TildaState = self.StatesDictionary[m].copy()
-                    m2TildaState["x{}".format(k)] = nk+1
-                    m2TildaState["x{}".format(k+1)] = nkplusone-1
+                    m2TildaState[f"x{k}"] = nk+1
+                    m2TildaState[f"x{k+1}"] = nkplusone-1
 
                     m2TildaIndex = list(self.StatesDictionary.keys())[list(self.StatesDictionary.values()).index(m2TildaState)]
 
@@ -293,7 +133,7 @@ class LossMultiSite:
         sum_j = tf.reduce_sum(sum_j.stack())
         return tf.math.real(sum_j)
 
-    def loss(self, site):
+    def loss(self):
         Data = tf.TensorArray(DTYPE, size=self.max_t+1)
         self.setCoeffs()
         for t in range(self.max_t+1):
@@ -301,15 +141,7 @@ class LossMultiSite:
             x = self._computeAverageCalculation(t)
             Data = Data.write(t, value=x)
         Data = Data.stack()
-        if not site==f'{list(self.StatesDictionary[0].keys())[-1]}':
+        if not self.targetState==f'{list(self.StatesDictionary[0].keys())[-1]}':
             return tf.reduce_min(Data)
         else:
             return self.max_N - tf.reduce_max(Data)
-    
-if __name__=="__main__":
-    loss = LossMultiSite(3, 100, 0.1, 3, [-3,3,3])
-    @tf.function
-    def test():
-        n = loss(site='x2', xD=0.5, xA=1)
-        return n
-    print(test())
