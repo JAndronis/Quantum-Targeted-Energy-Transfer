@@ -9,6 +9,7 @@ DTYPE = TensorflowParams['DTYPE']
 
 class Loss:
     def __init__(self, const):
+        #! Import the parameters of the problem
         self.max_N = tf.constant(const['max_N'], dtype=DTYPE)
         self.max_N_np = const['max_N']
         self.max_t = tf.constant(const['max_t'], dtype=tf.int32)
@@ -16,29 +17,35 @@ class Loss:
         self.sites = const['sites']
         self.omegas = tf.constant(const['omegas'], dtype=DTYPE)
         
+        #! Define some other helpful variables
         self.dim = int( factorial(const['max_N']+const['sites']-1)/( factorial(const['max_N'])*factorial(const['sites']-1) ) )
         self.CombinationsBosons = self.derive()
         self.StatesDictionary = dict(zip(np.arange(self.dim, dtype=int), self.CombinationsBosons))
 
-        #Assign initially all the bosons at the donor
+        #! Define the initial state
+        # Assign initially all the bosons at the donor
         self.InitialState = self.StatesDictionary[0]
         self.InitialState = dict.fromkeys(self.InitialState, 0)
         self.InitialState['x0'] = self.max_N
 
-        #Find the index
+        # Find the index
         self.InitialStateIndex = list(self.StatesDictionary.keys())[list(self.StatesDictionary.values()).index(self.InitialState)]
         I = np.identity(n=self.dim)
-        self.InitialState = I[self.InitialStateIndex]   # Choose Fock state that matches the initial state
+        # Choose Fock state that matches the initial state
+        self.InitialState = I[self.InitialStateIndex]   
         self.initialState = tf.convert_to_tensor(self.InitialState, dtype=DTYPE)
+
 
     def __call__(self, *args, site=str()):
         self.chis = list(args)
         self.targetState = site
         return self.loss()
 
+
     def getCombinations(self):
         return self.CombinationsBosons
 
+    #! Computing the Fock states
     def derive(self):
         space = [np.arange(self.max_N_np+1) for _ in range(self.sites)]
         values = [i for i in product(*space) if sum(i)==self.max_N_np]
@@ -54,11 +61,11 @@ class Loss:
 
         return solution
 
-    #Find the Hnm element of the Hamiltonian
+    #! Deduce the Hnm element of the Hamiltonian
     def ConstructElement(self, n, m):
-        #First Term. Contributions due to the kronecker(n,m) elements
+        #* First Term. Contributions due to the Kronecker(n,m) elements
         Term1 = tf.constant(0, dtype=DTYPE)
-        #Second Term. Various contributions
+        #* Second Term. Various contributions
         Term2a, Term2b = tf.constant(0, dtype=DTYPE), tf.constant(0, dtype=DTYPE)
         
         if n==m:
@@ -95,6 +102,7 @@ class Loss:
                 
         return Term1 + Term2a + Term2b
 
+    #! Constructing the Hamiltonian operator.
     def createHamiltonian(self):
         h = tf.TensorArray(dtype=DTYPE, size=self.dim*self.dim)
         for n in range(self.dim):
@@ -104,10 +112,11 @@ class Loss:
         h = tf.reshape(h, shape=[self.dim, self.dim])
         return h
 
+    #! Given a set of non linearity parameters, compute the coefficients needed according to PRL.
     def setCoeffs(self):
         problemHamiltonian = self.createHamiltonian()
-        eigvals, eigvecs = tf.linalg.eigh(problemHamiltonian)
 
+        eigvals, eigvecs = tf.linalg.eigh(problemHamiltonian)
         self.eigvals = tf.cast(eigvals, dtype=DTYPE)
         eigvecs = tf.cast(eigvecs, dtype=DTYPE)
 
@@ -116,10 +125,11 @@ class Loss:
             coeff_c = coeff_c.write(i, tf.tensordot(tf.cast(eigvecs[:,i], dtype=DTYPE), tf.cast(self.InitialState, dtype=DTYPE), 1))
         
         coeff_c = coeff_c.stack()
-        coeff_b = eigvecs
+    
         self.ccoeffs = coeff_c
-        self.bcoeffs = coeff_b
+        self.bcoeffs = eigvecs
 
+    #! Computing the loss function given the time step .
     def _computeAverageCalculation(self, t):
         sum_j = tf.TensorArray(dtype=tf.complex64, size=self.dim)
         for j in range(self.dim):
@@ -133,6 +143,7 @@ class Loss:
         sum_j = tf.reduce_sum(sum_j.stack())
         return tf.math.real(sum_j)
 
+    #! Computing the loss function given a Hamiltonian correspodning to one combination of non linearity parameters
     def loss(self):
         Data = tf.TensorArray(DTYPE, size=self.max_t+1)
         self.setCoeffs()
@@ -145,3 +156,4 @@ class Loss:
             return tf.reduce_min(Data)
         else:
             return self.max_N - tf.reduce_max(Data)
+
