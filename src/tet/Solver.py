@@ -1,47 +1,10 @@
 from itertools import product
 import numpy as np
-import matplotlib.pyplot as plt
 import os
-import multiprocessing as mp
 
-from tet import constants
+import constants
 from Optimizer import Optimizer
-from tet.data_process import createDir, read_1D_data
-from tet.saveFig import saveFig
-
-def PlotResults(const,data_path,d_init,a_init,i):
-    #* Load Background
-    min_n_path = os.path.join(os.getcwd(), 'data/coupling-'+str(const['coupling'])+'/tmax-'+\
-        str(const['max_t'])+'/avg_N/min_n_combinations')
-    test_array = np.loadtxt(min_n_path)
-    xA_plot = test_array[:,0].reshape(const['resolution'],const['resolution'])
-    xD_plot = test_array[:,1].reshape(const['resolution'],const['resolution'])
-    avg_n = test_array[:,2].reshape(const['resolution'],const['resolution'])
-    
-    figure2, ax2 = plt.subplots(figsize=(7,7))
-    plot1 = ax2.contourf(xD_plot, xA_plot, avg_n, levels=50, cmap='rainbow')
-    ax2.set_xlabel(r"$\chi_{D}$", fontsize=20)
-    ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
-    figure2.colorbar(plot1)
-
-    #* Plot Data
-    a = read_1D_data(destination=data_path, name_of_file='xAtrajectory.txt')
-    d = read_1D_data(destination=data_path, name_of_file='xDtrajectory.txt')
-    # Plot trajectory and initial guess data
-    x = np.array(np.array(d))
-    y = np.array(np.array(a))
-    plot2 = ax2.plot(x, y, marker='o', color='black', label=f'Optimizer Predictions' if i == 0 else "")
-    u = np.diff(x)
-    v = np.diff(y)
-    pos_x = x[:-1] + u/2
-    pos_y = y[:-1] + v/2
-    norm = np.sqrt(u**2+v**2)
-    ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy",pivot="mid")
-    plot3 = ax2.scatter(d_init, a_init, color='green', edgecolors='black', s=94, label='Initial Guess' if i == 0 else "", zorder=3)
-    #* Add legend and save the figure
-    ax2.legend()
-    saveFig(fig_id="contour_final", destination=data_path)
-
+from data_process import createDir, read_1D_data, PlotResults
 
 def solver(a_lims, d_lims, iterations=500, learning_rate=0.01, create_plot=False):
     #* Load the parameters of the problem
@@ -49,8 +12,8 @@ def solver(a_lims, d_lims, iterations=500, learning_rate=0.01, create_plot=False
     done = False
     
     #* Make a grid of uniformly distributed initial parameter guesses
-    xa = np.linspace(a_lims[0], a_lims[1], const['resolution'])
-    xd = np.linspace(d_lims[0], d_lims[1], const['resolution'])
+    xa = np.linspace(a_lims[0], a_lims[1], const['Npoints'])
+    xd = np.linspace(d_lims[0], d_lims[1], const['Npoints'])
     Combinations = list(product(xa,xd))
     
     #* Init an array to save chiAs/chiDs and resulting losses
@@ -79,7 +42,7 @@ def solver(a_lims, d_lims, iterations=500, learning_rate=0.01, create_plot=False
                 print('-'*20+'Combination:{} out of {}, Initial (xA,xD):({:.3f},{:.3f})'.\
                     format(i, len(Combinations)-1, ChiAInitial, ChiDInitial) + '-'*20)
             
-            opt = Optimizer(target_site='x2',
+            opt = Optimizer(target_site='x1',
                             DataExist=data_exists,
                             data_path=data_path,
                             const=const,
@@ -94,7 +57,9 @@ def solver(a_lims, d_lims, iterations=500, learning_rate=0.01, create_plot=False
             all_losses[i] = np.array([a, d, np.min(loss_data)])
         
         #! If you want to create the heatmap when having the data
-        if create_plot: PlotResults(const=const,data_path=data_path,d_init=ChiDInitial,a_init=ChiAInitial,i=i)
+        if create_plot: 
+            fig = PlotResults(const=const,path=data_path)
+            fig.plot(ChiDInitial=ChiDInitial, ChiAInitial=ChiAInitial, xa_lims=[-5,5], xd_lims=[-5,5])
         
         # Finish iteration if TET is found
         if np.min(loss_data)<0.1:
@@ -106,19 +71,9 @@ def solver(a_lims, d_lims, iterations=500, learning_rate=0.01, create_plot=False
     return min_a, min_d, min_loss
 
 if __name__=="__main__":
-
-    # Set globals
-    constants.setConstant('max_N', 3)
-    constants.setConstant('max_t', 100)
-    constants.setConstant('omegaA', 3)
-    constants.setConstant('omegaD', -3)
-    constants.setConstant('omegaMid', 3)
-    constants.setConstant('coupling', 1)
-    constants.setConstant('xMid', 0)
-    constants.setConstant('sites', 3)
-    constants.setConstant('resolution', 3)
     CONST = constants.constants
+    print(CONST)
     constants.dumpConstants()
 
-    solver(a_lims=[-5,5], d_lims=[-5,5])
+    solver(a_lims=[-5,5], d_lims=[-5,5], create_plot=False)
     exit(0)
