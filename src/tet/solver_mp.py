@@ -1,4 +1,4 @@
-from itertools import combinations, product
+from itertools import product
 import numpy as np
 import os
 import gc
@@ -7,8 +7,9 @@ import time
 import multiprocessing as mp
 
 from Optimizer import mp_opt
-from tet.data_process import createDir
-from tet import constants
+from data_process import createDir
+import constants
+from constants import solver_params
 
 def getCombinations(a_lims, d_lims, const, method='bins', grid=2):
     """
@@ -25,6 +26,10 @@ def getCombinations(a_lims, d_lims, const, method='bins', grid=2):
         * list: A list of tuples, of all the initial guesses to try.
     """
     
+    method_list = solver_params['methods']
+    if method not in method_list:
+        raise ValueError('Provided method not in list of supported methods [\'grid\', \'bins\']')
+
     if method=='bins':
         xa = np.linspace(a_lims[0], a_lims[1], 100)
         xd = np.linspace(d_lims[0], d_lims[1], 100)
@@ -56,8 +61,8 @@ def getCombinations(a_lims, d_lims, const, method='bins', grid=2):
 
     elif method=='grid':
         # make a grid of uniformly distributed initial parameter guesses
-        xa = np.linspace(a_lims[0], a_lims[1], const['resolution'])
-        xd = np.linspace(d_lims[0], d_lims[1], const['resolution'])
+        xa = np.linspace(a_lims[0], a_lims[1], const['Npoints'])
+        xd = np.linspace(d_lims[0], d_lims[1], const['Npoints'])
         Combinations = list(product(xa,xd))
 
     return Combinations
@@ -103,7 +108,7 @@ def solver_mp(xa_lims, xd_lims, const,
                                                     # guesses will be done with the bin method
 
     t0 = time.time()
-    while not done and iteration < 5:
+    while not done and iteration < 1:
 
         # create directory of current iteration
         data_path2 = os.path.join(data_path, f'iteration_{iteration}')
@@ -134,7 +139,7 @@ def solver_mp(xa_lims, xd_lims, const,
         # elif min_loss<=const['max_N']-1.5:
             # if grid_choice:
             #     # if this method has already been picked increase grid size
-            #     const['resolution'] *= 2
+            #     const['Npoints'] *= 2
             #     a_min, a_max = min_a-1, min_a+1
             #     d_min, d_max = min_d-1, min_d+1
             #     a_lims = [a_min,a_max]
@@ -189,7 +194,7 @@ def solver_mp(xa_lims, xd_lims, const,
             a_lims = [a_min,a_max]
             d_lims = [d_min,d_max]
         else:
-            const['resolution'] += 1
+            const['Npoints'] += 1
             lr += 0.1
 
         # advance iteration
@@ -208,23 +213,25 @@ def solver_mp(xa_lims, xd_lims, const,
             break
 
     t1 = time.time()
+    const['xA'] = str(min_a)
+    const['xD'] = str(min_d)
+    constants.dumpConstants(dict=const)
     print('Total solver run time: ', t1-t0)
-
 
 if __name__=="__main__":
 
-    # Set constants
-    constants.setConstant('max_N', 3)
-    constants.setConstant('max_t', 200)
-    constants.setConstant('omegaA', -3)
-    constants.setConstant('omegaD', 3)
-    constants.setConstant('omegaMid', -3)
-    constants.setConstant('coupling', 1)
-    constants.setConstant('xMid', 0)
-    constants.setConstant('sites', 3)
-    constants.setConstant('resolution', 6)
+    # # Set constants
+    # constants.setConstant('max_N', 3)
+    # constants.setConstant('max_t', 200)
+    # constants.setConstant('omegaA', -3)
+    # constants.setConstant('omegaD', 3)
+    # constants.setConstant('omegaMid', -3)
+    # constants.setConstant('coupling', 1)
+    # constants.setConstant('xMid', 0)
+    # constants.setConstant('sites', 3)
+    # constants.setConstant('Npoints', 6)
     CONST = constants.constants
     constants.dumpConstants()
 
-    solver_mp(xa_lims=[-5,5], xd_lims=[-5,5], const=CONST, target_site='x2')
+    solver_mp(xa_lims=[-5,5], xd_lims=[-5,5], const=CONST, target_site=solver_params['target'])
     exit(0)
