@@ -2,8 +2,9 @@ import numpy as np
 import os
 import shutil
 import sys
-from tensorflow.keras.models import model_from_json
 from os.path import exists
+import matplotlib.pyplot as plt
+from tet.saveFig import saveFig
 
 
 def writeData(data, destination, name_of_file):
@@ -90,28 +91,89 @@ def createDir(destination, replace_query=True):
     else:
         os.makedirs(destination, exist_ok=True)
 
+class PlotResults:
+    def __init__(self, const, path):
+        self.coupling = const['coupling']
+        self.Npoints = const['Npoints']
+        self.max_t = const['max_t']
+        self.max_n = const['max_N']
+        self.omegaD = const['omegas'][0]
+        self.omegaA = const['omegas'][-1]
+        self.data_path = path
 
-def SaveWeights(ModelToSave,case,destination):
-    #Save weights
-    _destinationjson = os.path.join(destination, case + '.json')
-    model_json = ModelToSave.to_json()
-    with open(_destinationjson, "w") as json_file:
-      json_file.write(model_json)
-    # serialize weights to HDF5
-    _destinationh5 =  os.path.join(destination, case + '.h5')
-    ModelToSave.save_weights(_destinationh5)
-    
+    def plot(self, ChiAInitial, ChiDInitial, xa_lims, xd_lims):
 
-def LoadModel(case,destination):
-    #load json and create model
-    _destinationjson = os.path.join(destination, case + '.json')
-    json_file = open(_destinationjson, 'r')
-    loaded_model_json = json_file.read()
-    json_file.close()
-    loaded_model = model_from_json(loaded_model_json)
-    # load weights into new model
-    _destinationh5 = os.path.join(destination, case + '.h5')
-    loaded_model.compile(loss='mse', optimizer='adam', metrics=['mse'])
-    loaded_model.load_weights(_destinationh5)
+        xA = np.linspace(*xa_lims, num=100)
+        xD = np.linspace(*xd_lims, num=100)
 
-    return loaded_model
+        from tet.Execute import Execute
+        data = Execute(chiA=xA, 
+                       chiD=xD, 
+                       coupling_lambda=self.coupling, 
+                       omegaA=self.omegaA, 
+                       omegaD=self.omegaD, 
+                       max_N=self.max_n, 
+                       max_t=self.max_t, 
+                       data_dir=self.data_path,
+                       return_data=True)()
+
+        if np.ndim(data)>1:
+            XA, XD = np.meshgrid(xA, xD)
+
+            min_flat_data = np.zeros(len(xA)*len(xD))
+            for i in enumerate(data): 
+                min_flat_data[i[0]] = min(i[1])
+
+            z = min_flat_data
+            x = XD.flatten(order='C')
+            y = XA.flatten(order='C')
+            k = list(np.zeros(len(z)))
+            for i in range(len(data)):
+                for j in range(len(data)):
+                    index = len(XA)*i+j
+                    k[index] = x[index], y[index], z[index]
+            
+            min_n_combinations = np.array(k)
+
+        # Load Background
+        # min_n_path = os.path.join(os.getcwd(), 'data/coupling-'+str(self.coupling)+'/tmax-'+\
+        #     str(self.max_t)+'/avg_N/min_n_combinations')
+        # test_array = np.loadtxt(min_n_path)
+        xA_plot = min_n_combinations[:,0].reshape(self.Npoints, self.Npoints)
+        xD_plot = min_n_combinations[:,1].reshape(self.Npoints, self.Npoints)
+        avg_n = min_n_combinations[:,2].reshape(self.Npoints, self.Npoints)
+        
+        # Load Data
+        loss_data = read_1D_data(destination=self.data_path, name_of_file='losses.txt')
+        a = read_1D_data(destination=self.data_path, name_of_file='xAtrajectory.txt')
+        d = read_1D_data(destination=self.data_path, name_of_file='xDtrajectory.txt')
+        a_init = ChiAInitial
+        d_init = ChiDInitial
+        
+        # Plot Loss
+        _, ax1 = plt.subplots()
+        ax1.plot(loss_data[1:])
+        saveFig(fig_id="loss", fig_extension="eps", destination=self.data_path)
+        
+        # Plot heatmaps with optimizer predictions
+        titl = f'N={self.max_n}, tmax={self.max_t}, Initial (χA, χD) = {a_init, d_init},\
+            λ={self.coupling}, ωA={self.omegaA}, ωD={self.omegaD}'
+
+        x = np.array(np.array(d))
+        y = np.array(np.array(a))
+        figure2, ax2 = plt.subplots(figsize=(12,12))
+        plot2 = ax2.contourf(xD_plot, xA_plot, avg_n, levels=50, cmap='rainbow')
+        plot3 = ax2.plot(x, y, marker='o', color='black', label='Optimizer Predictions')
+        u = np.diff(x)
+        v = np.diff(y)
+        pos_x = x[:-1] + u/2
+        pos_y = y[:-1] + v/2
+        norm = np.sqrt(u**2+v**2)
+        ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy",pivot="mid")
+        plot4 = ax2.scatter(d_init, a_init, color='green', edgecolors='black', s=94, label='Initial Value', zorder=3)
+        ax2.set_xlabel(r"$\chi_{D}$", fontsize=20)
+        ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
+        figure2.colorbar(plot2)
+        ax2.legend(prop={'size': 15})
+        ax2.set_title(titl, fontsize=20)
+        saveFig(fig_id="contour", fig_extension="eps", destination=self.data_path)
