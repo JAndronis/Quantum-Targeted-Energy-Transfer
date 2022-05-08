@@ -12,7 +12,7 @@ assert tf.__version__ >= "2.0"
 import keras.backend as K
 
 from data_process import createDir, writeData, read_1D_data
-from loss import Loss
+from HamiltonianLoss import Loss
 import constants as constants
 from constants import TensorflowParams
 
@@ -27,10 +27,10 @@ class Optimizer:
                  lr=TensorflowParams['lr'], 
                  data_path=os.path.join(os.getcwd(), 'data_optimizer')):
         
+        #! Import the parameters of the problem
         if const is None: self.const = constants.loadConstants()
         else: self.const = const
 
-        self.Npoints = self.const['Npoints']
         self.coupling = self.const['coupling']
         self.max_t = self.const['max_t']
         self.max_n = self.const['max_N']
@@ -54,7 +54,6 @@ class Optimizer:
     def __call__(self, ChiAInitial, ChiDInitial):
         self.ChiAInitial = ChiAInitial
         self.ChiDInitial = ChiDInitial
-        # self.CombinationPath = os.path.join(self.data_path, f'combination_{case}')
 
         if self.DataExist: pass
         else:
@@ -63,7 +62,8 @@ class Optimizer:
             
     @tf.function
     def compute_loss(self, lossClass):
-        return lossClass(self.xA, self.xD, site=self.target_site)
+        #return lossClass(self.xA, self.xD, site=self.target_site)
+        return lossClass(self.xD, self.xA, site=self.target_site)
 
     def get_grads(self, lossClass):
         with tf.GradientTape() as t:
@@ -79,30 +79,33 @@ class Optimizer:
         self.opt.apply_gradients(zip(grads, [self.xA, self.xD]))
         return loss
 
+    #! Running the optimizer given initial guesses for the trainable parameters
     def train(self, ChiAInitial, ChiDInitial):
         # Reset Optimizer
         K.clear_session()
         for var in self.opt.variables():
             var.assign(tf.zeros_like(var))
         K.set_value(self.opt.learning_rate, self.lr)
-    
+
+        # Define the object of the Loss class according to the current chiA,chiD.
         loss_ms = Loss(const=self.const)
-        
+        # Store the values of the loss function while proceeding 
         mylosses = []
-        tol = 1e-8
-    
+        # Define the tolerance of the optimizer
+        self.tol = TensorflowParams['tol']
+
         if self.xA is None:
             self.xA = tf.Variable(initial_value=ChiAInitial, trainable=True, dtype=self.DTYPE, name='xA')
         if self.xD is None:
             self.xD = tf.Variable(initial_value=ChiDInitial, trainable=True, dtype=self.DTYPE, name='xD')
-    
+
+        # Non linearity parameters that produce the lowest loss function
         xA_best = tf.Variable(initial_value=0, dtype=self.DTYPE, trainable=False)
         xD_best = tf.Variable(initial_value=0, dtype=self.DTYPE, trainable=False)
         mylosses.append(self.max_n)
         best_loss = self.max_n
         counter = 0
-        d_data = []
-        a_data = []
+        d_data,a_data = [], []
         a_error_count = 0
         d_error_count = 0
 
@@ -110,10 +113,11 @@ class Optimizer:
         for epoch in range(self.iter):
             xA_init = self.xA.numpy()
             xD_init = self.xD.numpy()
-            loss = self.apply_grads(loss_ms)
+            loss = self.apply_grads(lossClass = loss_ms)
             if self.Print:
                 if epoch%100 ==0: print(f'Loss:{loss.numpy()}, xA:{self.xA.numpy()}, xD:{self.xD.numpy()}, epoch:{epoch}')
             
+
             if loss.numpy()<=0.5:
                 K.set_value(self.opt.learning_rate, 0.001)
                 self.xA.assign(value=xA_init)
@@ -136,14 +140,14 @@ class Optimizer:
             if np.abs(loss.numpy()) < 0.1:
                 break
             
-            if errorA < tol:
+            if errorA < self.tol:
                 a_error_count += 1
                 if a_error_count > 2:
                     if self.Print:
                         print('Stopped training because of xA_new-xA_old =', errorA)
                     break
 
-            if errorD < tol:
+            if errorD < self.tol:
                 d_error_count += 1
                 if d_error_count > 2:
                     if self.Print:
@@ -171,6 +175,7 @@ class Optimizer:
         
         return mylosses, a_data, d_data, xA_best.numpy(), xD_best.numpy()
     
+    #! Run the optimizer for given initial guesses and save trajectories.
     def _train(self):
         mylosses, a_data, d_data, xA_best, xD_best = self.train(self.ChiAInitial, self.ChiDInitial)
         writeData(data=mylosses[1:], destination=self.data_path, name_of_file='losses.txt')
