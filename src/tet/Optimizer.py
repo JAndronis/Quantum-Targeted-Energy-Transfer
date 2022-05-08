@@ -11,12 +11,10 @@ import tensorflow as tf
 assert tf.__version__ >= "2.0"
 import keras.backend as K
 
-from tet.data_process import createDir, writeData, read_1D_data
-from tet.saveFig import saveFig
-from tet.loss import Loss, LossMultiSite
-import tet.constants as constants
-
-DTYPE = tf.float32
+from data_process import createDir, writeData, read_1D_data
+from loss import Loss
+import constants as constants
+from constants import TensorflowParams
 
 class Optimizer:
     def __init__(self,
@@ -25,21 +23,18 @@ class Optimizer:
                  const=None,
                  Plot=False, 
                  Print=True,
-                 iterations=200,
-                 lr=0.1, 
+                 iterations=TensorflowParams['iterations'],
+                 lr=TensorflowParams['lr'], 
                  data_path=os.path.join(os.getcwd(), 'data_optimizer')):
         
         if const is None: self.const = constants.loadConstants()
         else: self.const = const
 
-        self.res = self.const['resolution']
+        self.Npoints = self.const['Npoints']
         self.coupling = self.const['coupling']
         self.max_t = self.const['max_t']
         self.max_n = self.const['max_N']
-        self.omegaA = self.const['omegaA']
-        self.omegaD = self.const['omegaD']
-        self.omegaM = self.const['omegaMid']
-        self.xMid = self.const['xMid']
+        self.omegas = self.const['omegas']
         self.sites = self.const['sites']
 
         self.target_site = target_site
@@ -54,25 +49,21 @@ class Optimizer:
         self.xA = None
         self.xD = None
 
-        # createDir(self.data_path, replace_query=True)
+        self.DTYPE = TensorflowParams['DTYPE']
         
     def __call__(self, ChiAInitial, ChiDInitial):
         self.ChiAInitial = ChiAInitial
         self.ChiDInitial = ChiDInitial
         # self.CombinationPath = os.path.join(self.data_path, f'combination_{case}')
 
-        if self.DataExist and self.plot: self.PlotResults()
-        # If data exists according to the user, dont do anything
-        elif self.DataExist and not self.plot: pass
-        
+        if self.DataExist: pass
         else:
             createDir(self.data_path, replace_query=True)
             self._train()
-            if self.plot: self.PlotResults()
             
     @tf.function
     def compute_loss(self, lossClass):
-        return lossClass(site=self.target_site, xA=self.xA, xD=self.xD)
+        return lossClass(self.xA, self.xD, site=self.target_site)
 
     def get_grads(self, lossClass):
         with tf.GradientTape() as t:
@@ -88,37 +79,27 @@ class Optimizer:
         self.opt.apply_gradients(zip(grads, [self.xA, self.xD]))
         return loss
 
-    def train(self, ChiAInitial, ChiDInitial, max_iter=200, lr=0.01):
+    def train(self, ChiAInitial, ChiDInitial):
         # Reset Optimizer
         K.clear_session()
         for var in self.opt.variables():
             var.assign(tf.zeros_like(var))
-        K.set_value(self.opt.learning_rate, lr)
-        
-        LAMBDA = self.const['coupling']
-        OMEGA_A = self.const['omegaA']
-        OMEGA_D = self.const['omegaD']
-        MAX_N = self.const['max_N']
-        MAX_T = self.const['max_t']
-        SITES = self.const['sites']
-        if SITES>2:
-            omegas_list = [OMEGA_D] + [self.omegaM for _ in range(SITES-2)] + [OMEGA_A]
-        else:
-            omegas_list = [OMEGA_D, OMEGA_A]
-        loss_ms = LossMultiSite(const=self.const, omegas=omegas_list)
+        K.set_value(self.opt.learning_rate, self.lr)
+    
+        loss_ms = Loss(const=self.const)
         
         mylosses = []
         tol = 1e-8
     
         if self.xA is None:
-            self.xA = tf.Variable(initial_value=ChiAInitial, trainable=True, dtype=DTYPE, name='xA')
+            self.xA = tf.Variable(initial_value=ChiAInitial, trainable=True, dtype=self.DTYPE, name='xA')
         if self.xD is None:
-            self.xD = tf.Variable(initial_value=ChiDInitial, trainable=True, dtype=DTYPE, name='xD')
+            self.xD = tf.Variable(initial_value=ChiDInitial, trainable=True, dtype=self.DTYPE, name='xD')
     
-        xA_best = tf.Variable(initial_value=0, dtype=DTYPE, trainable=False)
-        xD_best = tf.Variable(initial_value=0, dtype=DTYPE, trainable=False)
-        mylosses.append(MAX_N)
-        best_loss = MAX_N
+        xA_best = tf.Variable(initial_value=0, dtype=self.DTYPE, trainable=False)
+        xD_best = tf.Variable(initial_value=0, dtype=self.DTYPE, trainable=False)
+        mylosses.append(self.max_n)
+        best_loss = self.max_n
         counter = 0
         d_data = []
         a_data = []
@@ -126,7 +107,7 @@ class Optimizer:
         d_error_count = 0
 
         t0 = time.time()
-        for epoch in range(max_iter):
+        for epoch in range(self.iter):
             xA_init = self.xA.numpy()
             xD_init = self.xD.numpy()
             loss = self.apply_grads(loss_ms)
@@ -178,70 +159,28 @@ class Optimizer:
                 "\nLoss - min #bosons on donor:", best_loss,
                 "\nOptimizer Iterations:", self.opt.iterations.numpy(), 
                 "\nTraining Time:", dt,
-                "\n"+40*"-",
+                "\n"+60*"-",
                 "\nParameters:",
-                "\nOmega_A:", OMEGA_A,
-                "| Omega_D:", OMEGA_D,
-                "| N:", MAX_N,
-                "| Sites: ", SITES,
-                "| Total timesteps:", MAX_T,
-                "| Coupling Lambda:",LAMBDA,
-                "\n"+40*"-")
+                "\nOmega_A:", self.omegas[-1],
+                "| Omega_D:", self.omegas[0],
+                "| N:", self.max_n,
+                "| Sites: ", self.sites,
+                "| Total timesteps:", self.max_t,
+                "| Coupling Lambda:",self.coupling,
+                "\n"+60*"-")
         
         return mylosses, a_data, d_data, xA_best.numpy(), xD_best.numpy()
     
     def _train(self):
-        mylosses, a_data, d_data, xA_best, xD_best = self.train(self.ChiAInitial, self.ChiDInitial, max_iter=self.iter, lr=self.lr)
+        mylosses, a_data, d_data, xA_best, xD_best = self.train(self.ChiAInitial, self.ChiDInitial)
         writeData(data=mylosses[1:], destination=self.data_path, name_of_file='losses.txt')
         writeData(data=a_data, destination=self.data_path, name_of_file='xAtrajectory.txt')
         writeData(data=d_data, destination=self.data_path, name_of_file='xDtrajectory.txt')
         self.const['xA'] = str(xA_best)
         self.const['xD'] = str(xD_best)
         constants.dumpConstants(dict=self.const)
-        
-    def PlotResults(self):
-        # Load Background
-        min_n_path = os.path.join(os.getcwd(), 'data/coupling-'+str(self.coupling)+'/tmax-'+
-        str(self.max_t)+'/avg_N/min_n_combinations')
-        test_array = np.loadtxt(min_n_path)
-        xA_plot = test_array[:,0].reshape(self.res, self.res)
-        xD_plot = test_array[:,1].reshape(self.res, self.res)
-        avg_n = test_array[:,2].reshape(self.res, self.res)
-        
-        # Load Data
-        loss_data = read_1D_data(destination=self.CombinationPath,name_of_file='losses.txt')
-        a = read_1D_data(destination=self.CombinationPath,name_of_file='xAtrajectory.txt')
-        d = read_1D_data(destination=self.CombinationPath,name_of_file='xDtrajectory.txt')
-        a_init = self.ChiAInitial
-        d_init = self.ChiDInitial
-        
-        # Plot Loss
-        _, ax1 = plt.subplots()
-        ax1.plot(loss_data[1:])
-        saveFig(fig_id="loss", destination=self.CombinationPath)
-        
-        # Plot heatmaps with optimizer predictions
-        titl = f'N={self.max_n}, tmax={self.max_t}, Initial (χA, χD) = {a_init, d_init},\
-            λ={self.coupling}, ωA={self.omegaA}, ωD={self.omegaD}'
 
-        x = np.array(np.array(d))
-        y = np.array(np.array(a))
-        figure2, ax2 = plt.subplots(figsize=(12,12))
-        plot2 = ax2.contourf(xD_plot, xA_plot, avg_n, levels=50, cmap='rainbow')
-        ax2.plot(x, y, marker='o', color='black', label='Optimizer Predictions')
-        u = np.diff(x)
-        v = np.diff(y)
-        pos_x = x[:-1] + u/2
-        pos_y = y[:-1] + v/2
-        norm = np.sqrt(u**2+v**2)
-        ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy",pivot="mid")
-        ax2.scatter(d_init, a_init, color='green', edgecolors='black', s=94, label='Initial Value', zorder=3)
-        ax2.set_xlabel(r"$\chi_{D}$", fontsize=20)
-        ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
-        figure2.colorbar(plot2)
-        ax2.legend(prop={'size': 15})
-        ax2.set_title(titl, fontsize=20)
-        saveFig(fig_id="contour", destination=self.CombinationPath)
+# ----------------------------- Multiprocess Helper Function ----------------------------- #
 
 def mp_opt(i, ChiAInitial, ChiDInitial, iteration_path, const, target_site, lr, iterations):
     const = constants.loadConstants()
@@ -252,8 +191,10 @@ def mp_opt(i, ChiAInitial, ChiDInitial, iteration_path, const, target_site, lr, 
                     data_path=data_path,
                     const=const,
                     lr=lr,
-                    iterations=iterations)
+                    iterations=iterations,
+                    Plot=True)
     opt(ChiAInitial, ChiDInitial)
+    
     # Load Data
     loss_data = read_1D_data(destination=data_path, name_of_file='losses.txt')
     a = const['xA']
