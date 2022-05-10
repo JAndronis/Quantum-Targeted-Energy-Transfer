@@ -46,9 +46,6 @@ class Optimizer:
         self.opt = tf.keras.optimizers.Adam()
         self.Print = Print
 
-        # self.xA = None
-        # self.xD = None
-
         self.vars = [None for _ in range(len(self.const['chis']))]
 
         self.DTYPE = TensorflowParams['DTYPE']
@@ -143,14 +140,31 @@ class Optimizer:
                     if var_error_count[j] > 2:
                         if self.Print:
                             print(f'Stopped training because of x{j}_new-x{j}_old =', var_error[j])
-                        break
-            
+                        t1 = time.time()
+                        dt = t1-t0
+                        if self.Print:
+                            print(
+                                *[f"\nApproximate value of chiA: {best_vars[j].numpy()}" for j in range(len(self.vars))],
+                                "\nLoss - min #bosons on donor:", best_loss,
+                                "\nOptimizer Iterations:", self.opt.iterations.numpy(), 
+                                "\nTraining Time:", dt,
+                                "\n"+60*"-",
+                                "\nParameters:",
+                                "\nOmega_A:", self.omegas[-1],
+                                "| Omega_D:", self.omegas[0],
+                                "| N:", self.max_n,
+                                "| Sites: ", self.sites,
+                                "| Total timesteps:", self.max_t,
+                                "| Coupling Lambda:",self.coupling,
+                                "\n"+60*"-"
+                            )
+                        return mylosses, var_data, best_vars
+
         t1 = time.time()
         dt = t1-t0
         
         if self.Print:
-            print
-            (
+            print(
                 *[f"\nApproximate value of chiA: {best_vars[j]}" for j in range(len(self.vars))],
                 "\nLoss - min #bosons on donor:", best_loss,
                 "\nOptimizer Iterations:", self.opt.iterations.numpy(), 
