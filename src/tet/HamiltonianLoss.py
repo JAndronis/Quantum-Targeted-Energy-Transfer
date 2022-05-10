@@ -41,7 +41,6 @@ class Loss:
         self.targetState = site
         return self.loss()
 
-
     def getCombinations(self):
         return self.CombinationsBosons
 

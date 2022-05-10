@@ -46,14 +46,15 @@ class Optimizer:
         self.opt = tf.keras.optimizers.Adam()
         self.Print = Print
 
-        self.xA = None
-        self.xD = None
+        # self.xA = None
+        # self.xD = None
+
+        self.vars = [None for _ in range(len(self.const['chis']))]
 
         self.DTYPE = TensorflowParams['DTYPE']
         
-    def __call__(self, ChiAInitial, ChiDInitial):
-        self.ChiAInitial = ChiAInitial
-        self.ChiDInitial = ChiDInitial
+    def __call__(self, *args):
+        self.init_chis = list(args)
 
         if self.DataExist: pass
         else:
@@ -63,24 +64,24 @@ class Optimizer:
     @tf.function
     def compute_loss(self, lossClass):
         #return lossClass(self.xA, self.xD, site=self.target_site)
-        return lossClass(self.xD, self.xA, site=self.target_site)
+        return lossClass(*self.vars, site=self.target_site)
 
     def get_grads(self, lossClass):
         with tf.GradientTape() as t:
-                t.watch([self.xA, self.xD])
-                loss = self.compute_loss(lossClass)
-        grads = t.gradient(loss, [self.xA, self.xD])
+            t.watch([self.vars[k] for k in TensorflowParams['train_sites']])
+            loss = self.compute_loss(lossClass)
+        grads = t.gradient(loss, self.vars)
         del t
         return grads, loss
 
     @tf.function
     def apply_grads(self, lossClass):
         grads, loss = self.get_grads(lossClass)
-        self.opt.apply_gradients(zip(grads, [self.xA, self.xD]))
+        self.opt.apply_gradients(zip(grads, self.vars))
         return loss
 
     #! Running the optimizer given initial guesses for the trainable parameters
-    def train(self, ChiAInitial, ChiDInitial):
+    def train(self, initial_chis):
         # Reset Optimizer
         K.clear_session()
         for var in self.opt.variables():
@@ -94,72 +95,60 @@ class Optimizer:
         # Define the tolerance of the optimizer
         self.tol = TensorflowParams['tol']
 
-        if self.xA is None:
-            self.xA = tf.Variable(initial_value=ChiAInitial, trainable=True, dtype=self.DTYPE, name='xA')
-        if self.xD is None:
-            self.xD = tf.Variable(initial_value=ChiDInitial, trainable=True, dtype=self.DTYPE, name='xD')
-
+        for i in range(len(self.const['chis'])):
+            if self.vars[i] is None:
+                self.vars[i] = tf.constant(value=initial_chis[i], dtype=self.DTYPE, name=f'chi{i}')
         # Non linearity parameters that produce the lowest loss function
-        xA_best = tf.Variable(initial_value=0, dtype=self.DTYPE, trainable=False)
-        xD_best = tf.Variable(initial_value=0, dtype=self.DTYPE, trainable=False)
+        best_vars = [tf.constant(value=0, dtype=self.DTYPE) for _ in range(len(self.vars))]
         mylosses.append(self.max_n)
         best_loss = self.max_n
         counter = 0
-        d_data,a_data = [], []
-        a_error_count = 0
-        d_error_count = 0
+        var_data = [[] for _ in range(len(self.vars))]
+        var_error_count = [0 for _ in range(len(self.vars))]
 
         t0 = time.time()
         for epoch in range(self.iter):
-            xA_init = self.xA.numpy()
-            xD_init = self.xD.numpy()
-            loss = self.apply_grads(lossClass = loss_ms)
+            _vars = [self.vars[i].numpy() for i in range(len(self.vars))]
+            loss = self.apply_grads(lossClass=loss_ms)
             if self.Print:
-                if epoch%100 ==0: print(f'Loss:{loss.numpy()}, xA:{self.xA.numpy()}, xD:{self.xD.numpy()}, epoch:{epoch}')
+                if epoch%100 ==0: print(f'Loss:{loss.numpy()}, ',*[f'x{j}: {self.vars[j].numpy()}, ' for j in range(len(self.vars))], f', epoch:{epoch}')
             
-
             if loss.numpy()<=0.5:
                 K.set_value(self.opt.learning_rate, 0.001)
-                self.xA.assign(value=xA_init)
-                self.xD.assign(value=xD_init)
+                for i in range(len(self.vars)):
+                    self.vars[i].assign(_vars[i])
             
-            errorA = np.abs(self.xA.numpy() - xA_init)
-            errorD = np.abs(self.xD.numpy() - xD_init)
+            var_error = [np.abs(self.vars[i].numpy() - _vars[i]) for i in range(len(self.vars))]
 
             mylosses.append(loss.numpy())
             if mylosses[epoch+1] < min(list(mylosses[:epoch+1])):
-                xA_best.assign(self.xA.numpy())
-                xD_best.assign(self.xD.numpy())
+                for i in range(len(self.vars)):
+                    best_vars[i].assign(self.vars[i].numpy())
                 best_loss = mylosses[epoch+1]
 
             counter += 1
             if counter%10 == 0:
-                d_data.append(self.xD.numpy())
-                a_data.append(self.xA.numpy())
+                for k in range(len(self.vars)):
+                    var_data[k].append(self.vars[k].numpy())
 
             if np.abs(loss.numpy()) < 0.1:
                 break
             
-            if errorA < self.tol:
-                a_error_count += 1
-                if a_error_count > 2:
-                    if self.Print:
-                        print('Stopped training because of xA_new-xA_old =', errorA)
-                    break
-
-            if errorD < self.tol:
-                d_error_count += 1
-                if d_error_count > 2:
-                    if self.Print:
-                        print('Stopped training because of xD_new-xD_old =', errorA)
-                    break
+            for j in range(len(self.vars)):
+                if var_error[j] < self.tol:
+                    var_error_count[j] += 1
+                    if var_error_count[j] > 2:
+                        if self.Print:
+                            print(f'Stopped training because of x{j}_new-x{j}_old =', var_error[j])
+                        break
             
         t1 = time.time()
         dt = t1-t0
         
         if self.Print:
-            print("\nApproximate value of chiA:", xA_best.numpy(), 
-                "\nApproximate value of chiD:", xD_best.numpy(),
+            print
+            (
+                *[f"\nApproximate value of chiA: {best_vars[j]}" for j in range(len(self.vars))],
                 "\nLoss - min #bosons on donor:", best_loss,
                 "\nOptimizer Iterations:", self.opt.iterations.numpy(), 
                 "\nTraining Time:", dt,
@@ -171,19 +160,18 @@ class Optimizer:
                 "| Sites: ", self.sites,
                 "| Total timesteps:", self.max_t,
                 "| Coupling Lambda:",self.coupling,
-                "\n"+60*"-")
+                "\n"+60*"-"
+            )
         
-        return mylosses, a_data, d_data, xA_best.numpy(), xD_best.numpy()
+        return mylosses, var_data, best_vars
     
     #! Run the optimizer for given initial guesses and save trajectories.
     def _train(self):
-        mylosses, a_data, d_data, xA_best, xD_best = self.train(self.ChiAInitial, self.ChiDInitial)
+        mylosses, var_data, best_vars = self.train(self.init_chis)
         writeData(data=mylosses[1:], destination=self.data_path, name_of_file='losses.txt')
-        writeData(data=a_data, destination=self.data_path, name_of_file='xAtrajectory.txt')
-        writeData(data=d_data, destination=self.data_path, name_of_file='xDtrajectory.txt')
-        self.const['xA'] = str(xA_best)
-        self.const['xD'] = str(xD_best)
-        constants.dumpConstants(dict=self.const)
+        for i in range(len(var_data)):
+            writeData(data=var_data[i], destination=self.data_path, name_of_file=f'x{i}trajectory.txt')
+            writeData(data=var_data[i], destination=self.data_path, name_of_file=f'x{i}trajectory.txt')
 
 # ----------------------------- Multiprocess Helper Function ----------------------------- #
 
@@ -206,3 +194,10 @@ def mp_opt(i, ChiAInitial, ChiDInitial, iteration_path, const, target_site, lr, 
     d = const['xD']
     print(f'Job {i}: Done')
     return np.array([a, d, np.min(loss_data)])
+
+if __name__=="__main__":
+    CONST = constants.constants
+    opt = Optimizer(target_site=constants.solver_params['target'],
+                    DataExist=False,
+                    const=CONST)
+    opt(*CONST['chis'])

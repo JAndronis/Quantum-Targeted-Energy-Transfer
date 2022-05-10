@@ -6,12 +6,11 @@ import sys
 import time
 import multiprocessing as mp
 
-from sympy import solve_linear
-
 from Optimizer import mp_opt
 from data_process import createDir
 import constants
 from constants import solver_params,TensorflowParams
+
 #!Creates a list of initial guess pairs to be fed to an optimizer call
 def getCombinations(a_lims, d_lims, const, method='bins', grid=2):
     """
