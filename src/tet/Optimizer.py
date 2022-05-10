@@ -165,7 +165,7 @@ class Optimizer:
         
         if self.Print:
             print(
-                *[f"\nApproximate value of chiA: {best_vars[j]}" for j in range(len(self.vars))],
+                *[f"\nApproximate value of chiA: {best_vars[j].numpy()}" for j in range(len(self.vars))],
                 "\nLoss - min #bosons on donor:", best_loss,
                 "\nOptimizer Iterations:", self.opt.iterations.numpy(), 
                 "\nTraining Time:", dt,
@@ -189,6 +189,8 @@ class Optimizer:
         for i in range(len(var_data)):
             writeData(data=var_data[i], destination=self.data_path, name_of_file=f'x{i}trajectory.txt')
             writeData(data=var_data[i], destination=self.data_path, name_of_file=f'x{i}trajectory.txt')
+        self.const['chis'] = [f'{best_vars[i].numpy()}' for i in range(len(best_vars))]
+        constants.dumpConstants(dict=self.const)
 
 # ----------------------------- Multiprocess Helper Function ----------------------------- #
 
