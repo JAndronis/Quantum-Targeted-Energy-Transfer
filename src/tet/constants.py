@@ -4,10 +4,10 @@ import tensorflow as tf
 #
 constants = {'max_N': 4,
              'max_t': 25, 
-             'omegas': [-3,3,2],
-             'chis': [0.5,-0.5, 4],
+             'omegas': [-3,3],
+             'chis': [0.5,-0.5],
              'coupling': 0.1, 
-             'sites': 3}
+             'sites': 2}
 
 
 # Parameters of tensorflow
@@ -15,7 +15,7 @@ TensorflowParams = {'DTYPE': tf.float32,
                     'lr': 0.1, 
                     'iterations': 200,
                     'tol':1e-8,
-                    'train_sites':[0,1]}
+                    'train_sites': [0,1]}
 
 # Solver Parameters
 solver_params = {'methods': ['grid', 'bins'],
