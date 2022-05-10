@@ -68,7 +68,7 @@ class Optimizer:
 
     def get_grads(self, lossClass):
         with tf.GradientTape() as t:
-            t.watch([self.vars[k] for k in TensorflowParams['train_sites']])
+            # t.watch([self.vars[k] for k in TensorflowParams['train_sites']])
             loss = self.compute_loss(lossClass)
         grads = t.gradient(loss, self.vars)
         del t
@@ -97,9 +97,12 @@ class Optimizer:
 
         for i in range(len(self.const['chis'])):
             if self.vars[i] is None:
-                self.vars[i] = tf.constant(value=initial_chis[i], dtype=self.DTYPE, name=f'chi{i}')
+                if i in TensorflowParams['train_sites']:
+                    self.vars[i] = tf.Variable(initial_value=initial_chis[i], dtype=self.DTYPE, name=f'chi{i}', trainable=True)
+                else:
+                    self.vars[i] = tf.Variable(initial_value=initial_chis[i], dtype=self.DTYPE, name=f'chi{i}', trainable=False)
         # Non linearity parameters that produce the lowest loss function
-        best_vars = [tf.constant(value=0, dtype=self.DTYPE) for _ in range(len(self.vars))]
+        best_vars = [tf.Variable(initial_value=0, dtype=self.DTYPE, trainable=False) for _ in range(len(self.vars))]
         mylosses.append(self.max_n)
         best_loss = self.max_n
         counter = 0
@@ -135,7 +138,7 @@ class Optimizer:
                 break
             
             for j in range(len(self.vars)):
-                if var_error[j] < self.tol:
+                if var_error[j] < self.tol and j in TensorflowParams['train_sites']:
                     var_error_count[j] += 1
                     if var_error_count[j] > 2:
                         if self.Print:
@@ -199,5 +202,6 @@ if __name__=="__main__":
     CONST = constants.constants
     opt = Optimizer(target_site=constants.solver_params['target'],
                     DataExist=False,
-                    const=CONST)
+                    const=CONST,
+                    Print=True)
     opt(*CONST['chis'])
