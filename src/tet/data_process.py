@@ -5,6 +5,8 @@ import sys
 from os.path import exists
 import matplotlib.pyplot as plt
 from tet.saveFig import saveFig
+import constants
+from math import sqrt
 
 
 def writeData(data, destination, name_of_file):
@@ -94,17 +96,18 @@ def createDir(destination, replace_query=True):
 class PlotResults:
     def __init__(self, const, path):
         self.coupling = const['coupling']
-        self.Npoints = const['Npoints']
         self.max_t = const['max_t']
         self.max_n = const['max_N']
         self.omegaD = const['omegas'][0]
         self.omegaA = const['omegas'][-1]
+        self.sites = const['sites']
+        self.Npoints = constants.plotting_params['plotting_resolution']
         self.data_path = path
 
     def plot(self, ChiAInitial, ChiDInitial, xa_lims, xd_lims):
 
-        xA = np.linspace(*xa_lims, num=100)
-        xD = np.linspace(*xd_lims, num=100)
+        xA = np.linspace(*xa_lims, num=self.Npoints)
+        xD = np.linspace(*xd_lims, num=self.Npoints)
 
         from tet.Execute import Execute
         data = Execute(chiA=xA, 
@@ -128,8 +131,8 @@ class PlotResults:
             x = XD.flatten(order='C')
             y = XA.flatten(order='C')
             k = list(np.zeros(len(z)))
-            for i in range(len(data)):
-                for j in range(len(data)):
+            for i in range(int(sqrt(len(min_flat_data)))):
+                for j in range(int(sqrt(len(min_flat_data)))):
                     index = len(XA)*i+j
                     k[index] = x[index], y[index], z[index]
             
@@ -145,15 +148,15 @@ class PlotResults:
         
         # Load Data
         loss_data = read_1D_data(destination=self.data_path, name_of_file='losses.txt')
-        a = read_1D_data(destination=self.data_path, name_of_file='xAtrajectory.txt')
-        d = read_1D_data(destination=self.data_path, name_of_file='xDtrajectory.txt')
+        a = read_1D_data(destination=self.data_path, name_of_file=f'x{self.sites-1}trajectory.txt')
+        d = read_1D_data(destination=self.data_path, name_of_file=f'x{0}trajectory.txt')
         a_init = ChiAInitial
         d_init = ChiDInitial
         
         # Plot Loss
         _, ax1 = plt.subplots()
         ax1.plot(loss_data[1:])
-        saveFig(fig_id="loss", fig_extension="eps", destination=self.data_path)
+        saveFig(fig_id="loss", fig_extension="png", destination=self.data_path)
         
         # Plot heatmaps with optimizer predictions
         titl = f'N={self.max_n}, tmax={self.max_t}, Initial (χA, χD) = {a_init, d_init},\
@@ -176,4 +179,4 @@ class PlotResults:
         figure2.colorbar(plot2)
         ax2.legend(prop={'size': 15})
         ax2.set_title(titl, fontsize=20)
-        saveFig(fig_id="contour", fig_extension="eps", destination=self.data_path)
+        saveFig(fig_id="contour", fig_extension="png", destination=self.data_path)
