@@ -24,6 +24,8 @@ solver_params = {'methods': ['grid', 'bins'],
                 'epochs_grid':200,
                 'epochs_bins':1000}
 
+plotting_params = {'plotting_resolution': 100}
+
 # -------------- Helper Functions -------------- #
 
 def setConstant(dict, key, value):
