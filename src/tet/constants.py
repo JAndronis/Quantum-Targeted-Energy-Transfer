@@ -1,13 +1,15 @@
 import os
+ 
 import json
 import tensorflow as tf
+#tf.get_logger().setLevel('WARNING')
 #
 constants = {'max_N': 4,
              'max_t': 25, 
-             'omegas': [-3,3],
-             'chis': [0.5,-0.5],
+             'omegas': [-3,3,3],
+             'chis': [0.5,0,-0.5],
              'coupling': 0.1, 
-             'sites': 2}
+             'sites': 3}
 
 
 # Parameters of tensorflow
@@ -15,7 +17,7 @@ TensorflowParams = {'DTYPE': tf.float32,
                     'lr': 0.1, 
                     'iterations': 200,
                     'tol':1e-8,
-                    'train_sites': [0,1]}
+                    'train_sites': [0,2]}
 
 # Solver Parameters
 solver_params = {'methods': ['grid', 'bins'],
