@@ -216,13 +216,11 @@ class Optimizer:
         writeData(data=mylosses[1:], destination=self.data_path, name_of_file='losses.txt')
         # Save the optimal parameters
         to_write_vars = self.const['chis']
-        for (index,case) in zip(TensorflowParams['train_sites'],best_vars):to_write_vars[index] = case
+        for (index,case) in zip(TensorflowParams['train_sites'],best_vars): to_write_vars[index] = case
         writeData(data=to_write_vars, destination=self.data_path, name_of_file='optimalvars.txt')
         for i in range(len(var_data)):
             # Save the trajectories in a file
             writeData(data=var_data[i], destination=self.data_path, name_of_file=f'x{i}trajectory.txt')
-        self.const['chis'] = [f'{best_vars[i].numpy()}' for i in range(len(best_vars))]
-        constants.dumpConstants(dict=self.const)
 
 # ----------------------------- Multiprocess Helper Function ----------------------------- #
 
@@ -244,12 +242,13 @@ def mp_opt(i, combination, iteration_path, const, target_site, lr, iterations):
     #! Call the optimizer with chis including the given initial guesses
     input_chis = const['chis']
     # Update the list with the initial guesses of the optimizer
-    for (index,case) in zip(TensorflowParams['train_sites'],combination):input_chis[index] = case
+    for index, case in zip(TensorflowParams['train_sites'],combination): input_chis[index] = case
     opt(*input_chis)
     
+    updated_const = constants.loadConstants()
     #! Load Data
     loss_data = read_1D_data(destination=data_path, name_of_file='losses.txt')
-    best_vars = read_1D_data(destination=data_path, name_of_file='optimalvars.txt')
+    best_vars = [float(x) for x in updated_const['chis']]
     print(f'Job {i}: Done')
     #? Just to keep the format, there is a better way
     return np.array([*best_vars,np.min(loss_data)])
@@ -257,8 +256,14 @@ def mp_opt(i, combination, iteration_path, const, target_site, lr, iterations):
 #! In case one wants to run one optimizer
 if __name__=="__main__":
     CONST = constants.constants
-    opt = Optimizer(target_site=constants.solver_params['target'],
-                    DataExist=False,
-                    const=CONST,
-                    Print=True)
-    opt(*CONST['chis'])
+    constants.dumpConstants()
+
+    #! Create a dictionary with the limits of each variable explored
+    keys = [ f'x{i}lims' for i in TensorflowParams['train_sites'] ] 
+    lims = [[-5,5]]*len(keys)
+    TrainableVarsLimits = dict(zip(keys,lims))
+
+    from solver_mp_test import getCombinations
+    Combinations = getCombinations(TrainableVarsLimits, method='grid', const=CONST)
+    args = [(i, combination, os.getcwd(), CONST, constants.solver_params['target'], 0.1, 200) for i, (combination) in enumerate(Combinations)]
+    mp_opt(*args[0])

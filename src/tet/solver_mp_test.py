@@ -195,7 +195,7 @@ def solver_mp(TrainableVarsLimits, const,
 
         # Gather results
         all_losses = np.array(all_losses)
-        OptimalVars = [float(all_losses[np.argmin(all_losses[:,const['sites']]), i]) for i in range(const['sites']) ]
+        OptimalVars = [ float(all_losses[np.argmin(all_losses[:,const['sites']]), i]) for i in range(const['sites']) ]
         min_loss = float(all_losses[np.argmin(all_losses[:,const['sites']]), const['sites']])
         
         # print results of run
@@ -207,7 +207,7 @@ def solver_mp(TrainableVarsLimits, const,
             edge = _edge[iteration]
             #grid += 2
     
-            lims = [ [OptimalVars[i]-edge,OptimalVars[i]+edge] for i in range(len(TrainableVarsLimits))]
+            lims = [ [ OptimalVars[i]-edge, OptimalVars[i]+edge ] for i in range(len(TrainableVarsLimits)) ]
 
         else:
             solver_params['Npoints'] += 1
@@ -232,7 +232,10 @@ def solver_mp(TrainableVarsLimits, const,
 
     t1 = time.time()
 
+    # Write best parameters to parameter json
+    const['chis'] = [f'{OptimalVars[i]}' for i in range(len(OptimalVars))]
     constants.dumpConstants(dict=const)
+
     print('Total solver run time: ', t1-t0)
 
 
