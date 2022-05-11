@@ -7,7 +7,7 @@ import tensorflow as tf
 constants = {'max_N': 4,
              'max_t': 25, 
              'omegas': [-3,3,3],
-             'chis': [0.5,0,-0.5],
+             'chis': [0.5, 1.,-0.5],
              'coupling': 0.1, 
              'sites': 3}
 
@@ -17,7 +17,7 @@ TensorflowParams = {'DTYPE': tf.float32,
                     'lr': 0.1, 
                     'iterations': 200,
                     'tol':1e-8,
-                    'train_sites': [0,2]}
+                    'train_sites': [0, 1, 2]}
 
 # Solver Parameters
 solver_params = {'methods': ['grid', 'bins'],
