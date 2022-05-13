@@ -199,6 +199,7 @@ class PlotResults:
             loss_data = read_1D_data(destination=opt_data[i], name_of_file='losses.txt')
             _loss = loss_data[-1]
             row = np.append(_chis, _loss)
+            # Each row of optimal_vars is [*nonliniearity parameters, loss]
             optimal_vars[i,:] = row
         
         fig = plt.figure()
@@ -206,6 +207,7 @@ class PlotResults:
             ax = fig.add_subplot(projection='3d')
         else:
             ax = fig.add_subplot()
+        # Scatterplot of final predicted parameters with colormap corresponding to the points' loss
         x = ax.scatter(*[optimal_vars[:,j] for j in range(optimal_vars.shape[1]-1)], c=optimal_vars[:,-1], cmap='plasma_r')
         fig.colorbar(x)
         plt.show()
