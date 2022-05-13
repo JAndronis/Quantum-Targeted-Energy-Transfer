@@ -5,7 +5,7 @@ import tensorflow as tf
 #tf.get_logger().setLevel('WARNING')
 #
 constants = {'max_N': 4,
-             'max_t': 25, 
+             'max_t': 200, 
              'omegas': [-3,3,3],
              'chis': [0.5, 1.,-0.5],
              'coupling': 0.1, 
