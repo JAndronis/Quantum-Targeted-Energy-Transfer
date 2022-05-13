@@ -137,7 +137,6 @@ class Optimizer:
                 for i in range(len(self.vars)):
                     self.vars[i].assign(_vars[i])
             
-            #? If the above condition statement is true, wouldn't var_errror be 0?
             # Manual check for the progress of each variable
             var_error = [np.abs(self.vars[i].numpy() - _vars[i]) for i in range(len(self.vars))]
             # Save the new value of the loss function
@@ -214,10 +213,15 @@ class Optimizer:
 
         # Save the evolution of the values of the loss function
         writeData(data=mylosses[1:], destination=self.data_path, name_of_file='losses.txt')
+        
+        # Save initial parameter data
+        writeData(data=self.init_chis, destination=self.data_path, name_of_file='init_chis.txt')
+        
         # Save the optimal parameters
         to_write_vars = self.const['chis']
         for (index,case) in zip(TensorflowParams['train_sites'],best_vars): to_write_vars[index] = case
         writeData(data=to_write_vars, destination=self.data_path, name_of_file='optimalvars.txt')
+        
         for i in range(len(var_data)):
             # Save the trajectories in a file
             writeData(data=var_data[i], destination=self.data_path, name_of_file=f'x{i}trajectory.txt')
