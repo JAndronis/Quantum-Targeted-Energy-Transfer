@@ -248,6 +248,7 @@ if __name__=="__main__":
     lims = [[-5,5]]*len(keys)
     TrainableVarsLimits = dict(zip(keys,lims))
 
+    # create data directory with the naming convention data_{unix time}
     data_dir_name = f'data_{time.time_ns()}'
     data = os.path.join(os.getcwd(), data_dir_name)
 
