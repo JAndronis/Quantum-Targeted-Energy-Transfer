@@ -2,6 +2,7 @@ import numpy as np
 import os
 import shutil
 import sys
+import glob
 from os.path import exists
 import matplotlib.pyplot as plt
 from saveFig import saveFig
@@ -105,11 +106,7 @@ class PlotResults:
         self.Npoints = constants.plotting_params['plotting_resolution']
 
         self.data_path = data_path
-        self.data_dirs = [f.path for f in os.scandir(self.data_path) if f.is_dir()]
-        self.iteration_path = []
-        for i, d in enumerate(self.data_dirs):
-            self.iteration_path.append(d)
-            self.iteration_dirs = [f.path for f in os.scandir(d) if f.is_dir()]
+        self.data_dirs = glob.glob(os.path.join(data_path, 'iteration_*'))
 
     # ONLY WORKS IN DIMER CASE
     def plotHeatmap(self, ChiAInitial, ChiDInitial, xa_lims, xd_lims, path):
@@ -193,26 +190,28 @@ class PlotResults:
     # ONLY USABLE IN TRIMER AND DIMER CASE
     def plotScatterChis(self):
         
-        data = self.data_dirs
-        opt_data = self.iteration_dirs
-        optimal_vars = np.zeros((len(opt_data), self.sites+1))
-        for i in range(optimal_vars.shape[0]):
-            _chis = read_1D_data(destination=opt_data[i], name_of_file='optimalvars.txt')
-            loss_data = read_1D_data(destination=opt_data[i], name_of_file='losses.txt')
-            _loss = loss_data[-1]
-            row = np.append(_chis, _loss)
-            # Each row of optimal_vars is [*nonliniearity parameters, loss]
-            optimal_vars[i,:] = row
-        
-        fig = plt.figure()
-        if self.sites>2:
-            ax = fig.add_subplot(projection='3d')
-        else:
-            ax = fig.add_subplot()
-        # Scatterplot of final predicted parameters with colormap corresponding to the points' loss
-        x = ax.scatter(*[optimal_vars[:,j] for j in range(optimal_vars.shape[1]-1)], c=optimal_vars[:,-1], cmap='plasma_r')
-        fig.colorbar(x)
-        plt.show()
+        for j, path in enumerate(self.data_dirs):
+            iter_path = path
+            opt_data = glob.glob(os.path.join(iter_path, 'data_optimizer_*'))
+            optimal_vars = np.zeros((len(opt_data), self.sites+1))
+            for i in range(optimal_vars.shape[0]):
+                _chis = read_1D_data(destination=opt_data[i], name_of_file='optimalvars.txt')
+                loss_data = read_1D_data(destination=opt_data[i], name_of_file='losses.txt')
+                _loss = loss_data[-1]
+                row = np.append(_chis, _loss)
+                # Each row of optimal_vars is [*nonliniearity parameters, loss]
+                optimal_vars[i,:] = row
+            
+            fig = plt.figure()
+            if self.sites>2:
+                ax = fig.add_subplot(projection='3d')
+            else:
+                ax = fig.add_subplot()
+            # Scatterplot of final predicted parameters with colormap corresponding to the points' loss
+            x = ax.scatter(*[optimal_vars[:,j] for j in range(optimal_vars.shape[1]-1)], c=optimal_vars[:,-1], cmap='plasma_r')
+            fig.colorbar(x)
+            saveFig(fig_id='chi_scatterplot', destination=path)
+            plt.close(fig)
 
     def plotTimeEvol(self):
 
@@ -236,8 +235,11 @@ class PlotResults:
             plt.close(fig)
 
 if __name__=="__main__":
-    CONST = constants.constants
-    constants.dumpConstants()
-    data_path = os.path.join(os.getcwd(), 'data')
-    p = PlotResults(CONST, data_path = os.path.join(os.getcwd(), 'data'))
-    p.plotTimeEvol()
+    import glob
+    data_paths = glob.glob(os.path.join(os.getcwd(), 'data_*'))
+    data_params = [constants.loadConstants(path=os.path.join(path, 'constants.json')) for i, path in enumerate(data_paths)]
+    # constants.dumpConstants()
+    for index, path in enumerate(data_paths):
+        if data_params[index]['omegas'][1] == 2:
+            p = PlotResults(data_params[index], data_path=path)
+            p.plotScatterChis()
