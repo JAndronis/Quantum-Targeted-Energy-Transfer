@@ -189,23 +189,27 @@ class PlotResults:
             saveFig(fig_id="loss", fig_extension="png", destination=self.iteration_dirs[i], silent=True)
             plt.close(fig)
     
-    def plotMinN(self, iteration_path):
+    def plotScatterChis(self):
         
-        data = [f.path for f in os.scandir(iteration_path) if f.is_dir()]
-        optimal_vars = np.zeros((len(data), self.sites+1))
+        data = self.data_dirs
+        opt_data = self.iteration_dirs
+        optimal_vars = np.zeros((len(opt_data), self.sites+1))
         for i in range(optimal_vars.shape[0]):
-            _chis = read_1D_data(destination=data[i], name_of_file='optimalvars.txt')
-            loss_data = read_1D_data(destination=data[i], name_of_file='losses.txt')
+            _chis = read_1D_data(destination=opt_data[i], name_of_file='optimalvars.txt')
+            loss_data = read_1D_data(destination=opt_data[i], name_of_file='losses.txt')
             _loss = loss_data[-1]
             row = np.append(_chis, _loss)
             optimal_vars[i,:] = row
         
         fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
-        ax.scatter(optimal_vars[:, 0], optimal_vars[:, 1], optimal_vars[:, 2])
+        if self.sites>2:
+            ax = fig.add_subplot(projection='3d')
+        else:
+            ax = fig.add_subplot()
+        ax.scatter(*[optimal_vars[:,i] for i in range(optimal_vars.shape[1])])
         plt.show()
 
 if __name__=="__main__":
     data_path = os.path.join(os.getcwd(), 'data')
     p = PlotResults(constants.loadConstants(), data_path = os.path.join(os.getcwd(), 'data'))
-    p.plotLoss()
+    p.plotScatterChis()
