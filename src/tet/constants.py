@@ -4,10 +4,10 @@ import json
 import tensorflow as tf
 #tf.get_logger().setLevel('WARNING')
 #
-constants = {'max_N': 4,
+constants = {'max_N': 3,
              'max_t': 200, 
              'omegas': [-3,3,3],
-             'chis': [0.5, 1.,-0.5],
+             'chis': [0, 0, 0],
              'coupling': 0.1, 
              'sites': 3}
 
@@ -19,9 +19,12 @@ TensorflowParams = {'DTYPE': tf.float32,
                     'tol':1e-8,
                     'train_sites': [0, 1, 2]}
 
+acceptor = 'x{}'.format(constants['sites']-1)
+donor = 'x0'
+
 # Solver Parameters
 solver_params = {'methods': ['grid', 'bins'],
-                'target': 'x{}'.format(constants['sites']-1),
+                'target': acceptor,
                 'Npoints': 5,
                 'epochs_grid':200,
                 'epochs_bins':1000}
