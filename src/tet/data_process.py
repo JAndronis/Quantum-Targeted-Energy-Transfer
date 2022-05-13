@@ -95,12 +95,13 @@ def createDir(destination, replace_query=True):
 
 class PlotResults:
     def __init__(self, const, data_path):
-        self.coupling = const['coupling']
-        self.max_t = const['max_t']
-        self.max_n = const['max_N']
-        self.omegaD = const['omegas'][0]
-        self.omegaA = const['omegas'][-1]
-        self.sites = const['sites']
+        self.const = const
+        self.coupling = self.const['coupling']
+        self.max_t = self.const['max_t']
+        self.max_n = self.const['max_N']
+        self.omegaD = self.const['omegas'][0]
+        self.omegaA = self.const['omegas'][-1]
+        self.sites = self.const['sites']
         self.Npoints = constants.plotting_params['plotting_resolution']
 
         self.data_path = data_path
@@ -189,6 +190,7 @@ class PlotResults:
             saveFig(fig_id="loss", fig_extension="png", destination=self.iteration_dirs[i], silent=True)
             plt.close(fig)
     
+    # ONLY USABLE IN TRIMER AND DIMER CASE
     def plotScatterChis(self):
         
         data = self.data_dirs
@@ -212,9 +214,30 @@ class PlotResults:
         fig.colorbar(x)
         plt.show()
 
-    # def 
+    def plotTimeEvol(self):
+
+        import tensorflow as tf
+        from HamiltonianLoss import Loss
+
+        @tf.function
+        def calcN(site):
+            return l(*chis, single_value=False, site=site)
+
+        for i in range(len(self.iteration_dirs)):
+            chis = read_1D_data(destination=self.iteration_dirs[i], name_of_file='optimalvars.txt')
+            self.const['chis'] = list(chis)
+            l = Loss(const=self.const)
+            evolved_n_acceptor = calcN(site=constants.acceptor)
+            evolved_n_donor = calcN(site=constants.donor)
+            fig, ax = plt.subplots()
+            ax.plot(evolved_n_acceptor)
+            ax.plot(evolved_n_donor)
+            saveFig(fig_id="avg_n", fig_extension="png", destination=self.iteration_dirs[i], silent=True)
+            plt.close(fig)
 
 if __name__=="__main__":
+    CONST = constants.constants
+    constants.dumpConstants()
     data_path = os.path.join(os.getcwd(), 'data')
-    p = PlotResults(constants.loadConstants(), data_path = os.path.join(os.getcwd(), 'data'))
-    p.plotScatterChis()
+    p = PlotResults(CONST, data_path = os.path.join(os.getcwd(), 'data'))
+    p.plotTimeEvol()
