@@ -5,10 +5,10 @@ import tensorflow as tf
 #tf.get_logger().setLevel('WARNING')
 #
 constants = {'max_N': 3,
-             'max_t': 200, 
-             'omegas': [-3,3,3],
+             'max_t': 25, 
+             'omegas': [-3,2,3],
              'chis': [0, 0, 0],
-             'coupling': 0.1, 
+             'coupling': 1, 
              'sites': 3}
 
 
@@ -25,8 +25,8 @@ donor = 'x0'
 # Solver Parameters
 solver_params = {'methods': ['grid', 'bins'],
                 'target': acceptor,
-                'Npoints': 5,
-                'epochs_grid':200,
+                'Npoints': 2,
+                'epochs_grid':500,
                 'epochs_bins':1000}
 
 plotting_params = {'plotting_resolution': 100}
