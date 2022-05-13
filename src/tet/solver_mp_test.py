@@ -119,7 +119,7 @@ def solver_mp(TrainableVarsLimits, const,
                                                     # guesses will be done with the bin method
 
     t0 = time.time()
-    while not done and iteration < 1:
+    while not done and iteration < 2:
 
         # Create directory of current iteration
         data_path2 = os.path.join(data_path, f'iteration_{iteration}')
@@ -172,9 +172,9 @@ def solver_mp(TrainableVarsLimits, const,
 
         try:
             # Run multiprocess map 
-            all_losses = pool.starmap_async(mp_opt, args).get(timeout=1000)
+            _all_losses = pool.starmap_async(mp_opt, args).get()
 
-        except KeyboardInterrupt:
+        except KeyboardInterrupt():
             print('Keyboard Interrupt.')
             # Make sure to close pool so no more processes start
             pool.close()    
@@ -194,8 +194,8 @@ def solver_mp(TrainableVarsLimits, const,
         dt = t3-t2  
 
         # Gather results
-        all_losses = np.array(all_losses)
-        OptimalVars = [ float(all_losses[np.argmin(all_losses[:,const['sites']]), i]) for i in range(const['sites']) ]
+        all_losses = np.array(_all_losses)
+        OptimalVars = [float(all_losses[np.argmin(all_losses[:,const['sites']]), i]) for i in range(const['sites']) ]
         min_loss = float(all_losses[np.argmin(all_losses[:,const['sites']]), const['sites']])
         
         # print results of run
@@ -234,7 +234,7 @@ def solver_mp(TrainableVarsLimits, const,
 
     # Write best parameters to parameter json
     const['chis'] = [f'{OptimalVars[i]}' for i in range(len(OptimalVars))]
-    constants.dumpConstants(dict=const)
+    constants.dumpConstants(dict=const, path=data_path)
 
     print('Total solver run time: ', t1-t0)
 
@@ -242,14 +242,16 @@ def solver_mp(TrainableVarsLimits, const,
 if __name__=="__main__":
     #! Import the constants of the problem
     CONST = constants.constants
-    constants.dumpConstants()
 
     #! Create a dictionary with the limits of each variable explored
     keys = [ f'x{i}lims' for i in TensorflowParams['train_sites'] ] 
     lims = [[-5,5]]*len(keys)
     TrainableVarsLimits = dict(zip(keys,lims))
 
+    data_dir_name = f'data_{time.time_ns()}'
+    data = os.path.join(os.getcwd(), data_dir_name)
+
     #! Call the solver function that uses multiprocessing(pointer _mp)
-    solver_mp(TrainableVarsLimits, const=CONST, target_site=solver_params['target'])
+    solver_mp(TrainableVarsLimits, const=CONST, target_site=solver_params['target'], data_path=data)
 
     exit(0)
