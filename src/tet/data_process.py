@@ -4,7 +4,7 @@ import shutil
 import sys
 from os.path import exists
 import matplotlib.pyplot as plt
-from tet.saveFig import saveFig
+from saveFig import saveFig
 import constants
 from math import sqrt
 
@@ -94,7 +94,7 @@ def createDir(destination, replace_query=True):
         os.makedirs(destination, exist_ok=True)
 
 class PlotResults:
-    def __init__(self, const, path):
+    def __init__(self, const, data_path):
         self.coupling = const['coupling']
         self.max_t = const['max_t']
         self.max_n = const['max_N']
@@ -102,9 +102,18 @@ class PlotResults:
         self.omegaA = const['omegas'][-1]
         self.sites = const['sites']
         self.Npoints = constants.plotting_params['plotting_resolution']
-        self.data_path = path
 
-    def plot(self, ChiAInitial, ChiDInitial, xa_lims, xd_lims):
+        self.data_path = data_path
+        self.data_dirs = [f.path for f in os.scandir(self.data_path) if f.is_dir()]
+        self.iteration_path = []
+        for i, d in enumerate(self.data_dirs):
+            self.iteration_path.append(d)
+            self.iteration_dirs = [f.path for f in os.scandir(d) if f.is_dir()]
+
+    # ONLY WORKS IN DIMER CASE
+    def plotHeatmap(self, ChiAInitial, ChiDInitial, xa_lims, xd_lims, path):
+
+        data_path = path
 
         xA = np.linspace(*xa_lims, num=self.Npoints)
         xD = np.linspace(*xd_lims, num=self.Npoints)
@@ -117,7 +126,7 @@ class PlotResults:
                        omegaD=self.omegaD, 
                        max_N=self.max_n, 
                        max_t=self.max_t, 
-                       data_dir=self.data_path,
+                       data_dir=data_path,
                        return_data=True)()
 
         if np.ndim(data)>1:
@@ -138,25 +147,15 @@ class PlotResults:
             
             min_n_combinations = np.array(k)
 
-        # Load Background
-        # min_n_path = os.path.join(os.getcwd(), 'data/coupling-'+str(self.coupling)+'/tmax-'+\
-        #     str(self.max_t)+'/avg_N/min_n_combinations')
-        # test_array = np.loadtxt(min_n_path)
         xA_plot = min_n_combinations[:,0].reshape(self.Npoints, self.Npoints)
         xD_plot = min_n_combinations[:,1].reshape(self.Npoints, self.Npoints)
         avg_n = min_n_combinations[:,2].reshape(self.Npoints, self.Npoints)
         
         # Load Data
-        loss_data = read_1D_data(destination=self.data_path, name_of_file='losses.txt')
-        a = read_1D_data(destination=self.data_path, name_of_file=f'x{self.sites-1}trajectory.txt')
-        d = read_1D_data(destination=self.data_path, name_of_file=f'x{0}trajectory.txt')
+        a = read_1D_data(destination=data_path, name_of_file=f'x{self.sites-1}trajectory.txt')
+        d = read_1D_data(destination=data_path, name_of_file=f'x{0}trajectory.txt')
         a_init = ChiAInitial
         d_init = ChiDInitial
-        
-        # Plot Loss
-        _, ax1 = plt.subplots()
-        ax1.plot(loss_data[1:])
-        saveFig(fig_id="loss", fig_extension="png", destination=self.data_path)
         
         # Plot heatmaps with optimizer predictions
         titl = f'N={self.max_n}, tmax={self.max_t}, Initial (χA, χD) = {a_init, d_init},\
@@ -179,4 +178,34 @@ class PlotResults:
         figure2.colorbar(plot2)
         ax2.legend(prop={'size': 15})
         ax2.set_title(titl, fontsize=20)
-        saveFig(fig_id="contour", fig_extension="png", destination=self.data_path)
+        saveFig(fig_id="contour", fig_extension="png", destination=data_path)
+
+    def plotLoss(self):
+        for i in range(len(self.iteration_dirs)):
+            loss_data = read_1D_data(destination=self.iteration_dirs[i], name_of_file='losses.txt')
+            # Plot Loss
+            fig, ax = plt.subplots()
+            ax.plot(loss_data[1:])
+            saveFig(fig_id="loss", fig_extension="png", destination=self.iteration_dirs[i], silent=True)
+            plt.close(fig)
+    
+    def plotMinN(self, iteration_path):
+        
+        data = [f.path for f in os.scandir(iteration_path) if f.is_dir()]
+        optimal_vars = np.zeros((len(data), self.sites+1))
+        for i in range(optimal_vars.shape[0]):
+            _chis = read_1D_data(destination=data[i], name_of_file='optimalvars.txt')
+            loss_data = read_1D_data(destination=data[i], name_of_file='losses.txt')
+            _loss = loss_data[-1]
+            row = np.append(_chis, _loss)
+            optimal_vars[i,:] = row
+        
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+        ax.scatter(optimal_vars[:, 0], optimal_vars[:, 1], optimal_vars[:, 2])
+        plt.show()
+
+if __name__=="__main__":
+    data_path = os.path.join(os.getcwd(), 'data')
+    p = PlotResults(constants.loadConstants(), data_path = os.path.join(os.getcwd(), 'data'))
+    p.plotLoss()
