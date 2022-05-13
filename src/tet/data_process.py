@@ -206,8 +206,13 @@ class PlotResults:
             ax = fig.add_subplot(projection='3d')
         else:
             ax = fig.add_subplot()
-        ax.scatter(*[optimal_vars[:,i] for i in range(optimal_vars.shape[1])])
+        for i in range(optimal_vars.shape[0]):
+            ax.scatter(*[optimal_vars[i,j] for j in range(optimal_vars.shape[1]-1)], color='r')
+            # want to add text annotation but still brainstorming
+            # ax.text(*[optimal_vars[i,j] for j in range(optimal_vars.shape[1]-1)],  f'{optimal_vars[i,-1]:.2f}', size=20, zorder=1, color='k')
         plt.show()
+
+    # def 
 
 if __name__=="__main__":
     data_path = os.path.join(os.getcwd(), 'data')
