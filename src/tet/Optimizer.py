@@ -230,7 +230,7 @@ class Optimizer:
 
 def mp_opt(i, combination, iteration_path, const, target_site, lr, iterations):
     #! Import the parameters of the problem
-    const = constants.loadConstants()
+    const = const
     data_path = os.path.join(os.getcwd(), f'{iteration_path}/data_optimizer_{i}')
 
     #! Create the current optimizer
@@ -244,15 +244,14 @@ def mp_opt(i, combination, iteration_path, const, target_site, lr, iterations):
                     Plot=True)
 
     #! Call the optimizer with chis including the given initial guesses
-    input_chis = const['chis']
+    input_chis = list(combination)
     # Update the list with the initial guesses of the optimizer
-    for index, case in zip(TensorflowParams['train_sites'],combination): input_chis[index] = case
+    # for index, case in zip(TensorflowParams['train_sites'], combination): input_chis[index] = case
     opt(*input_chis)
-    
-    updated_const = constants.loadConstants()
+
     #! Load Data
     loss_data = read_1D_data(destination=data_path, name_of_file='losses.txt')
-    best_vars = [float(x) for x in updated_const['chis']]
+    best_vars = read_1D_data(destination=data_path, name_of_file='optimalvars.txt')
     print(f'Job {i}: Done')
     #? Just to keep the format, there is a better way
     return np.array([*best_vars,np.min(loss_data)])
