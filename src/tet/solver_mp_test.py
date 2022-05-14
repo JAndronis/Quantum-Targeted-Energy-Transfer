@@ -1,21 +1,20 @@
-from itertools import combinations, product
+
 import numpy as np
 import os
-
 import gc
 import sys
 import time
 import multiprocessing as mp
+import constants
 
-
+from itertools import combinations, product
 from Optimizer import mp_opt
 from data_process import createDir
-import constants
 from constants import solver_params,TensorflowParams
 
 
 #!Creates a list of initial guess pairs to be fed to an optimizer call
-def getCombinations(TrainableVarsLimits, const, method='bins', grid=2):
+def getCombinations(TrainableVarsLimits, method='bins', grid=2):
     """
     Args:
         * TrainableVarsLimits (Dictionary): The keys are the nonlinearity parameters of each site and the values 
@@ -97,7 +96,7 @@ def solver_mp(TrainableVarsLimits, const,
     """
 
 
-    #* use cpu since we are doing parallelization on the cpu
+    #! Use cpu since we are doing parallelization on the cpu
     #os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
     # Create data directory to save results
@@ -107,9 +106,14 @@ def solver_mp(TrainableVarsLimits, const,
     lims = list(TrainableVarsLimits.values())
     grid = grid
 
-    _edge = [5, 4, 3, 2, 1, 0.5, 0.1]   # list of integers to decrease bin size by
+    _edge =  [0.1,0.5,1.5,2.5,3.0,3.5,4.0]  
+    #_edge =  [4.0,3.5,3.0,2.5,1.5,0.5,0.1]  
 
-    iteration,counter = 0,0
+    # Control how many times loss is lower than the threshold having changed the limits
+    iteration = 0
+
+    # Count attempts based on the limits 
+    counter = 0
     done = False
     bin_choice = False
 
@@ -157,10 +161,10 @@ def solver_mp(TrainableVarsLimits, const,
             #     d_lims = [d_min,d_max]
         #bin_choice = False
         """
-        Combinations = getCombinations(TrainableVarsLimits, method='grid', const=const)
+        Combinations = getCombinations(TrainableVarsLimits, method='grid')
     
         iter = epochs_grid
-        grid_choice = True
+        #grid_choice = True
         print(10*'-',f'Iteration: {iteration}, Method: Grid, Jobs: {len(Combinations)}, lims: {lims}', 10*'-')
 
         t2 = time.time()
@@ -198,7 +202,7 @@ def solver_mp(TrainableVarsLimits, const,
         OptimalVars = [float(all_losses[np.argmin(all_losses[:,const['sites']]), i]) for i in range(const['sites']) ]
         min_loss = float(all_losses[np.argmin(all_losses[:,const['sites']]), const['sites']])
         
-        # print results of run
+        # Print results of run
         print(f"Best parameters of tries: loss={min_loss}, OptimalVars = {OptimalVars}")
         print("Code run time: ", dt, " s")
 
@@ -218,13 +222,13 @@ def solver_mp(TrainableVarsLimits, const,
 
         # if loss has not been reduced for more than 5 iterations stop
         if counter>=5 and min_loss>=CONST['max_N']/2:
-            print('Couldnt find TET')
+            print("Couldn't find TET")
             break
         
         # tet has been achieved no need to continue
         if float(min_loss)<=0.1:
             print('TET!')
-            #print(f"xA: {min_a}, xD: {min_d}, loss: {min_loss}")
+
     
             print(f'OptimalParams:{OptimalVars}')
             done = True
@@ -245,10 +249,10 @@ if __name__=="__main__":
 
     #! Create a dictionary with the limits of each variable explored
     keys = [ f'x{i}lims' for i in TensorflowParams['train_sites'] ] 
-    lims = [[-5,5]]*len(keys)
+    lims = [[-1.5,1.5]]*len(keys)
     TrainableVarsLimits = dict(zip(keys,lims))
 
-    # create data directory with the naming convention data_{unix time}
+    # Create data directory with the naming convention data_{unix time}
     data_dir_name = f'data_{time.time_ns()}'
     data = os.path.join(os.getcwd(), data_dir_name)
 
@@ -256,3 +260,4 @@ if __name__=="__main__":
     solver_mp(TrainableVarsLimits, const=CONST, target_site=solver_params['target'], data_path=data)
 
     exit(0)
+
