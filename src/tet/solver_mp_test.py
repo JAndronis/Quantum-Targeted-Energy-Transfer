@@ -16,8 +16,10 @@ from constants import solver_params,TensorflowParams
 #!Creates a list of initial guess pairs to be fed to an optimizer call
 def getCombinations(TrainableVarsLimits, method='bins', grid=2):
     """
+    Creates a list of initial guess pairs to be fed to an optimizer call
+
     Args:
-        * TrainableVarsLimits (Dictionary): The keys are the nonlinearity parameters of each site and the values 
+        * TrainableVarsLimits (dict): The keys are the nonlinearity parameters of each site and the values 
         * include a list with the limits of the said variable.
         * const (dict): Dictionary of problem parameters.
         * method (str, optional): Method to use for creating Combinations list. Defaults to 'bins'.
