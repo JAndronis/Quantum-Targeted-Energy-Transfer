@@ -109,12 +109,12 @@ class PlotResults:
         self.data_dirs = glob.glob(os.path.join(data_path, 'iteration_*'))
 
     # ONLY WORKS IN DIMER CASE
-    def plotHeatmap(self, ChiAInitial, ChiDInitial, xa_lims, xd_lims, path):
+    def _plotHeatmap(self, data_path):
 
-        data_path = path
-
-        xA = np.linspace(*xa_lims, num=self.Npoints)
-        xD = np.linspace(*xd_lims, num=self.Npoints)
+        lims = constants.lims
+        init_chis = read_1D_data(data_path, 'init_chis.txt')
+        xA = np.linspace(*lims[-1], num=self.Npoints)
+        xD = np.linspace(*lims[0], num=self.Npoints)
 
         from tet.Execute import Execute
         data = Execute(chiA=xA, 
@@ -152,11 +152,11 @@ class PlotResults:
         # Load Data
         a = read_1D_data(destination=data_path, name_of_file=f'x{self.sites-1}trajectory.txt')
         d = read_1D_data(destination=data_path, name_of_file=f'x{0}trajectory.txt')
-        a_init = ChiAInitial
-        d_init = ChiDInitial
+        a_init = init_chis[-1]
+        d_init = init_chis[0]
         
         # Plot heatmaps with optimizer predictions
-        titl = f'N={self.max_n}, tmax={self.max_t}, Initial (χA, χD) = {a_init, d_init},\
+        titl = f'N={self.max_n}, tmax={self.max_t}, Initial (χA, χD) = {a_init, d_init},\n\
             λ={self.coupling}, ωA={self.omegaA}, ωD={self.omegaD}'
 
         x = np.array(np.array(d))
@@ -175,8 +175,21 @@ class PlotResults:
         ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
         figure2.colorbar(plot2)
         ax2.legend(prop={'size': 15})
-        ax2.set_title(titl, fontsize=20)
+        # ax2.set_title(titl, fontsize=20)
         saveFig(fig_id="contour", fig_extension="png", destination=data_path)
+        plt.close(figure2)
+    
+    def plotHeatmap(self, all_opts=False, data_path=str()):
+        if all_opts:
+            for j, path in enumerate(self.data_dirs):
+                iter_path = path
+                opt_data = glob.glob(os.path.join(iter_path, 'data_optimizer_*'))
+                for optimizer_i in opt_data:
+                    self._plotHeatmap(optimizer_i)
+        elif not all_opts and type(data_path)!=str:
+            raise TypeError(f"Provided path variable is type {type(data_path).__name__}, not str.")
+        else:
+            self._plotHeatmap(data_path)
 
     def plotLoss(self):
         for j, path in enumerate(self.data_dirs):
@@ -244,8 +257,11 @@ if __name__=="__main__":
 
     data_paths = glob.glob(os.path.join(os.getcwd(), 'data_*'))
     data_params = [constants.loadConstants(path=os.path.join(path, 'constants.json')) for i, path in enumerate(data_paths)]
-    # constants.dumpConstants()
     for index, path in enumerate(data_paths):
-        if data_params[index]['omegas'][1] == 2:
+        if data_params[index]['omegas'][1] == 2 and index>1:
             p = PlotResults(data_params[index], data_path=path)
-            p.plotTimeEvol()
+            p.plotHeatmap(all_opts=True)
+
+    # Test for 1 case
+    # p = PlotResults(data_params[-1], data_path=data_paths[-1])
+    # p.plotHeatmap(all_opts=False, data_path=r"C:\Users\Jason\source\repos\Thesis\data_1652461096118155600\iteration_1\data_optimizer_0")
