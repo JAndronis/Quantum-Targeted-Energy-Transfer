@@ -1,4 +1,6 @@
+import os
 import tensorflow as tf
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 assert tf.__version__ >= "2.0"
 from math import factorial
 from itertools import product
@@ -7,6 +9,11 @@ from constants import TensorflowParams
 
 DTYPE = TensorflowParams['DTYPE']
 
+"""
+Class Loss: A class designed for computing the loss function
+Documentation:
+    * const:  Refer to the constants dictionary in constants.py.
+"""
 class Loss:
     def __init__(self, const):
         #! Import the parameters of the problem
@@ -36,11 +43,10 @@ class Loss:
         self.initialState = tf.convert_to_tensor(self.InitialState, dtype=DTYPE)
 
 
-    def __call__(self, *args, site=str()):
+    def __call__(self, *args, site=str(), single_value=True):
         self.chis = list(args)
         self.targetState = site
-        return self.loss()
-
+        return self.loss(single_value)
 
     def getCombinations(self):
         return self.CombinationsBosons
@@ -144,7 +150,7 @@ class Loss:
         return tf.math.real(sum_j)
 
     #! Computing the loss function given a Hamiltonian correspodning to one combination of non linearity parameters
-    def loss(self):
+    def loss(self, single_value=True):
         Data = tf.TensorArray(DTYPE, size=self.max_t+1)
         self.setCoeffs()
         for t in range(self.max_t+1):
@@ -152,8 +158,9 @@ class Loss:
             x = self._computeAverageCalculation(t)
             Data = Data.write(t, value=x)
         Data = Data.stack()
-        if not self.targetState==f'{list(self.StatesDictionary[0].keys())[-1]}':
-            return tf.reduce_min(Data)
-        else:
-            return self.max_N - tf.reduce_max(Data)
-
+        if single_value:
+            if not self.targetState==f'{list(self.StatesDictionary[0].keys())[-1]}':
+                return tf.reduce_min(Data)
+            else:
+                return self.max_N - tf.reduce_max(Data)
+        else: return Data
