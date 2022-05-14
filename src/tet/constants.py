@@ -29,6 +29,11 @@ solver_params = {'methods': ['grid', 'bins'],
                 'epochs_grid':500,
                 'epochs_bins':1000}
 
+#! Create a dictionary with the limits of each variable explored
+keys = [ f'x{i}lims' for i in TensorflowParams['train_sites'] ] 
+lims = [[-5,5]]*len(keys)
+TrainableVarsLimits = dict(zip(keys,lims))
+
 plotting_params = {'plotting_resolution': 100}
 
 # -------------- Helper Functions -------------- #
