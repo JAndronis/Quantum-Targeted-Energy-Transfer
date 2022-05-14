@@ -9,6 +9,15 @@ from saveFig import saveFig
 import constants
 from math import sqrt
 
+# -------------------------------------------------------------------
+
+"""
+writeData: A function used for saving data in files
+Documentation:
+    * data: List/Array of data
+    * destination: Path to save the file
+    * name_of_file: Desired name of the file. Include the type of the file too.
+"""
 
 def writeData(data, destination, name_of_file):
     data = np.array(data)
@@ -25,6 +34,8 @@ def writeData(data, destination, name_of_file):
     
     else: np.savetxt(_destination, data, fmt=fmt)
 
+# -------------------------------------------------------------------
+#? TO DO 
 def write_min_N(xA, xD, min_n, destination, name_of_file):
     z = min_n.flatten(order='C')
     x = xD.flatten(order='C')
@@ -40,6 +51,14 @@ def write_min_N(xA, xD, min_n, destination, name_of_file):
     temp_arr = np.array(k)
     writeData(data=temp_arr, destination=destination, name_of_file=name_of_file)
 
+# -------------------------------------------------------------------
+
+"""
+read_1D_data: Assume that you are having a file with a float number per line.This function returns an array with that data.
+Documentation:
+    * destination: The path of the existing file:
+    * name_of_file: The name of the file
+"""
 def read_1D_data(destination, name_of_file):
     _destination = os.path.join(destination, name_of_file)
     data = []
@@ -48,7 +67,8 @@ def read_1D_data(destination, name_of_file):
         data.append(float(lines[0]))
     return data
 
-
+# -------------------------------------------------------------------
+"""
 def read_2D_data(destination, name_of_file):
     _destination = os.path.join(destination, name_of_file)
     X,Y = [],[]
@@ -73,8 +93,15 @@ def compress(zip_files, destination):
     if zip_files:
         shutil.make_archive(base_name=f"{destination}-zipped", format='zip')
         shutil.rmtree(path=destination)
+"""
 
-
+# -------------------------------------------------------------------
+"""
+createDir: A function that creates a directory given the path
+Documentation:
+    * destination: The path to create the directory
+    * replace_query: If true, permission is asked to overwrite the folder. If false, the directory gets replaced 
+"""
 def createDir(destination, replace_query=True):
     if replace_query:    
         try:
@@ -94,6 +121,12 @@ def createDir(destination, replace_query=True):
     else:
         os.makedirs(destination, exist_ok=True)
 
+# -------------------------------------------------------------------
+
+"""
+PlotResults: A class for plotting results
+Documentation
+"""
 class PlotResults:
     def __init__(self, const, data_path):
         self.const = const
