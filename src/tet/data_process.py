@@ -225,17 +225,20 @@ class PlotResults:
         def calcN(site):
             return l(*chis, single_value=False, site=site)
 
-        for i in range(len(self.iteration_dirs)):
-            chis = read_1D_data(destination=self.iteration_dirs[i], name_of_file='optimalvars.txt')
-            self.const['chis'] = list(chis)
-            l = Loss(const=self.const)
-            evolved_n_acceptor = calcN(site=constants.acceptor)
-            evolved_n_donor = calcN(site=constants.donor)
-            fig, ax = plt.subplots()
-            ax.plot(evolved_n_acceptor)
-            ax.plot(evolved_n_donor)
-            saveFig(fig_id="avg_n", fig_extension="png", destination=self.iteration_dirs[i], silent=True)
-            plt.close(fig)
+        for j, path in enumerate(self.data_dirs):
+            iter_path = path
+            opt_data = glob.glob(os.path.join(iter_path, 'data_optimizer_*'))
+            for optimizer_i in opt_data:
+                chis = read_1D_data(destination=optimizer_i, name_of_file='optimalvars.txt')
+                self.const['chis'] = list(chis)
+                l = Loss(const=self.const)
+                evolved_n_acceptor = calcN(site=constants.acceptor)
+                evolved_n_donor = calcN(site=constants.donor)
+                fig, ax = plt.subplots()
+                ax.plot(evolved_n_acceptor)
+                ax.plot(evolved_n_donor)
+                saveFig(fig_id="avg_n", fig_extension="png", destination=optimizer_i, silent=True)
+                plt.close(fig)
 
 if __name__=="__main__":
 
@@ -245,4 +248,4 @@ if __name__=="__main__":
     for index, path in enumerate(data_paths):
         if data_params[index]['omegas'][1] == 2:
             p = PlotResults(data_params[index], data_path=path)
-            p.plotLoss()
+            p.plotTimeEvol()
