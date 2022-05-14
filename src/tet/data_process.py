@@ -179,13 +179,16 @@ class PlotResults:
         saveFig(fig_id="contour", fig_extension="png", destination=data_path)
 
     def plotLoss(self):
-        for i in range(len(self.iteration_dirs)):
-            loss_data = read_1D_data(destination=self.iteration_dirs[i], name_of_file='losses.txt')
-            # Plot Loss
-            fig, ax = plt.subplots()
-            ax.plot(loss_data[1:])
-            saveFig(fig_id="loss", fig_extension="png", destination=self.iteration_dirs[i], silent=True)
-            plt.close(fig)
+        for j, path in enumerate(self.data_dirs):
+            iter_path = path
+            opt_data = glob.glob(os.path.join(iter_path, 'data_optimizer_*'))
+            for optimizer_i in opt_data:
+                loss_data = read_1D_data(destination=optimizer_i, name_of_file='losses.txt')
+                # Plot Loss
+                fig, ax = plt.subplots()
+                ax.plot(loss_data[1:])
+                saveFig(fig_id="loss", fig_extension="png", destination=optimizer_i, silent=True)
+                plt.close(fig)
     
     # ONLY USABLE IN TRIMER AND DIMER CASE
     def plotScatterChis(self):
@@ -235,11 +238,11 @@ class PlotResults:
             plt.close(fig)
 
 if __name__=="__main__":
-    import glob
+
     data_paths = glob.glob(os.path.join(os.getcwd(), 'data_*'))
     data_params = [constants.loadConstants(path=os.path.join(path, 'constants.json')) for i, path in enumerate(data_paths)]
     # constants.dumpConstants()
     for index, path in enumerate(data_paths):
         if data_params[index]['omegas'][1] == 2:
             p = PlotResults(data_params[index], data_path=path)
-            p.plotScatterChis()
+            p.plotLoss()
