@@ -1,21 +1,32 @@
 import sys
 import os
 import time
-assert sys.version_info >= (3,6)
-
-
 import numpy as np
 import matplotlib.pyplot as plt
-
 import tensorflow as tf
-#tf.get_logger().setLevel('WARNING')
-assert tf.__version__ >= "2.0"
 import keras.backend as K
+import constants as constants
 
 from data_process import createDir, writeData, read_1D_data
 from HamiltonianLoss import Loss
-import constants as constants
 from constants import TensorflowParams
+
+assert tf.__version__ >= "2.0"
+assert sys.version_info >= (3,6)
+#from solver_mp_test import getCombinations
+#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
+
+"""
+class Oprimizer: A class where the policy of each optimizer is designed.
+Documentation:
+    * target_site: Refer to the argument target of the solver_params dictionary in constants.py
+    * DataExist: A boolean variable verifying that an optimizer with given initial guesses runs for the first time
+    * const: Refer to the constants dictionary in constants.py.
+    * Plot,Print:
+    * iterations: Refer to the argument iterations of the TensorflowParams dictionary in constants.py
+    * lr: Refer to the argument lr of the TensorflowParams dictionary in constants.py
+    * data_path: Path to save the directory of an optimizer with given initial guesses
+"""
 
 class Optimizer:
     def __init__(self,
@@ -228,6 +239,17 @@ class Optimizer:
 
 # ----------------------------- Multiprocess Helper Function ----------------------------- #
 
+"""
+mp_opt: A helper function used for multiprocess.
+Documentation:
+    * i: Index refering to optimizer with specific initial guesses
+    * combination: The initial guesses(referring to the trainable parameters) of the said optimizer
+    * const: Refer to the constants dictionary in constants.py.
+    * target_site: Refer to the argument target of the solver_params dictionary in constants.py
+    * lr: Refer to the argument lr of the TensorflowParams dictionary in constants.py
+    * iterations: Maximum iteratiosn of the optimizer
+"""
+
 def mp_opt(i, combination, iteration_path, const, target_site, lr, iterations):
     #! Import the parameters of the problem
     const = const
@@ -244,18 +266,21 @@ def mp_opt(i, combination, iteration_path, const, target_site, lr, iterations):
                     Plot=True)
 
     #! Call the optimizer with chis including the given initial guesses
-    input_chis = list(combination)
-    # Update the list with the initial guesses of the optimizer
-    # for index, case in zip(TensorflowParams['train_sites'], combination): input_chis[index] = case
+    input_chis = const['chis']
+    # Update the list with the initial guesses of the optimizer.IT IS ESSENTIAL WHEN WE DON'T TRAIN ALL THE NON 
+    #LINEARITY PARAMETERS
+    for index, case in zip(TensorflowParams['train_sites'], combination): input_chis[index] = case
+
     opt(*input_chis)
 
     #! Load Data
     loss_data = read_1D_data(destination=data_path, name_of_file='losses.txt')
     best_vars = read_1D_data(destination=data_path, name_of_file='optimalvars.txt')
     print(f'Job {i}: Done')
-    #? Just to keep the format, there is a better way
+
     return np.array([*best_vars,np.min(loss_data)])
 
+"""
 #! In case one wants to run one optimizer
 if __name__=="__main__":
     CONST = constants.constants
@@ -266,7 +291,9 @@ if __name__=="__main__":
     lims = [[-5,5]]*len(keys)
     TrainableVarsLimits = dict(zip(keys,lims))
 
-    from solver_mp_test import getCombinations
+    
     Combinations = getCombinations(TrainableVarsLimits, method='grid', const=CONST)
     args = [(i, combination, os.getcwd(), CONST, constants.solver_params['target'], 0.1, 200) for i, (combination) in enumerate(Combinations)]
     mp_opt(*args[0])
+"""
+
