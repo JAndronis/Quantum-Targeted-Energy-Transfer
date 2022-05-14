@@ -164,3 +164,7 @@ class Loss:
             else:
                 return self.max_N - tf.reduce_max(Data)
         else: return Data
+
+if __name__=="__main__":
+    import constants
+    l = Loss(constants.constants)

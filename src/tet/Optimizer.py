@@ -33,7 +33,6 @@ class Optimizer:
                  target_site, 
                  DataExist,
                  const=None,
-                 Plot=False, 
                  Print=True,
                  iterations=TensorflowParams['iterations'],
                  lr=TensorflowParams['lr'], 
@@ -52,7 +51,6 @@ class Optimizer:
         self.target_site = target_site
         self.DataExist = DataExist
         self.data_path = data_path
-        self.plot = Plot
         self.iter = iterations
         self.lr = lr
         self.opt = tf.keras.optimizers.Adam()
@@ -263,8 +261,7 @@ def mp_opt(i, combination, iteration_path, const, target_site, lr, iterations):
                     data_path=data_path,
                     const=const,
                     lr=lr,
-                    iterations=iterations,
-                    Plot=True)
+                    iterations=iterations)
 
     #! Call the optimizer with chis including the given initial guesses
     input_chis = const['chis']

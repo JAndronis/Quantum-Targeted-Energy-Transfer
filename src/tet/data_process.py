@@ -220,6 +220,7 @@ class PlotResults:
         plt.close(figure2)
     
     def plotHeatmap(self, all_opts=False, data_path=str()):
+
         if all_opts:
             for j, path in enumerate(self.data_dirs):
                 iter_path = path
@@ -232,6 +233,7 @@ class PlotResults:
             self._plotHeatmap(data_path)
 
     def plotLoss(self):
+        
         for j, path in enumerate(self.data_dirs):
             iter_path = path
             opt_data = glob.glob(os.path.join(iter_path, 'data_optimizer_*'))
@@ -297,10 +299,14 @@ if __name__=="__main__":
 
     data_paths = glob.glob(os.path.join(os.getcwd(), 'data_*'))
     data_params = [constants.loadConstants(path=os.path.join(path, 'constants.json')) for i, path in enumerate(data_paths)]
-    for index, path in enumerate(data_paths):
-        if data_params[index]['omegas'][1] == 2 and index>1:
-            p = PlotResults(data_params[index], data_path=path)
-            p.plotHeatmap(all_opts=True)
+    ndata = [data_params[i]['max_N'] for i in range(len(data_params))]
+    loss_data = [data_params[i]['min_n'] for i in range(len(data_params))]
+    plt.scatter(ndata, loss_data)
+    plt.show()
+    # for index, path in enumerate(data_paths):
+        # if data_params[index]['omegas'][1] == 2 and index>1:
+            # p = PlotResults(data_params[index], data_path=path)
+            # p.plotHeatmap(all_opts=True)
 
     # Test for 1 case
     # p = PlotResults(data_params[-1], data_path=data_paths[-1])
