@@ -1,4 +1,6 @@
+import os
 import tensorflow as tf
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 assert tf.__version__ >= "2.0"
 from math import factorial
 from itertools import product
@@ -7,6 +9,11 @@ from constants import TensorflowParams
 
 DTYPE = TensorflowParams['DTYPE']
 
+"""
+Class Loss: A class designed for computing the loss function
+Documentation:
+    * const:  Refer to the constants dictionary in constants.py.
+"""
 class Loss:
     def __init__(self, const):
         #! Import the parameters of the problem
@@ -157,4 +164,3 @@ class Loss:
             else:
                 return self.max_N - tf.reduce_max(Data)
         else: return Data
-
