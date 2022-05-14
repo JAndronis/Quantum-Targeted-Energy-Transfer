@@ -15,11 +15,10 @@ Documentation:
     * the non trainable parameters and enter random values for the trainable ones.
     * sites: The number of the oscillators of the system. Usually denoted by f.
 """
-
-constants = {'max_N': 6,
-             'max_t': 25*7, 
-             'omegas': [-3,3,3],
-             'chis': [1.5,0,-1.5],
+constants = {'max_N': 2,
+             'max_t': 25, 
+             'omegas': [-3, 3, 3],
+             'chis': [0, 0, 0],
              'coupling': 1, 
              'sites': 3}
 
@@ -34,12 +33,11 @@ Documentation:
     * tol : The tolerance of each optimizer concerning the changes in the non-linearity parameters.
     * train_sites: A list including the non-linearity parameters to be optimized. Begin counting from 0
 """
-
 TensorflowParams = {'DTYPE': tf.float32, 
                     'lr': 0.1, 
-                    'iterations': 200,
+                    'iterations': 500,
                     'tol':1e-8,
-                    'train_sites': [0,2]}
+                    'train_sites': [0, 2]}
 
 # Define the acceptor and the donor site
 acceptor = 'x{}'.format(constants['sites']-1)
@@ -61,7 +59,7 @@ Documentation:
 """
 solver_params = {'methods': ['grid', 'bins'],
                 'target': acceptor,
-                'Npoints': 7,
+                'Npoints': 3,
                 'epochs_grid':500,
                 'epochs_bins':1000}
 
