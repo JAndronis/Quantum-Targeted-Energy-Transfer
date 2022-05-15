@@ -5,12 +5,15 @@ import gc
 import sys
 import time
 import multiprocessing as mp
-import constants
-
 from itertools import combinations, product
+import tensorflow as tf
+
+import constants
 from Optimizer import mp_opt, Optimizer
-from data_process import createDir
+from data_process import createDir, read_1D_data
 from constants import solver_params,TensorflowParams
+
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 
 #!Creates a list of initial guess pairs to be fed to an optimizer call
@@ -99,7 +102,7 @@ def solver_mp(TrainableVarsLimits, const,
 
 
     #! Use cpu since we are doing parallelization on the cpu
-    #os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
     # Create data directory to save results
     createDir(destination=data_path, replace_query=True)
@@ -120,12 +123,12 @@ def solver_mp(TrainableVarsLimits, const,
     bin_choice = False
 
     #* An array to save the optimal parameters
-    OptimalVars, min_loss = np.zeros(len(TrainableVarsLimits)), const['max_N']   # initializing min_loss to the maximum number
-                                                    # ensures that the initial combinations of initial
-                                                    # guesses will be done with the bin method
+    OptimalVars, min_loss = np.zeros(len(TrainableVarsLimits)), const['max_N']  # initializing min_loss to the maximum number
+                                                                                # ensures that the initial combinations of initial
+                                                                                # guesses will be done with the bin method
 
     t0 = time.time()
-    while not done and iteration < 2:
+    while not done and iteration < 3:
 
         # Create directory of current iteration
         data_path2 = os.path.join(data_path, f'iteration_{iteration}')
@@ -201,7 +204,7 @@ def solver_mp(TrainableVarsLimits, const,
 
         # Gather results
         all_losses = np.array(_all_losses)
-        OptimalVars = [float(all_losses[np.argmin(all_losses[:,const['sites']]), i]) for i in range(const['sites']) ]
+        OptimalVars = [float(all_losses[np.argmin(all_losses[:,const['sites']]), i]) for i in range(const['sites'])]
         min_loss = float(all_losses[np.argmin(all_losses[:,const['sites']]), const['sites']])
         
         # Print results of run
@@ -213,7 +216,7 @@ def solver_mp(TrainableVarsLimits, const,
             edge = _edge[iteration]
             #grid += 2
     
-            lims = [ [ OptimalVars[i]-edge, OptimalVars[i]+edge ] for i in range(len(TrainableVarsLimits)) ]
+            lims = [[OptimalVars[i]-edge, OptimalVars[i]+edge] for i in range(len(TrainableVarsLimits))]
 
         else:
             solver_params['Npoints'] += 1
@@ -230,26 +233,21 @@ def solver_mp(TrainableVarsLimits, const,
         # tet has been achieved no need to continue
         if float(min_loss)<=0.1:
             print('TET!')
-
-    
             print(f'OptimalParams:{OptimalVars}')
             done = True
             break
 
     t1 = time.time()
 
-    # # Write best parameters to parameter json
-    # const['chis'] = [f'{OptimalVars[i]}' for i in range(len(OptimalVars))]
-    # const['min_n'] = min_loss
-    # constants.dumpConstants(dict=const, path=data_path)
-
     data_path3 = os.path.join(data_path, f'main_opt')
-    # createDir(destination=data_path3, replace_query=True)
-
     _opt = Optimizer(target_site=solver_params['target'], DataExist=False, const=const, Print=True, data_path=data_path3)
     _opt(*OptimalVars)
 
-    const['chis'] = [f'{OptimalVars[i]}' for i in range(len(OptimalVars))]
+    #! Load Data
+    loss_data = read_1D_data(destination=data_path3, name_of_file='losses.txt')
+    OptimalVars = read_1D_data(destination=data_path3, name_of_file='optimalvars.txt')
+
+    const['chis'] = OptimalVars
     const['min_n'] = min_loss
     constants.dumpConstants(dict=const, path=data_path)
     
