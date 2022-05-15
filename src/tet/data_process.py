@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from saveFig import saveFig
 import constants
 from math import sqrt
+import warnings
 
 # -------------------------------------------------------------------
 
@@ -130,10 +131,15 @@ class PlotResults:
         self.data_dirs = glob.glob(os.path.join(data_path, 'iteration_*'))
 
     # ONLY WORKS IN DIMER CASE
-    def _plotHeatmap(self, data_path):
+    def plotHeatmap(self, all_opts=False, data_path=str()):
 
-        lims = constants.lims
-        init_chis = read_1D_data(data_path, 'init_chis.txt')
+        def fmt(x):
+            s = f"{x:.1f}"
+            if s.endswith("0"):
+                s = f"{x:.0f}"
+            return rf"{s} \%" if plt.rcParams["text.usetex"] else f"{s}"
+
+        lims = [[-8, 8], [-8, 8]]
         xA = np.linspace(*lims[-1], num=self.Npoints)
         xD = np.linspace(*lims[0], num=self.Npoints)
 
@@ -169,49 +175,104 @@ class PlotResults:
         xA_plot = min_n_combinations[:,0].reshape(self.Npoints, self.Npoints)
         xD_plot = min_n_combinations[:,1].reshape(self.Npoints, self.Npoints)
         avg_n = min_n_combinations[:,2].reshape(self.Npoints, self.Npoints)
-        
-        # Load Data
-        a = read_1D_data(destination=data_path, name_of_file=f'x{self.sites-1}trajectory.txt')
-        d = read_1D_data(destination=data_path, name_of_file=f'x{0}trajectory.txt')
-        a_init = init_chis[-1]
-        d_init = init_chis[0]
-        
-        # Plot heatmaps with optimizer predictions
-        titl = f'N={self.max_n}, tmax={self.max_t}, Initial (χA, χD) = {a_init, d_init},\n\
-            λ={self.coupling}, ωA={self.omegaA}, ωD={self.omegaD}'
-
-        x = np.array(np.array(d))
-        y = np.array(np.array(a))
-        figure2, ax2 = plt.subplots(figsize=(12,12))
-        plot2 = ax2.contourf(xD_plot, xA_plot, avg_n, levels=50, cmap='rainbow')
-        plot3 = ax2.plot(x, y, marker='o', color='black', label='Optimizer Predictions')
-        u = np.diff(x)
-        v = np.diff(y)
-        pos_x = x[:-1] + u/2
-        pos_y = y[:-1] + v/2
-        norm = np.sqrt(u**2+v**2)
-        ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy",pivot="mid")
-        plot4 = ax2.scatter(d_init, a_init, color='green', edgecolors='black', s=94, label='Initial Value', zorder=3)
-        ax2.set_xlabel(r"$\chi_{D}$", fontsize=20)
-        ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
-        figure2.colorbar(plot2)
-        ax2.legend(prop={'size': 15})
-        # ax2.set_title(titl, fontsize=20)
-        saveFig(fig_id="contour", fig_extension="png", destination=data_path)
-        plt.close(figure2)
-    
-    def plotHeatmap(self, all_opts=False, data_path=str()):
 
         if all_opts:
+            figure2, ax2 = plt.subplots()
+            plot = ax2.contourf(xD_plot, xA_plot, avg_n, levels=50, cmap='YlGn_r')  # change cmap
+            plot2 = ax2.contour(xD_plot, xA_plot, avg_n, levels=5, colors=('k',))
+            ax2.clabel(plot2, plot2.levels, inline=True, fmt=fmt, fontsize=20)
+
             for j, path in enumerate(self.data_dirs):
                 iter_path = path
                 opt_data = glob.glob(os.path.join(iter_path, 'data_optimizer_*'))
+                counter=0
                 for optimizer_i in opt_data:
-                    self._plotHeatmap(optimizer_i)
+                    if min(read_1D_data(destination=optimizer_i, name_of_file='losses.txt')) < 0.5:
+                        init_chis = read_1D_data(optimizer_i, 'init_chis.txt')
+                        # Load Data
+                        a = read_1D_data(destination=optimizer_i, name_of_file=f'x{self.sites-1}trajectory.txt')
+                        d = read_1D_data(destination=optimizer_i, name_of_file=f'x{0}trajectory.txt')
+                        a_init = init_chis[-1]
+                        d_init = init_chis[0]
+
+                        # Plot heatmaps with optimizer predictions
+                        titl = f'N={self.max_n}, tmax={self.max_t}, Initial (χA, χD) = {a_init, d_init},\n\
+                            λ={self.coupling}, ωA={self.omegaA}, ωD={self.omegaD}'
+                            
+                        x = np.array(d)
+                        y = np.array(a)
+                        plot3 = ax2.plot(x, y, marker='.', color='black', label='Test Opt. Predictions' if counter == 0 else '')
+                        u = np.diff(x)
+                        v = np.diff(y)
+                        pos_x = x[:-1] + u/2
+                        pos_y = y[:-1] + v/2
+                        norm = np.sqrt(u**2+v**2)
+                        plot4 = ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy")
+                        plot5 = ax2.scatter(d_init, a_init, color='#DC5D47', edgecolors='black', s=94, label='Test Opt. Initial Guesses' if counter == 0 else '', zorder=3)
+                        ax2.set_xlabel(r"$\chi_{D}$", fontsize=20)
+                        ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
+                        counter += 1
+            
+            main_opt_path = os.path.join(self.data_path, 'main_opt')
+            init_chis = read_1D_data(main_opt_path, 'init_chis.txt')
+            # Load Data
+            a = read_1D_data(destination=main_opt_path, name_of_file=f'x{self.sites-1}trajectory.txt')
+            d = read_1D_data(destination=main_opt_path, name_of_file=f'x{0}trajectory.txt')
+            a_init = init_chis[-1]
+            d_init = init_chis[0]
+            x = np.array(d)
+            y = np.array(a)
+            plot3 = ax2.plot(x, y, marker='.', color='black', label='Main Opt. Predictions')
+            u = np.diff(x)
+            v = np.diff(y)
+            pos_x = x[:-1] + u/2
+            pos_y = y[:-1] + v/2
+            norm = np.sqrt(u**2+v**2)
+            plot4 = ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy")
+            plot5 = ax2.scatter(d_init, a_init, color='b', edgecolors='black', s=94, label='Main Opt. Initial Guess', zorder=3)
+            ax2.set_xlabel(r"$\chi_{D}$", fontsize=20)
+            ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
+            ax2.legend(prop={'size': 12})
+            cbar = figure2.colorbar(plot)
+            cbar.set_label('Loss Value', fontsize=20)
+            saveFig(fig_id="contour", fig_extension="png", destination=main_opt_path)
+            
         elif not all_opts and type(data_path)!=str:
             raise TypeError(f"Provided path variable is type {type(data_path).__name__}, not str.")
+        
         else:
-            self._plotHeatmap(data_path)
+            figure2, ax2 = plt.subplots(figsize=(12,12))
+            plot = ax2.contourf(xD_plot, xA_plot, avg_n, levels=50, cmap='YlGn_r')
+            plot2 = ax2.contour(xD_plot, xA_plot, avg_n, levels=5, colors=('k',))
+            ax2.clabel(plot2, plot2.levels, inline=True, fmt=fmt, fontsize=20)
+
+            if min(read_1D_data(destination=data_path, name_of_file='losses.txt')) < 0.5:
+                init_chis = read_1D_data(data_path, 'init_chis.txt')
+                # Load Data
+                a = read_1D_data(destination=data_path, name_of_file=f'x{self.sites-1}trajectory.txt')
+                d = read_1D_data(destination=data_path, name_of_file=f'x{0}trajectory.txt')
+                a_init = init_chis[-1]
+                d_init = init_chis[0]
+                # Plot heatmaps with optimizer predictions
+                titl = f'N={self.max_n}, tmax={self.max_t}, Initial (χA, χD) = {a_init, d_init},\n\
+                    λ={self.coupling}, ωA={self.omegaA}, ωD={self.omegaD}'
+                x = np.array(np.array(d))
+                y = np.array(np.array(a))
+                # plot3 = ax2.plot(x, y, marker='o', color='black', label='Optimizer Predictions' if i == 0 else '')
+                u = np.diff(x)
+                v = np.diff(y)
+                pos_x = x[:-1] + u/2
+                pos_y = y[:-1] + v/2
+                norm = np.sqrt(u**2+v**2)
+                plot4 = ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy", alpha=0.5, label='Optimizer Trajectory')
+                plot5 = ax2.scatter(d_init, a_init, color='#1C2536', edgecolors='black', s=94, label='Initial Value', zorder=3)
+                ax2.set_xlabel(r"$\chi_{D}$", fontsize=20)
+                ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
+                    
+            ax2.legend(prop={'size': 15})
+            cbar = figure2.colorbar(plot)
+            cbar.set_label('Loss Value', fontsize=20)
+            saveFig(fig_id="contour", fig_extension="png", destination=data_path)
 
     def plotLoss(self):
 
@@ -247,7 +308,7 @@ class PlotResults:
             else:
                 ax = fig.add_subplot()
             # Scatterplot of final predicted parameters with colormap corresponding to the points' loss
-            x = ax.scatter(*[optimal_vars[:,j] for j in range(optimal_vars.shape[1]-1)], c=optimal_vars[:,-1], cmap='plasma_r')
+            x = ax.scatter(*[optimal_vars[:,j] for j in range(optimal_vars.shape[1]-1)], c=optimal_vars[:,-1], cmap='YlGn_r')
             fig.colorbar(x)
             saveFig(fig_id='chi_scatterplot', destination=path)
             plt.close(fig)
@@ -284,20 +345,23 @@ if __name__=="__main__":
     loss_data = [data_params[i]['min_n'] for i in range(len(data_params))]
     chi_as = [data_params[i]['chis'][-1] for i in range(len(data_params))]
     chi_ds = [data_params[i]['chis'][0] for i in range(len(data_params))]
-    fig, ax = plt.subplots()
-    x = ax.scatter(chi_as, chi_ds, c=loss_data, cmap='plasma')
-    fig.colorbar(x)
-    for label, x, y in zip(ndata, chi_as, chi_ds):
-        plt.annotate(
-            label,
-            xy=(x, y), xytext=(2, 5),
-            textcoords='offset points', ha='right', va='bottom')
-    plt.show()
+    # fig, ax = plt.subplots()
+    # x = ax.scatter(ndata[:10], loss_data[:10])
+    # plt.show()
+    # fig.colorbar(x)
+    # for label, x, y in zip(ndata, chi_as, chi_ds):
+    #     plt.annotate(
+    #         label,
+    #         xy=(x, y), xytext=(2, 5),
+    #         textcoords='offset points', ha='right', va='bottom')
+    # plt.show()
     # for index, path in enumerate(data_paths):
         # if data_params[index]['omegas'][1] == 2 and index>1:
             # p = PlotResults(data_params[index], data_path=path)
             # p.plotHeatmap(all_opts=True)
 
     # Test for 1 case
-    # p = PlotResults(data_params[-1], data_path=data_paths[-1])
-    # p.plotHeatmap(all_opts=False, data_path=r"C:\Users\Jason\source\repos\Thesis\data_1652461096118155600\iteration_1\data_optimizer_0")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        p = PlotResults(data_params[2], data_path=data_paths[2])
+        p.plotHeatmap(all_opts=True)
