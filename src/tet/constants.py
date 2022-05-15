@@ -15,7 +15,7 @@ Documentation:
     * the non trainable parameters and enter random values for the trainable ones.
     * sites: The number of the oscillators of the system. Usually denoted by f.
 """
-constants = {'max_N': 12,
+constants = {'max_N': 4,
              'max_t': 25, 
              'omegas': [-3, 3],
              'chis': [0, 0],
@@ -60,7 +60,7 @@ Documentation:
 """
 solver_params = {'methods': ['grid', 'bins'],
                 'target': acceptor,
-                'Npoints': 5,
+                'Npoints': 10,
                 'epochs_grid':1000,
                 'epochs_bins':1000}
 
