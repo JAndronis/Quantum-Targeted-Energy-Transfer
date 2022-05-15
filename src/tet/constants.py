@@ -15,12 +15,12 @@ Documentation:
     * the non trainable parameters and enter random values for the trainable ones.
     * sites: The number of the oscillators of the system. Usually denoted by f.
 """
-constants = {'max_N': 2,
+constants = {'max_N': 12,
              'max_t': 25, 
-             'omegas': [-3, 3, 3],
-             'chis': [0, 0, 0],
-             'coupling': 1, 
-             'sites': 3}
+             'omegas': [-3, 3],
+             'chis': [0, 0],
+             'coupling': 0.1, 
+             'sites': 2}
 
 # -------------------------------------------------------------------#
 
@@ -35,9 +35,9 @@ Documentation:
 """
 TensorflowParams = {'DTYPE': tf.float32, 
                     'lr': 0.1, 
-                    'iterations': 500,
+                    'iterations': 1000,
                     'tol':1e-8,
-                    'train_sites': [0, 2]}
+                    'train_sites': [0, 1]}
 
 # Define the acceptor and the donor site
 acceptor = 'x{}'.format(constants['sites']-1)
@@ -59,8 +59,8 @@ Documentation:
 """
 solver_params = {'methods': ['grid', 'bins'],
                 'target': acceptor,
-                'Npoints': 3,
-                'epochs_grid':500,
+                'Npoints': 5,
+                'epochs_grid':1000,
                 'epochs_bins':1000}
 
 #! Create a dictionary with the limits of each variable explored
