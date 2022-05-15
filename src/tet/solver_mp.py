@@ -111,8 +111,8 @@ def solver_mp(TrainableVarsLimits, const,
     lims = list(TrainableVarsLimits.values())
     grid = grid
 
-    _edge =  [0.1,0.5,1.5,2.5,3.0,3.5,4.0]  
-    #_edge =  [4.0,3.5,3.0,2.5,1.5,0.5,0.1]  
+    # _edge =  [0.1,0.5,1.5,2.5,3.0,3.5,4.0]  
+    _edge =  [4.0,3.5,3.0,2.5,1.5,0.5,0.1]  
 
     # Control how many times loss is lower than the threshold having changed the limits
     iteration = 0
@@ -128,7 +128,7 @@ def solver_mp(TrainableVarsLimits, const,
                                                                                 # guesses will be done with the bin method
 
     t0 = time.time()
-    while not done and iteration < 3:
+    while not done and iteration < 2:
 
         # Create directory of current iteration
         data_path2 = os.path.join(data_path, f'iteration_{iteration}')
@@ -174,7 +174,8 @@ def solver_mp(TrainableVarsLimits, const,
 
         t2 = time.time()
         # Initialize processing pool
-        pool = mp.Pool(max(mp.cpu_count()//2, 1))
+        # pool = mp.Pool(max(mp.cpu_count()//2, 1))
+        pool = mp.Pool(mp.cpu_count())
 
         # Set input arg list for mp_opt() function
         args = [(i, combination, data_path2, const, target_site, lr, iter) for i, (combination) in enumerate(Combinations)]
@@ -248,7 +249,7 @@ def solver_mp(TrainableVarsLimits, const,
     OptimalVars = read_1D_data(destination=data_path3, name_of_file='optimalvars.txt')
 
     const['chis'] = OptimalVars
-    const['min_n'] = min_loss
+    const['min_n'] = min(loss_data)
     constants.dumpConstants(dict=const, path=data_path)
     
     print('Total solver run time: ', t1-t0)
