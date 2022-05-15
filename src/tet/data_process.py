@@ -213,29 +213,23 @@ class PlotResults:
                         ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
                         counter += 1
             
-            main_opt_path = os.path.join(self.data_path, 'main_opt')
-            init_chis = read_1D_data(main_opt_path, 'init_chis.txt')
-            # Load Data
-            a = read_1D_data(destination=main_opt_path, name_of_file=f'x{self.sites-1}trajectory.txt')
-            d = read_1D_data(destination=main_opt_path, name_of_file=f'x{0}trajectory.txt')
-            a_init = init_chis[-1]
-            d_init = init_chis[0]
-            x = np.array(d)
-            y = np.array(a)
-            plot3 = ax2.plot(x, y, marker='.', color='black', label='Main Opt. Predictions')
-            u = np.diff(x)
-            v = np.diff(y)
-            pos_x = x[:-1] + u/2
-            pos_y = y[:-1] + v/2
-            norm = np.sqrt(u**2+v**2)
-            plot4 = ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy")
-            plot5 = ax2.scatter(d_init, a_init, color='b', edgecolors='black', s=94, label='Main Opt. Initial Guess', zorder=3)
+            chis = constants.loadConstants(path=os.path.join(self.data_path, 'constants.json'))['chis']
+            # x = np.array(d)
+            # y = np.array(a)
+            # plot3 = ax2.plot(x, y, marker='.', color='black', label='Main Opt. Predictions')
+            # u = np.diff(x)
+            # v = np.diff(y)
+            # pos_x = x[:-1] + u/2
+            # pos_y = y[:-1] + v/2
+            # norm = np.sqrt(u**2+v**2)
+            # plot4 = ax2.quiver(pos_x, pos_y, u/norm, v/norm, angles="xy")
+            plot5 = ax2.scatter(*chis, color='b', edgecolors='black', s=94, label='Optimal Parameters', zorder=3)
             ax2.set_xlabel(r"$\chi_{D}$", fontsize=20)
             ax2.set_ylabel(r"$\chi_{A}$", fontsize=20)
             ax2.legend(prop={'size': 12})
             cbar = figure2.colorbar(plot)
             cbar.set_label('Loss Value', fontsize=20)
-            saveFig(fig_id="contour", fig_extension="png", destination=main_opt_path)
+            saveFig(fig_id="contour", fig_extension="png", destination=self.data_path)
             
         elif not all_opts and type(data_path)!=str:
             raise TypeError(f"Provided path variable is type {type(data_path).__name__}, not str.")
@@ -363,5 +357,5 @@ if __name__=="__main__":
     # Test for 1 case
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=RuntimeWarning)
-        p = PlotResults(data_params[2], data_path=data_paths[2])
+        p = PlotResults(data_params[3], data_path=data_paths[3])
         p.plotHeatmap(all_opts=True)
