@@ -35,8 +35,18 @@ def writeData(data, destination, name_of_file):
     else: np.savetxt(_destination, data, fmt=fmt)
 
 # -------------------------------------------------------------------
-#? TO DO 
+
 def write_min_N(xA, xD, min_n, destination, name_of_file):
+    """_summary_
+
+    Args:
+        * xA (_type_): _description_
+        * xD (_type_): _description_
+        * min_n (_type_): _description_
+        * destination (_type_): _description_
+        * name_of_file (_type_): _description_
+    """
+    
     z = min_n.flatten(order='C')
     x = xD.flatten(order='C')
     y = xA.flatten(order='C')
@@ -67,35 +77,6 @@ def read_1D_data(destination, name_of_file):
         lines = [i for i in line.split()]
         data.append(float(lines[0]))
     return data
-
-# -------------------------------------------------------------------
-# Deprecated Code 
-"""
-def read_2D_data(destination, name_of_file):
-    _destination = os.path.join(destination, name_of_file)
-    X,Y = [],[]
-    for line in open(_destination, 'r'):
-        lines = [i for i in line.split()]
-        X.append(float(lines[0]))
-        Y.append(float(lines[1]))
-    return X,Y
-
-def ReadDeque(destination, name_of_file):
-    _destination = os.path.join(destination, name_of_file)
-    to_return = []
-    for line in open(_destination, 'r'):
-        lines = [i for i in line.split()]
-        to_return.append( (int(float(lines[0])),int(float(lines[1])),float(lines[2]),
-                        int(float(lines[3])),int(float(lines[4]))) )
-
-    return to_return 
-
-def compress(zip_files, destination):
-    if not zip_files: return None
-    if zip_files:
-        shutil.make_archive(base_name=f"{destination}-zipped", format='zip')
-        shutil.rmtree(path=destination)
-"""
 
 # -------------------------------------------------------------------
 
@@ -233,7 +214,7 @@ class PlotResults:
             self._plotHeatmap(data_path)
 
     def plotLoss(self):
-        
+
         for j, path in enumerate(self.data_dirs):
             iter_path = path
             opt_data = glob.glob(os.path.join(iter_path, 'data_optimizer_*'))
@@ -301,7 +282,16 @@ if __name__=="__main__":
     data_params = [constants.loadConstants(path=os.path.join(path, 'constants.json')) for i, path in enumerate(data_paths)]
     ndata = [data_params[i]['max_N'] for i in range(len(data_params))]
     loss_data = [data_params[i]['min_n'] for i in range(len(data_params))]
-    plt.scatter(ndata, loss_data)
+    chi_as = [data_params[i]['chis'][-1] for i in range(len(data_params))]
+    chi_ds = [data_params[i]['chis'][0] for i in range(len(data_params))]
+    fig, ax = plt.subplots()
+    x = ax.scatter(chi_as, chi_ds, c=loss_data, cmap='plasma')
+    fig.colorbar(x)
+    for label, x, y in zip(ndata, chi_as, chi_ds):
+        plt.annotate(
+            label,
+            xy=(x, y), xytext=(2, 5),
+            textcoords='offset points', ha='right', va='bottom')
     plt.show()
     # for index, path in enumerate(data_paths):
         # if data_params[index]['omegas'][1] == 2 and index>1:
