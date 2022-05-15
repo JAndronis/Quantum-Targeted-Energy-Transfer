@@ -18,7 +18,7 @@ class Loss:
     def __init__(self, const):
         #! Import the parameters of the problem
         self.max_N = tf.constant(const['max_N'], dtype=DTYPE)
-        self.NpointsT = const['Npointst']
+        self.NpointsT = const['timesteps']
         self.max_N_np = const['max_N']
         self.max_t = tf.constant(const['max_t'], dtype=tf.int32)
         self.coupling_lambda = tf.constant(const['coupling'], dtype=DTYPE)
@@ -169,4 +169,9 @@ class Loss:
 
 if __name__=="__main__":
     import constants
-    l = Loss(constants.constants)
+    constants_ = constants.constants
+    from matplotlib import pyplot as plt
+    l = Loss(constants_)
+    data = l(*constants_['chis'],site = 'x{}'.format(constants_['sites']-1),single_value=False)
+    plt.plot(np.linspace(0,constants_['max_t'],constants_['timesteps']),data)
+    plt.show()
