@@ -140,14 +140,15 @@ class Optimizer:
             if self.Print:
                 if epoch%100 ==0: print(f'Loss:{loss.numpy()}, ',*[f'x{j}: {self.vars[j].numpy()}, ' for j in range(len(self.vars))], f', epoch:{epoch}')
             
+            # Manual check for the progress of each variable
+            var_error = [np.abs(self.vars[i].numpy() - _vars[i]) for i in range(len(self.vars))]
+
             # Reduce the learning rate when being close to TET
             if loss.numpy()<=0.5:
                 K.set_value(self.opt.learning_rate, self.lr/100)
                 for i in range(len(self.vars)):
                     self.vars[i].assign(_vars[i])
             
-            # Manual check for the progress of each variable
-            var_error = [np.abs(self.vars[i].numpy() - _vars[i]) for i in range(len(self.vars))]
             # Save the new value of the loss function
             mylosses.append(loss.numpy())
 
