@@ -15,7 +15,7 @@ Documentation:
     * the non trainable parameters and enter random values for the trainable ones.
     * sites: The number of the oscillators of the system. Usually denoted by f.
 """
-constants = {'max_N': 4,
+constants = {'max_N': 10,
              'max_t': 25, 
              'omegas': [-3, 3],
              'chis': [0, 0],
@@ -61,11 +61,11 @@ Documentation:
 solver_params = {'methods': ['grid', 'bins'],
                 'target': acceptor,
                 'Npoints': 10,
-                'epochs_grid':1000,
+                'epochs_grid':500,
                 'epochs_bins':1000}
 
 #! Create a dictionary with the limits of each variable explored
-keys = [ f'x{i}lims' for i in TensorflowParams['train_sites'] ] 
+keys = [f'x{i}lims' for i in TensorflowParams['train_sites']] 
 lims = [[-5,5]]*len(keys)
 TrainableVarsLimits = dict(zip(keys,lims))
 
