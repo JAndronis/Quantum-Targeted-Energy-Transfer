@@ -33,6 +33,7 @@ tests/data_optimizer_avgn/*
 tests/data_optimizer_avgn_*/*
 constants.json
 */constants.json
+images
 
 # pycache
 __pycache__/*
