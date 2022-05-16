@@ -145,7 +145,7 @@ class Optimizer:
 
             # Reduce the learning rate when being close to TET
             if loss.numpy()<=0.5:
-                K.set_value(self.opt.learning_rate, self.lr/100)
+                K.set_value(self.opt.learning_rate, self.lr/10)
                 for i in range(len(self.vars)):
                     self.vars[i].assign(_vars[i])
             
