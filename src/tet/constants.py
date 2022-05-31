@@ -15,13 +15,13 @@ Documentation:
     * the non trainable parameters and enter random values for the trainable ones.
     * sites: The number of the oscillators of the system. Usually denoted by f.
 """
-constants = {'max_N': 10,
+constants = {'max_N': 2,
              'max_t': 25, 
-             'omegas': [-3, 3],
-             'chis': [0, 0],
+             'omegas': [-3, 3, 3],
+             'chis': [0, 0, 0],
              'coupling': 0.1, 
-             'sites': 2,
-             'timesteps':100}
+             'sites': 3,
+             'timesteps':10}
 
 # -------------------------------------------------------------------#
 
@@ -38,7 +38,7 @@ TensorflowParams = {'DTYPE': tf.float32,
                     'lr': 0.1, 
                     'iterations': 1000,
                     'tol':1e-8,
-                    'train_sites': [0, 1]}
+                    'train_sites': [0, 2]}
 
 # Define the acceptor and the donor site
 acceptor = 'x{}'.format(constants['sites']-1)
