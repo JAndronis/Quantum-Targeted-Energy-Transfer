@@ -67,9 +67,9 @@ class Optimizer:
         else:
             createDir(self.data_path, replace_query=True)
             self._train()
-            
-    @tf.function
+    
     #! Compute the loss function
+    @tf.function
     def compute_loss(self, lossClass):
         return lossClass(*self.vars, site=self.target_site)
 
@@ -82,12 +82,10 @@ class Optimizer:
         del t
         return grads, loss
 
+     #! Apply the gradients
     @tf.function
-    #! Apply the gradients
-    def apply_grads(self, lossClass):
-        grads, loss = self.get_grads(lossClass)
+    def apply_grads(self, grads):
         self.opt.apply_gradients(zip(grads, self.vars))
-        return loss
 
     #! Running the optimizer given initial guesses for the trainable parameters
     def train(self, initial_chis):
@@ -123,6 +121,7 @@ class Optimizer:
         mylosses.append(self.max_n)
         
         best_loss = self.max_n
+        current_loss = best_loss
         # Keep the changes for each parameters. Non-trainable parameters are not supposed to change
         counter = 0
         var_data = [[] for _ in range(len(self.vars))]
@@ -131,27 +130,24 @@ class Optimizer:
 
         t0 = time.time()
         for epoch in range(self.iter):
+            
             # Help list with the variables before applying gradients
             _vars = [self.vars[i].numpy() for i in range(len(self.vars))]
+            
             # Compute the loss function and obtain the updated variables
-            loss = self.apply_grads(lossClass=loss_ms)
+            grads, loss = self.get_grads(lossClass=loss_ms)
 
             # Set a repetition rate for displaying the progress 
             if self.Print:
                 if epoch%100 ==0: 
                     print(f'Loss:{loss.numpy()}, ',*[f'x{j}: {self.vars[j].numpy()}, ' for j in range(len(self.vars))], f', epoch:{epoch}')
-            
-            # Manual check for the progress of each variable
-            var_error = [np.abs(self.vars[i].numpy() - _vars[i]) for i in range(len(self.vars))]
 
             # Reduce the learning rate when being close to TET
-            if loss.numpy()<=0.5:
+            if loss.numpy() <= 0.5:
                 K.set_value(self.opt.learning_rate, self.lr/10)
-                for i in range(len(self.vars)):
-                    self.vars[i].assign(_vars[i])
             
             # Save the new value of the loss function
-            mylosses.append(loss_ms(*self.vars, site=self.target_site))
+            mylosses.append(loss.numpy())
 
             # Keep the minimum loss and the corresponding parameters
             if mylosses[epoch+1] < min(list(mylosses[:epoch+1])):
@@ -159,7 +155,18 @@ class Optimizer:
                     best_vars[i].assign(self.vars[i].numpy())
                 best_loss = mylosses[epoch+1]
 
-            # Keep the changes of the variables per 10 steps
+            # CHANGE self.vars
+            self.apply_grads(grads)
+
+            # Manual check for the progress of each variable
+            var_error = [np.abs(self.vars[i].numpy() - _vars[i]) for i in range(len(self.vars))]
+
+            # Change self.vars to 1 step back if loss is reduced too fast
+            if mylosses[epoch+1] - mylosses[epoch] >= 0.5 and loss.numpy() >= 0.5:
+                for i in range(len(self.vars)):
+                    self.vars[i].assign(_vars[i])
+
+            # Keep the changes of the variables per 10 steps for plotting
             counter += 1
             if counter%10 == 0:
                 for k in range(len(self.vars)):
@@ -215,7 +222,6 @@ class Optimizer:
                 "| Coupling Lambda:",self.coupling,
                 "\n"+60*"-"
             )
-        
         return mylosses, var_data, best_vars
     
     #! Run the optimizer for given initial guesses and save trajectories.
