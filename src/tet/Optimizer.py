@@ -235,9 +235,7 @@ class Optimizer:
         writeData(data=self.init_chis, destination=self.data_path, name_of_file='init_chis.txt')
         
         # Save the optimal parameters
-        to_write_vars = self.const['chis']
-        for (index,case) in zip(TensorflowParams['train_sites'],best_vars): to_write_vars[index] = case
-        writeData(data=to_write_vars, destination=self.data_path, name_of_file='optimalvars.txt')
+        writeData(data=best_vars, destination=self.data_path, name_of_file='optimalvars.txt')
         
         for i in range(len(var_data)):
             # Save the trajectories in a file
