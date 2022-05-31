@@ -113,7 +113,7 @@ class Optimizer:
                 # Trainable ones
                 if i in TensorflowParams['train_sites']:
                     self.vars[i] = tf.Variable(initial_value=initial_chis[i], dtype=self.DTYPE, name=f'chi{i}', trainable=True)
-                #Non-trainable ones
+                # Non-trainable ones
                 else:
                     self.vars[i] = tf.Variable(initial_value=initial_chis[i], dtype=self.DTYPE, name=f'chi{i}', trainable=False)
         
@@ -138,7 +138,8 @@ class Optimizer:
 
             # Set a repetition rate for displaying the progress 
             if self.Print:
-                if epoch%100 ==0: print(f'Loss:{loss.numpy()}, ',*[f'x{j}: {self.vars[j].numpy()}, ' for j in range(len(self.vars))], f', epoch:{epoch}')
+                if epoch%100 ==0: 
+                    print(f'Loss:{loss.numpy()}, ',*[f'x{j}: {self.vars[j].numpy()}, ' for j in range(len(self.vars))], f', epoch:{epoch}')
             
             # Manual check for the progress of each variable
             var_error = [np.abs(self.vars[i].numpy() - _vars[i]) for i in range(len(self.vars))]
@@ -150,7 +151,7 @@ class Optimizer:
                     self.vars[i].assign(_vars[i])
             
             # Save the new value of the loss function
-            mylosses.append(loss.numpy())
+            mylosses.append(loss_ms(*self.vars, site=self.target_site))
 
             # Keep the minimum loss and the corresponding parameters
             if mylosses[epoch+1] < min(list(mylosses[:epoch+1])):
@@ -278,3 +279,9 @@ def mp_opt(i, combination, iteration_path, const, target_site, lr, iterations):
     print(f'Job {i}: Done')
 
     return np.array([*best_vars,np.min(loss_data)])
+
+if __name__=="__main__":
+    import constants
+    constants.dumpConstants(constants.constants)
+    opt = Optimizer(constants.acceptor, DataExist=False, Print=True)
+    opt(0, 0, 0)
