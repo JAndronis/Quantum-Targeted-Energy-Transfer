@@ -16,12 +16,12 @@ Documentation:
     * sites: The number of the oscillators of the system. Usually denoted by f.
 """
 constants = {'max_N': 2,
-             'max_t': 25, 
-             'omegas': [-3, 3, 3],
-             'chis': [0, 0, 0],
-             'coupling': 0.1, 
+             'max_t': 400, 
+             'omegas': [-3,3,3],
+             'chis': [3.5,0,-1.9],
+             'coupling': 0.1,
              'sites': 3,
-             'timesteps':10}
+             'timesteps':200}
 
 # -------------------------------------------------------------------#
 
@@ -60,13 +60,13 @@ Documentation:
 """
 solver_params = {'methods': ['grid', 'bins'],
                 'target': acceptor,
-                'Npoints': 10,
+                'Npoints': 12,
                 'epochs_grid':500,
                 'epochs_bins':1000}
 
 #! Create a dictionary with the limits of each variable explored
 keys = [f'x{i}lims' for i in TensorflowParams['train_sites']] 
-lims = [[-5,5]]*len(keys)
+lims = [[-10,10]]*len(keys)
 TrainableVarsLimits = dict(zip(keys,lims))
 
 plotting_params = {'plotting_resolution': 100}
@@ -95,4 +95,6 @@ def loadConstants(path='constants.json'):
     return constants
 
 # -------------------------------------------------------------------#
+
+
 
