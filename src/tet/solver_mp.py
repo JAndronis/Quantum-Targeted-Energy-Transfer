@@ -37,7 +37,7 @@ def getCombinations(TrainableVarsLimits, method='bins', grid=2):
     if method not in method_list:
         raise ValueError('Provided method not in list of supported methods [\'grid\', \'bins\']')
 
-
+    # Works only in the dimer case
     if method=='bins':
         pass
         """
