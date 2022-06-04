@@ -39,35 +39,30 @@ def getCombinations(TrainableVarsLimits, method='bins', grid=2):
 
     # Works only in the dimer case
     if method=='bins':
-        pass
-        """
-            xa = np.linspace(a_lims[0], a_lims[1], 100)
-            xd = np.linspace(d_lims[0], d_lims[1], 100)
-            data = np.array(list(product(xa,xd)))
-            
-            # Extent of bins needs to be a bit smaller than parameter range
-            extenti = (a_lims[0]-0.1, a_lims[1]+0.1)
-            extentj = (d_lims[0]-0.1, d_lims[1]+0.1)
-            
-            # Produce bin edges.Default returning: H,xedges,yedges.
-            _, *edges = np.histogram2d(data[:,0], data[:,1], bins=grid, range=(extenti, extentj))
-            
-            # create an indexed list of possible choices for initial guess
-            hitx = np.digitize(data[:, 0], edges[0])
-            hity = np.digitize(data[:, 1], edges[1])
-            hitbins = list(zip(hitx, hity))
-            data_and_bins = list(zip(data, hitbins))
-            it = range(1, grid+1)
-            Combinations = []
-            for bin in list(product(it,it)):
-                test_item = []
-                for item in data_and_bins:
-                    if item[1]==bin:
-                        test_item.append(item[0])
-                # choose initial conditions and append them to the combination list
-                choice = np.random.choice(list(range(len(test_item))))
-                Combinations.append(test_item[choice])
-            """
+        TrainableSpans = [ np.linspace( TrainableVarsLimits[f'x{i}lims'][0], TrainableVarsLimits[f'x{i}lims'][1], solver_params['Npoints']) for i in TensorflowParams['train_sites'] ]
+        data = np.array(list(product(*TrainableSpans)))
+        data_list = [data[:, i] for i in range(data.shape[1])]
+        
+        # Extent of bins needs to be a bit smaller than parameter range
+        extents = [ ( TrainableVarsLimits[f'x{i}lims'][0]-0.1, TrainableVarsLimits[f'x{i}lims'][1]+0.1 ) for i in TensorflowParams['train_sites'] ]
+        
+        # Produce bin edges.Default returning: H,xedges,yedges.
+        _, *edges = np.histogramdd(data_list, bins=grid, range=extents)
+        
+        # create an indexed list of possible choices for initial guess
+        hit = [np.digitize(data_list[i], edges[0][i]) for i,_ in enumerate(data_list)]
+        hitbins = list(zip(*hit))
+        data_and_bins = list(zip(data, hitbins))
+        it = [ range(1, grid+1) for _ in range(len(TensorflowParams['train_sites'])) ]
+        Combinations = []
+        for bin in list(product(*it)):
+            test_item = []
+            for item in data_and_bins:
+                if item[1]==bin:
+                    test_item.append(item[0])
+            # choose initial conditions and append them to the combination list
+            choice = np.random.choice(list(range(len(test_item))))
+            Combinations.append(test_item[choice])
 
     elif method=='grid':
         # make a grid of uniformly distributed initial parameter guesses
