@@ -188,7 +188,7 @@ class Optimizer:
                         dt = t1-t0
                         if self.Print:
                             print(
-                                *[f"\nApproximate value of chiA: {best_vars[j].numpy()}" for j in range(len(self.vars))],
+                                *[f"\nApproximate value of chi_{j}: {best_vars[j].numpy()}" for j in range(len(self.vars))],
                                 "\nLoss - min #bosons on donor:", best_loss,
                                 "\nOptimizer Iterations:", self.opt.iterations.numpy(), 
                                 "\nTraining Time:", dt,
@@ -209,7 +209,7 @@ class Optimizer:
         #Print the outcome of the optimizer
         if self.Print:
             print(
-                *[f"\nApproximate value of chiA: {best_vars[j].numpy()}" for j in range(len(self.vars))],
+                *[f"\nApproximate value of chi_{j}: {best_vars[j].numpy()}" for j in range(len(self.vars))],
                 "\nLoss - min #bosons on donor:", best_loss,
                 "\nOptimizer Iterations:", self.opt.iterations.numpy(), 
                 "\nTraining Time:", dt,
