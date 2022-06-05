@@ -16,12 +16,12 @@ Documentation:
     * sites: The number of the oscillators of the system. Usually denoted by f.
 """
 constants = {'max_N': 2,
-             'max_t': 400, 
+             'max_t': 25, 
              'omegas': [-3,3,3],
              'chis': [3.5,0,-1.9],
-             'coupling': 0.1,
+             'coupling': 1,
              'sites': 3,
-             'timesteps':200}
+             'timesteps': 100}
 
 # -------------------------------------------------------------------#
 
@@ -38,7 +38,7 @@ TensorflowParams = {'DTYPE': tf.float32,
                     'lr': 0.1, 
                     'iterations': 1000,
                     'tol':1e-8,
-                    'train_sites': [0, 2]}
+                    'train_sites': [0, 1, 2]}
 
 # Define the acceptor and the donor site
 acceptor = 'x{}'.format(constants['sites']-1)
