@@ -128,49 +128,50 @@ def solver_mp(TrainableVarsLimits, const,
         # Create directory of current iteration
         data_path2 = os.path.join(data_path, f'iteration_{iteration}')
         createDir(destination=data_path2, replace_query=True)
-        """
-        # if min loss is not small enough do a general search with the bin method
-        # if grid<=6 and min_loss>=const['max_N']-1.5:
-        #     if bin_choice:
-        #         # if this method has already been picked increase bin number
-        #         if not grid==6:
-        #             edge = _edge[iteration]
-        #             grid += 2
-        #             a_min, a_max = min_a-edge, min_a+edge
-        #             d_min, d_max = min_d-edge, min_d+edge
-        #             a_lims = [a_min,a_max]
-        #             d_lims = [d_min,d_max]
-        #         else:
-        #             grid = 2
-        #             iteration = 0
-        #             a_lims = xa_lims
-        #             d_lims = xd_lims
-        #     Combinations = getCombinations(a_lims, d_lims, method='bins', grid=grid, const=const)
-        #     iter = epochs_bins
-        #     bin_choice = True
-        #     print(10*'-',f'Iteration: {iteration}, Method: Bins({grid*2}), Jobs: {len(Combinations)}, a_lim: {a_lims}, d_lim: {d_lims}', 10*'-')
 
-        # else if min loss is suffeciently small do an exact search with the grid method
+        # if min loss is not small enough do a general search with the bin method
+        if grid<=6 and min_loss>=const['max_N']-1.5:
+            # if bin_choice:
+            #     # if this method has already been picked increase bin number
+            #     if not grid==6:
+            #         edge = _edge[iteration]
+            #         grid += 2
+            #         a_min, a_max = min_a-edge, min_a+edge
+            #         d_min, d_max = min_d-edge, min_d+edge
+            #         a_lims = [a_min,a_max]
+            #         d_lims = [d_min,d_max]
+            #     else:
+            #         grid = 2
+            #         iteration = 0
+            #         a_lims = xa_lims
+            #         d_lims = xd_lims
+            Combinations = getCombinations(TrainableVarsLimits, method='bins', grid=grid)
+            # iter = epochs_bins
+            # bin_choice = True
+            # print(10*'-',f'Iteration: {iteration}, Method: Bins({grid*2}), Jobs: {len(Combinations)}, a_lim: {a_lims}, d_lim: {d_lims}', 10*'-')
+
+        # # else if min loss is suffeciently small do an exact search with the grid method
         # elif min_loss<=const['max_N']-1.5:
-            # if grid_choice:
-            #     # if this method has already been picked increase grid size
-            #     const['Npoints'] *= 2
-            #     a_min, a_max = min_a-1, min_a+1
-            #     d_min, d_max = min_d-1, min_d+1
-            #     a_lims = [a_min,a_max]
-            #     d_lims = [d_min,d_max]
-        #bin_choice = False
-        """
-        Combinations = getCombinations(TrainableVarsLimits, method='grid')
+        #     if grid_choice:
+        #         # if this method has already been picked increase grid size
+        #         const['Npoints'] *= 2
+        #         a_min, a_max = min_a-1, min_a+1
+        #         d_min, d_max = min_d-1, min_d+1
+        #         a_lims = [a_min,a_max]
+        #         d_lims = [d_min,d_max]
+        # bin_choice = False
+
+
+        # Combinations = getCombinations(TrainableVarsLimits, method='grid')
     
-        iter = epochs_grid
+        iter = epochs_bins
         #grid_choice = True
         print(10*'-',f'Iteration: {iteration}, Method: Grid, Jobs: {len(Combinations)}, lims: {lims}', 10*'-')
 
         t2 = time.time()
         # Initialize processing pool
-        # pool = mp.Pool(max(mp.cpu_count()//2, 1))
-        pool = mp.Pool(mp.cpu_count())
+        pool = mp.Pool(max(mp.cpu_count()//4, 1))
+        # pool = mp.Pool(mp.cpu_count())
 
         # Set input arg list for mp_opt() function
         args = [(i, combination, data_path2, const, target_site, lr, iter) for i, (combination) in enumerate(Combinations)]
