@@ -18,6 +18,7 @@ class Loss:
     def __init__(self, const):
         #! Import the parameters of the problem
         self.max_N = tf.constant(const['max_N'], dtype=DTYPE)
+        self.NpointsT = const['timesteps']
         self.max_N_np = const['max_N']
         self.max_t = tf.constant(const['max_t'], dtype=tf.int32)
         self.coupling_lambda = tf.constant(const['coupling'], dtype=DTYPE)
@@ -151,12 +152,13 @@ class Loss:
 
     #! Computing the loss function given a Hamiltonian correspodning to one combination of non linearity parameters
     def loss(self, single_value=True):
-        Data = tf.TensorArray(DTYPE, size=self.max_t+1)
+        Data = tf.TensorArray(DTYPE, size=self.NpointsT)
         self.setCoeffs()
-        for t in range(self.max_t+1):
+        t_span = np.linspace(0,self.max_t,self.NpointsT)
+        for indext,t in enumerate(t_span):
             #print('\r t = {}'.format(t),end="")
             x = self._computeAverageCalculation(t)
-            Data = Data.write(t, value=x)
+            Data = Data.write(indext, value=x)
         Data = Data.stack()
         if single_value:
             if not self.targetState==f'{list(self.StatesDictionary[0].keys())[-1]}':

@@ -17,6 +17,8 @@ settings.json
 *.vsix
 
 # code generated files and dirs
+data*
+data_*
 data/*
 data_optimizer_avgn/*
 data_optimizer_avgn_*/*
@@ -31,6 +33,7 @@ tests/data_optimizer_avgn/*
 tests/data_optimizer_avgn_*/*
 constants.json
 */constants.json
+images
 
 # pycache
 __pycache__/*

@@ -12,8 +12,8 @@ def solver(a_lims, d_lims, iterations=500, learning_rate=0.01, create_plot=False
     done = False
     
     #* Make a grid of uniformly distributed initial parameter guesses
-    xa = np.linspace(a_lims[0], a_lims[1], const['Npoints'])
-    xd = np.linspace(d_lims[0], d_lims[1], const['Npoints'])
+    xa = np.linspace(a_lims[0], a_lims[1], constants.solver_params['Npoints'])
+    xd = np.linspace(d_lims[0], d_lims[1], constants.solver_params['Npoints'])
     Combinations = list(product(xa,xd))
     
     #* Init an array to save chiAs/chiDs and resulting losses
@@ -52,9 +52,8 @@ def solver(a_lims, d_lims, iterations=500, learning_rate=0.01, create_plot=False
             
             # Load Data
             loss_data = read_1D_data(destination=data_path, name_of_file='losses.txt')
-            a = const['xA']
-            d = const['xD']
-            all_losses[i] = np.array([a, d, np.min(loss_data)])
+            const['chis'] = [float(const['chis'][i]) for i in range(len(const['chis']))]
+            all_losses[i] = np.array([*const['chis'], np.min(loss_data)])
         
         #! If you want to create the heatmap when having the data
         if create_plot: 
@@ -75,5 +74,5 @@ if __name__=="__main__":
     print(CONST)
     constants.dumpConstants()
 
-    solver(a_lims=[-5,5], d_lims=[-5,5], create_plot=False)
+    solver(a_lims=[-5,5], d_lims=[-5,5], create_plot=True)
     exit(0)

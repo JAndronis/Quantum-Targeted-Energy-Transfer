@@ -5,23 +5,27 @@ import gc
 import sys
 import time
 import multiprocessing as mp
-import constants
-
 from itertools import combinations, product
-from Optimizer import mp_opt
-from data_process import createDir
+import tensorflow as tf
+
+import constants
+from Optimizer import mp_opt, Optimizer
+from data_process import createDir, read_1D_data
 from constants import solver_params,TensorflowParams
 
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 #!Creates a list of initial guess pairs to be fed to an optimizer call
 def getCombinations(TrainableVarsLimits, method='bins', grid=2):
     """
+    Creates a list of initial guess pairs to be fed to an optimizer call
+
     Args:
-        * TrainableVarsLimits (Dictionary): The keys are the nonlinearity parameters of each site and the values 
+        * TrainableVarsLimits (dict): The keys are the nonlinearity parameters of each site and the values 
         * include a list with the limits of the said variable.
         * const (dict): Dictionary of problem parameters.
         * method (str, optional): Method to use for creating Combinations list. Defaults to 'bins'.
-        grid (int, optional): Number of times to split the parameter space. Defaults to 2.
+        * grid (int, optional): Number of times to split the parameter space. Defaults to 2.
 
     Returns:
         * list: A list of tuples, of all the initial guesses to try.
@@ -32,37 +36,32 @@ def getCombinations(TrainableVarsLimits, method='bins', grid=2):
     if method not in method_list:
         raise ValueError('Provided method not in list of supported methods [\'grid\', \'bins\']')
 
-
+    # Works only in the dimer case
     if method=='bins':
-        pass
-        """
-            xa = np.linspace(a_lims[0], a_lims[1], 100)
-            xd = np.linspace(d_lims[0], d_lims[1], 100)
-            data = np.array(list(product(xa,xd)))
-            
-            # Extent of bins needs to be a bit smaller than parameter range
-            extenti = (a_lims[0]-0.1, a_lims[1]+0.1)
-            extentj = (d_lims[0]-0.1, d_lims[1]+0.1)
-            
-            # Produce bin edges.Default returning: H,xedges,yedges.
-            _, *edges = np.histogram2d(data[:,0], data[:,1], bins=grid, range=(extenti, extentj))
-            
-            # create an indexed list of possible choices for initial guess
-            hitx = np.digitize(data[:, 0], edges[0])
-            hity = np.digitize(data[:, 1], edges[1])
-            hitbins = list(zip(hitx, hity))
-            data_and_bins = list(zip(data, hitbins))
-            it = range(1, grid+1)
-            Combinations = []
-            for bin in list(product(it,it)):
-                test_item = []
-                for item in data_and_bins:
-                    if item[1]==bin:
-                        test_item.append(item[0])
-                # choose initial conditions and append them to the combination list
-                choice = np.random.choice(list(range(len(test_item))))
-                Combinations.append(test_item[choice])
-            """
+        TrainableSpans = [ np.linspace( TrainableVarsLimits[f'x{i}lims'][0], TrainableVarsLimits[f'x{i}lims'][1], solver_params['Npoints']) for i in TensorflowParams['train_sites'] ]
+        data = np.array(list(product(*TrainableSpans)))
+        data_list = [data[:, i] for i in range(data.shape[1])]
+        
+        # Extent of bins needs to be a bit smaller than parameter range
+        extents = [ ( TrainableVarsLimits[f'x{i}lims'][0]-0.1, TrainableVarsLimits[f'x{i}lims'][1]+0.1 ) for i in TensorflowParams['train_sites'] ]
+        
+        # Produce bin edges.Default returning: H,xedges,yedges.
+        _, *edges = np.histogramdd(data_list, bins=grid, range=extents)
+        
+        # create an indexed list of possible choices for initial guess
+        hit = [np.digitize(data_list[i], edges[0][i]) for i,_ in enumerate(data_list)]
+        hitbins = list(zip(*hit))
+        data_and_bins = list(zip(data, hitbins))
+        it = [ range(1, grid+1) for _ in range(len(TensorflowParams['train_sites'])) ]
+        Combinations = []
+        for bin in list(product(*it)):
+            test_item = []
+            for item in data_and_bins:
+                if item[1]==bin:
+                    test_item.append(item[0])
+            # choose initial conditions and append them to the combination list
+            choice = np.random.choice(list(range(len(test_item))))
+            Combinations.append(test_item[choice])
 
     elif method=='grid':
         # make a grid of uniformly distributed initial parameter guesses
@@ -95,9 +94,8 @@ def solver_mp(TrainableVarsLimits, const,
         * data_path (str, optional): Path to create the data directory. Defaults to cwd/data.
     """
 
-
     #! Use cpu since we are doing parallelization on the cpu
-    #os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
     # Create data directory to save results
     createDir(destination=data_path, replace_query=True)
@@ -106,7 +104,8 @@ def solver_mp(TrainableVarsLimits, const,
     lims = list(TrainableVarsLimits.values())
     grid = grid
 
-    _edge =  [0.1,0.5,1.5,2.5,3.0,3.5,4.0]  
+    # _edge =  [0.1,0.5,1.5,2.5,3.0,3.5,4.0]  
+    _edge =  [4.0,3.5,3.0,2.5,1.5,0.5,0.1]
 
     # Control how many times loss is lower than the threshold having changed the limits
     iteration = 0
@@ -117,9 +116,9 @@ def solver_mp(TrainableVarsLimits, const,
     bin_choice = False
 
     #* An array to save the optimal parameters
-    OptimalVars, min_loss = np.zeros(len(TrainableVarsLimits)), const['max_N']   # initializing min_loss to the maximum number
-                                                    # ensures that the initial combinations of initial
-                                                    # guesses will be done with the bin method
+    OptimalVars, min_loss = np.zeros(len(TrainableVarsLimits)), const['max_N']  # initializing min_loss to the maximum number
+                                                                                # ensures that the initial combinations of initial
+                                                                                # guesses will be done with the bin method
 
     t0 = time.time()
     while not done and iteration < 2:
@@ -129,27 +128,27 @@ def solver_mp(TrainableVarsLimits, const,
         createDir(destination=data_path2, replace_query=True)
         """
         # if min loss is not small enough do a general search with the bin method
-        # if grid<=6 and min_loss>=const['max_N']-1.5:
-        #     if bin_choice:
-        #         # if this method has already been picked increase bin number
-        #         if not grid==6:
-        #             edge = _edge[iteration]
-        #             grid += 2
-        #             a_min, a_max = min_a-edge, min_a+edge
-        #             d_min, d_max = min_d-edge, min_d+edge
-        #             a_lims = [a_min,a_max]
-        #             d_lims = [d_min,d_max]
-        #         else:
-        #             grid = 2
-        #             iteration = 0
-        #             a_lims = xa_lims
-        #             d_lims = xd_lims
-        #     Combinations = getCombinations(a_lims, d_lims, method='bins', grid=grid, const=const)
-        #     iter = epochs_bins
-        #     bin_choice = True
-        #     print(10*'-',f'Iteration: {iteration}, Method: Bins({grid*2}), Jobs: {len(Combinations)}, a_lim: {a_lims}, d_lim: {d_lims}', 10*'-')
+        if grid<=6 and min_loss>=const['max_N']-1.5:
+            # if bin_choice:
+            #     # if this method has already been picked increase bin number
+            #     if not grid==6:
+            #         edge = _edge[iteration]
+            #         grid += 2
+            #         a_min, a_max = min_a-edge, min_a+edge
+            #         d_min, d_max = min_d-edge, min_d+edge
+            #         a_lims = [a_min,a_max]
+            #         d_lims = [d_min,d_max]
+            #     else:
+            #         grid = 2
+            #         iteration = 0
+            #         a_lims = xa_lims
+            #         d_lims = xd_lims
+            Combinations = getCombinations(TrainableVarsLimits, method='bins', grid=grid)
+            # iter = epochs_bins
+            # bin_choice = True
+            # print(10*'-',f'Iteration: {iteration}, Method: Bins({grid*2}), Jobs: {len(Combinations)}, a_lim: {a_lims}, d_lim: {d_lims}', 10*'-')
 
-        # else if min loss is suffeciently small do an exact search with the grid method
+        # # else if min loss is suffeciently small do an exact search with the grid method
         # elif min_loss<=const['max_N']-1.5:
             # if grid_choice:
             #     # if this method has already been picked increase grid size
@@ -160,6 +159,7 @@ def solver_mp(TrainableVarsLimits, const,
             #     d_lims = [d_min,d_max]
         #bin_choice = False
         """
+        
         Combinations = getCombinations(TrainableVarsLimits, method='grid')
     
         iter = epochs_grid
@@ -168,7 +168,8 @@ def solver_mp(TrainableVarsLimits, const,
 
         t2 = time.time()
         # Initialize processing pool
-        pool = mp.Pool(max(mp.cpu_count()//2, 1))
+        pool = mp.Pool(max(mp.cpu_count()//4, 1))
+        # pool = mp.Pool(mp.cpu_count())
 
         # Set input arg list for mp_opt() function
         args = [(i, combination, data_path2, const, target_site, lr, iter) for i, (combination) in enumerate(Combinations)]
@@ -198,7 +199,7 @@ def solver_mp(TrainableVarsLimits, const,
 
         # Gather results
         all_losses = np.array(_all_losses)
-        OptimalVars = [float(all_losses[np.argmin(all_losses[:,const['sites']]), i]) for i in range(const['sites']) ]
+        OptimalVars = [float(all_losses[np.argmin(all_losses[:,const['sites']]), i]) for i in range(const['sites'])]
         min_loss = float(all_losses[np.argmin(all_losses[:,const['sites']]), const['sites']])
         
         # Print results of run
@@ -209,8 +210,7 @@ def solver_mp(TrainableVarsLimits, const,
             counter += 1
             edge = _edge[iteration]
             #grid += 2
-    
-            lims = [ [ OptimalVars[i]-edge, OptimalVars[i]+edge ] for i in range(len(TrainableVarsLimits)) ]
+            lims = [[OptimalVars[i]-edge, OptimalVars[i]+edge] for i in range(len(TrainableVarsLimits))]
 
         else:
             solver_params['Npoints'] += 1
@@ -227,36 +227,37 @@ def solver_mp(TrainableVarsLimits, const,
         # tet has been achieved no need to continue
         if float(min_loss)<=0.1:
             print('TET!')
-
-    
             print(f'OptimalParams:{OptimalVars}')
             done = True
             break
 
     t1 = time.time()
 
-    # Write best parameters to parameter json
-    const['chis'] = [f'{OptimalVars[i]}' for i in range(len(OptimalVars))]
-    constants.dumpConstants(dict=const, path=data_path)
+    data_path3 = os.path.join(data_path, f'main_opt')
+    _opt = Optimizer(target_site=solver_params['target'], DataExist=False, const=const, Print=True, data_path=data_path3)
+    _opt(*OptimalVars)
 
+    #! Load Data
+    loss_data = read_1D_data(destination=data_path3, name_of_file='losses.txt')
+    OptimalVars = read_1D_data(destination=data_path3, name_of_file='optimalvars.txt')
+
+    const['chis'] = OptimalVars
+    const['min_n'] = min(loss_data)
+    constants.dumpConstants(dict=const, path=data_path)
+    
     print('Total solver run time: ', t1-t0)
 
 
 if __name__=="__main__":
+
     #! Import the constants of the problem
     CONST = constants.constants
 
-    #! Create a dictionary with the limits of each variable explored
-    keys = [ f'x{i}lims' for i in TensorflowParams['train_sites'] ] 
-    lims = [[-1.5,1.5]]*len(keys)
-    TrainableVarsLimits = dict(zip(keys,lims))
-
-    # Create data directory with the naming convention data_{unix time}
+    # create data directory with the naming convention data_{unix time}
     data_dir_name = f'data_{time.time_ns()}'
     data = os.path.join(os.getcwd(), data_dir_name)
 
     #! Call the solver function that uses multiprocessing(pointer _mp)
-    solver_mp(TrainableVarsLimits, const=CONST, target_site=solver_params['target'], data_path=data)
+    solver_mp(constants.TrainableVarsLimits, const=CONST, target_site=solver_params['target'], data_path=data)
 
     exit(0)
-
