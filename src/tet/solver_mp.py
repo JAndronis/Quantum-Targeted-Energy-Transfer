@@ -15,7 +15,6 @@ from constants import solver_params,TensorflowParams
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
-
 #!Creates a list of initial guess pairs to be fed to an optimizer call
 def getCombinations(TrainableVarsLimits, method='bins', grid=2):
     """
@@ -26,7 +25,7 @@ def getCombinations(TrainableVarsLimits, method='bins', grid=2):
         * include a list with the limits of the said variable.
         * const (dict): Dictionary of problem parameters.
         * method (str, optional): Method to use for creating Combinations list. Defaults to 'bins'.
-        grid (int, optional): Number of times to split the parameter space. Defaults to 2.
+        * grid (int, optional): Number of times to split the parameter space. Defaults to 2.
 
     Returns:
         * list: A list of tuples, of all the initial guesses to try.
@@ -95,7 +94,6 @@ def solver_mp(TrainableVarsLimits, const,
         * data_path (str, optional): Path to create the data directory. Defaults to cwd/data.
     """
 
-
     #! Use cpu since we are doing parallelization on the cpu
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
@@ -107,7 +105,7 @@ def solver_mp(TrainableVarsLimits, const,
     grid = grid
 
     # _edge =  [0.1,0.5,1.5,2.5,3.0,3.5,4.0]  
-    _edge =  [4.0,3.5,3.0,2.5,1.5,0.5,0.1]  
+    _edge =  [4.0,3.5,3.0,2.5,1.5,0.5,0.1]
 
     # Control how many times loss is lower than the threshold having changed the limits
     iteration = 0
@@ -128,7 +126,7 @@ def solver_mp(TrainableVarsLimits, const,
         # Create directory of current iteration
         data_path2 = os.path.join(data_path, f'iteration_{iteration}')
         createDir(destination=data_path2, replace_query=True)
-
+        """
         # if min loss is not small enough do a general search with the bin method
         if grid<=6 and min_loss>=const['max_N']-1.5:
             # if bin_choice:
@@ -152,19 +150,19 @@ def solver_mp(TrainableVarsLimits, const,
 
         # # else if min loss is suffeciently small do an exact search with the grid method
         # elif min_loss<=const['max_N']-1.5:
-        #     if grid_choice:
-        #         # if this method has already been picked increase grid size
-        #         const['Npoints'] *= 2
-        #         a_min, a_max = min_a-1, min_a+1
-        #         d_min, d_max = min_d-1, min_d+1
-        #         a_lims = [a_min,a_max]
-        #         d_lims = [d_min,d_max]
-        # bin_choice = False
-
-
-        # Combinations = getCombinations(TrainableVarsLimits, method='grid')
+            # if grid_choice:
+            #     # if this method has already been picked increase grid size
+            #     const['Npoints'] *= 2
+            #     a_min, a_max = min_a-1, min_a+1
+            #     d_min, d_max = min_d-1, min_d+1
+            #     a_lims = [a_min,a_max]
+            #     d_lims = [d_min,d_max]
+        #bin_choice = False
+        """
+        
+        Combinations = getCombinations(TrainableVarsLimits, method='grid')
     
-        iter = epochs_bins
+        iter = epochs_grid
         #grid_choice = True
         print(10*'-',f'Iteration: {iteration}, Method: Grid, Jobs: {len(Combinations)}, lims: {lims}', 10*'-')
 
@@ -180,7 +178,7 @@ def solver_mp(TrainableVarsLimits, const,
             # Run multiprocess map 
             _all_losses = pool.starmap_async(mp_opt, args).get()
 
-        except KeyboardInterrupt:
+        except KeyboardInterrupt():
             print('Keyboard Interrupt.')
             # Make sure to close pool so no more processes start
             pool.close()    
@@ -212,7 +210,6 @@ def solver_mp(TrainableVarsLimits, const,
             counter += 1
             edge = _edge[iteration]
             #grid += 2
-    
             lims = [[OptimalVars[i]-edge, OptimalVars[i]+edge] for i in range(len(TrainableVarsLimits))]
 
         else:

@@ -166,12 +166,3 @@ class Loss:
             else:
                 return self.max_N - tf.reduce_max(Data)
         else: return Data
-
-if __name__=="__main__":
-    import constants
-    constants_ = constants.constants
-    from matplotlib import pyplot as plt
-    l = Loss(constants_)
-    data = l(*constants_['chis'],site = 'x{}'.format(constants_['sites']-1),single_value=False)
-    plt.plot(np.linspace(0,constants_['max_t'],constants_['timesteps']),data)
-    plt.show()
