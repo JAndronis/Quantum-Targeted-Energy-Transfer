@@ -9,12 +9,12 @@ from constants import TensorflowParams
 
 DTYPE = TensorflowParams['DTYPE']
 
-"""
-Class Loss: A class designed for computing the loss function
-Documentation:
-    * const:  Refer to the constants dictionary in constants.py.
-"""
 class Loss:
+    """
+    Class Loss: A class designed for computing the loss function
+    Documentation:
+        * const:  Refer to the constants dictionary in constants.py.
+    """
     def __init__(self, const):
         #! Import the parameters of the problem
         self.max_N = tf.constant(const['max_N'], dtype=DTYPE)
@@ -24,27 +24,16 @@ class Loss:
         self.coupling_lambda = tf.constant(const['coupling'], dtype=DTYPE)
         self.sites = const['sites']
         self.omegas = tf.constant(const['omegas'], dtype=DTYPE)
+
+        # default values for chis and target site, will be replaced by __call__()
+        self.chis = const['chis']
+        self.targetState = const['sites'] - 1
         
         #! Define some other helpful variables
         self.dim = int( factorial(const['max_N']+const['sites']-1)/( factorial(const['max_N'])*factorial(const['sites']-1) ) )
-        self.CombinationsBosons = self.derive()
-        self.StatesDictionary = dict(zip(np.arange(self.dim, dtype=int), self.CombinationsBosons))
-
-        #! Define the initial state
-        # Assign initially all the bosons at the donor
-        self.InitialState = self.StatesDictionary[0]
-        self.InitialState = dict.fromkeys(self.InitialState, 0)
-        self.InitialState['x0'] = self.max_N
-
-        # Find the index
-        self.InitialStateIndex = list(self.StatesDictionary.keys())[list(self.StatesDictionary.values()).index(self.InitialState)]
-        I = np.identity(n=self.dim)
-        # Choose Fock state that matches the initial state
-        self.InitialState = I[self.InitialStateIndex]   
-        self.initialState = tf.convert_to_tensor(self.InitialState, dtype=DTYPE)
 
 
-    def __call__(self, *args, site=str(), single_value=True):
+    def __call__(self, *args, site=int(), single_value=True):
         self.chis = list(args)
         self.targetState = site
         return self.loss(single_value)
@@ -54,22 +43,57 @@ class Loss:
 
     #! Computing the Fock states
     def derive(self):
-        space = [np.arange(self.max_N_np+1) for _ in range(self.sites)]
-        values = [i for i in product(*space) if sum(i)==self.max_N_np]
-        keys = [f"x{i}" for i in range(self.sites)]
-        solution = []
-        kv = []
-        for i in range(self.dim):
-            temp = []
-            for j in range(self.sites):
-                temp.append([keys[j], values[i][j]])
-            kv.append(temp)
-            solution.append(dict(kv[i]))
 
-        return solution
+        self.states = np.zeros((self.dim, self.sites))
+        self.states[0, 0] = self.max_N
+
+        v = 0
+        k = 0
+        while v < self.dim - 1:
+
+            for i in range(0, k): self.states[v+1, i] = self.states[v, i]
+
+            self.states[v+1, k] = self.states[v, k] - 1
+            self.states[v+1, k+1] = self.max_N - self.states[v+1, 0:k+2].sum()
+
+            for j in range(k+2, self.sites): self.states[v+1, j] = 0
+
+            _k = 0
+            condition = True
+            while _k < self.sites - 1:
+                _i = _k+1
+                if _i >= self.sites - 1:
+                    _i = self.sites - 1
+                    if self.states[v+1, _i] != 0: condition = False
+                    else: condition = True
+                else:
+                    while _i < self.sites - 1:
+                        if self.states[v+1, _i] != 0:
+                            condition = False
+                            break
+                        else: condition = True
+                        _i += 1
+                
+                if not condition: _k += 1
+                else: break
+            if condition: k = _k
+            v += 1
+
+    def getHash(self, state):
+        s = 0
+        for i in range(self.sites):
+            s += np.sqrt(100 * (i + 1) + 3) * state[i]
+        return s
+
+    def getHashArray(self):
+        self.T = np.zeros(self.dim)
+        for i in range(self.dim):
+            self.T[i] = self.getHash(self.states[i])
+        self.sorted_indeces = np.argsort(self.T)
 
     #! Deduce the Hnm element of the Hamiltonian
     def ConstructElement(self, n, m):
+        
         #* First Term. Contributions due to the Kronecker(n,m) elements
         Term1 = tf.constant(0, dtype=DTYPE)
         #* Second Term. Various contributions
@@ -77,40 +101,44 @@ class Loss:
         
         if n==m:
             for k in range(self.sites):
-                Term1 += self.omegas[k] * self.StatesDictionary[m][f"x{k}"] +\
-                    0.5 * self.chis[k] * (self.StatesDictionary[m][f"x{k}"])**2
+                Term1 += self.omegas[k] * self.states[m, k] +\
+                    0.5 * self.chis[k] * (self.states[m, k])**2
         else:
             for k in range(self.sites-1):
                 #Find the number of bosons
-                nk = self.StatesDictionary[m][f"x{k}"]
-                nkplusone = self.StatesDictionary[m][f"x{k+1}"]
+                nk = self.states[m, k]
+                nkplusone = self.states[m, k+1]
                 _maxN = tf.get_static_value(self.max_N)
 
                 #Term 2a/Important check
                 if (nkplusone != _maxN) and (nk != 0): 
-                    m1TildaState = self.StatesDictionary[m].copy()
-                    m1TildaState[f"x{k}"] = nk-1
-                    m1TildaState[f"x{k+1}"] = nkplusone+1
-
-                    m1TildaIndex = list(self.StatesDictionary.keys())[list(self.StatesDictionary.values()).index(m1TildaState)]
+                    m1TildaState = self.states[m].copy()
+                    m1TildaState[k] = nk - 1
+                    m1TildaState[k+1] = nkplusone + 1
+                    state_hash = self.getHash(m1TildaState)
+                    _idx = self.sorted_indeces[np.searchsorted(self.T, state_hash, sorter=self.sorted_indeces)]
                 
-                    if m1TildaIndex == n: Term2a += -self.coupling_lambda*np.sqrt((nkplusone+1)*nk)
+                    if _idx == n: Term2a -= self.coupling_lambda*np.sqrt((nkplusone+1)*nk)
                 
                 #Term 2b/Important check
-                if (nkplusone != 0) and (nk != _maxN): 
+                if (nkplusone != 0) and (nk != _maxN):
                     #Find the new state/vol2
-                    m2TildaState = self.StatesDictionary[m].copy()
-                    m2TildaState[f"x{k}"] = nk+1
-                    m2TildaState[f"x{k+1}"] = nkplusone-1
+                    m2TildaState = self.states[m].copy()
+                    m2TildaState[k] = nk + 1
+                    m2TildaState[k+1] = nkplusone - 1
+                    state_hash = self.getHash(m2TildaState)
+                    _idx = self.sorted_indeces[np.searchsorted(self.T, state_hash, sorter=self.sorted_indeces)]
 
-                    m2TildaIndex = list(self.StatesDictionary.keys())[list(self.StatesDictionary.values()).index(m2TildaState)]
-
-                    if m2TildaIndex == n: Term2b += -self.coupling_lambda*np.sqrt(nkplusone*(nk+1))
+                    if _idx == n: Term2b -= self.coupling_lambda*np.sqrt(nkplusone*(nk+1))
                 
         return Term1 + Term2a + Term2b
 
     #! Constructing the Hamiltonian operator.
     def createHamiltonian(self):
+
+        self.derive()
+        self.getHashArray()
+        
         h = tf.TensorArray(dtype=DTYPE, size=self.dim*self.dim)
         for n in range(self.dim):
             for m in range(self.dim):
@@ -126,6 +154,13 @@ class Loss:
         eigvals, eigvecs = tf.linalg.eigh(problemHamiltonian)
         self.eigvals = tf.cast(eigvals, dtype=DTYPE)
         eigvecs = tf.cast(eigvecs, dtype=DTYPE)
+
+        self.InitialState = np.zeros(self.sites)
+        self.InitialState[0] = self.max_N
+        state_hash = self.getHash(self.InitialState)
+        init_idx = np.searchsorted(self.T, state_hash, sorter=self.sorted_indeces)
+        self.InitialState = np.identity(self.dim)[init_idx]
+        self.InitialState = tf.convert_to_tensor(self.InitialState, dtype=DTYPE)
 
         coeff_c = tf.TensorArray(DTYPE, size=self.dim)
         for i in range(self.dim):
@@ -146,7 +181,7 @@ class Loss:
             _t = tf.cast(t, dtype=tf.complex64)
             sum_i = tf.reduce_sum(c*b[j,:]*tf.exp(tf.complex(0.,-1.)*e*_t))
             sum_k = tf.reduce_sum(tf.math.conj(c)*tf.math.conj(b[j,:])*tf.exp(tf.complex(0.,1.)*e*_t)*sum_i)
-            sum_j = sum_j.write(j, value=sum_k*self.StatesDictionary[j][self.targetState])
+            sum_j = sum_j.write(j, value=sum_k*self.states[j][self.targetState])
         sum_j = tf.reduce_sum(sum_j.stack())
         return tf.math.real(sum_j)
 
@@ -161,8 +196,34 @@ class Loss:
             Data = Data.write(indext, value=x)
         Data = Data.stack()
         if single_value:
-            if not self.targetState==f'{list(self.StatesDictionary[0].keys())[-1]}':
+            if not self.targetState==f'x{self.sites}':
                 return tf.reduce_min(Data)
             else:
                 return self.max_N - tf.reduce_max(Data)
         else: return Data
+
+def main(maxn, sites):
+    import constants as const
+    import matplotlib.pyplot as plt
+
+    c = const.constants
+    c['max_N'] = maxn
+    c['sites'] = sites
+    c['omegas'] = [3 for _ in range(c['sites'])]
+    c['omegas'][0] = - c['omegas'][0]
+    chi = (c['omegas'][-1] - c['omegas'][0]) / c['max_N']
+    chi_m = -(chi) - 1
+    c['chis'] = [chi] + [chi_m for _ in range(c['sites']-2)] + [chi]
+    c['timesteps'] = 50
+    l = Loss(c)
+    h = l.createHamiltonian().numpy()
+    # h_bool = np.zeros(h.shape)
+    # for i in range(h.shape[0]):
+    #     for j in range(h.shape[1]):
+    #         if h[i,j] != 0:
+    #             h_bool[i,j] = 1
+    #         else:
+    #             h_bool[i,j] = 0
+    # plt.imshow(h_bool, cmap='gray_r')
+    # plt.show()
+    # print(c['max_N'] - max(l(*c["chis"], site=const.constants['sites']-1, single_value=False).numpy()))
