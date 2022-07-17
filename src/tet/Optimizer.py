@@ -286,6 +286,14 @@ def mp_opt(i, combination, iteration_path, const, target_site, lr, iterations):
 
 if __name__=="__main__":
     import constants
+    import time
+
+
     constants.dumpConstants(constants.constants)
     opt = Optimizer(constants.acceptor, DataExist=False, Print=True)
+    
+    t0 = time.time()
     opt(0, 0, 0)
+    t1 = time.time()
+
+    print(t0-t1)
