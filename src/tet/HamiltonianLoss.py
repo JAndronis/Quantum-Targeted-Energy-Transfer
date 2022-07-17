@@ -32,16 +32,25 @@ class Loss:
         #! Define some other helpful variables
         self.dim = int( factorial(const['max_N']+const['sites']-1)/( factorial(const['max_N'])*factorial(const['sites']-1) ) )
 
+        # Initialize states array
+        self.derive()
+        self.getHashArray()
 
     def __call__(self, *args, site=int(), single_value=True):
         self.chis = list(args)
-        self.targetState = site
+        try:
+            if type(site) != int: raise ValueError
+            self.targetState = site
+        except ValueError:
+            if type(site) == str:
+                self.targetState = int(site[-1])
+            else:
+                raise ValueError("Invalid type for site variable. Must be int.")
         return self.loss(single_value)
 
     def getCombinations(self):
         return self.CombinationsBosons
 
-    #! Computing the Fock states
     def derive(self):
 
         self.states = np.zeros((self.dim, self.sites))
@@ -51,10 +60,12 @@ class Loss:
         k = 0
         while v < self.dim - 1:
 
-            for i in range(0, k): self.states[v+1, i] = self.states[v, i]
+            for i in range(k): self.states[v+1, i] = self.states[v, i]
 
             self.states[v+1, k] = self.states[v, k] - 1
-            self.states[v+1, k+1] = self.max_N - self.states[v+1, 0:k+2].sum()
+            s = 0
+            for i in range(k+1): s += self.states[(v+1), i]
+            self.states[v+1, k+1] = tf.get_static_value(self.max_N) - s
 
             for j in range(k+2, self.sites): self.states[v+1, j] = 0
 
@@ -136,15 +147,13 @@ class Loss:
     #! Constructing the Hamiltonian operator.
     def createHamiltonian(self):
 
-        self.derive()
-        self.getHashArray()
-        
         h = tf.TensorArray(dtype=DTYPE, size=self.dim*self.dim)
         for n in range(self.dim):
             for m in range(self.dim):
                 h = h.write(n*self.dim+m, self.ConstructElement(n, m))
         h = h.stack()
         h = tf.reshape(h, shape=[self.dim, self.dim])
+        print('Done')
         return h
 
     #! Given a set of non linearity parameters, compute the coefficients needed according to PRL.
@@ -189,17 +198,17 @@ class Loss:
     def loss(self, single_value=True):
         Data = tf.TensorArray(DTYPE, size=self.NpointsT)
         self.setCoeffs()
-        t_span = np.linspace(0,self.max_t,self.NpointsT)
+        t_span = np.linspace(0, self.max_t, self.NpointsT)
         for indext,t in enumerate(t_span):
             #print('\r t = {}'.format(t),end="")
             x = self._computeAverageCalculation(t)
             Data = Data.write(indext, value=x)
         Data = Data.stack()
         if single_value:
-            if not self.targetState==f'x{self.sites}':
-                return tf.reduce_min(Data)
-            else:
+            if self.targetState == self.sites-1:
                 return self.max_N - tf.reduce_max(Data)
+            else:
+                return tf.reduce_min(Data)
         else: return Data
 
 def main(maxn, sites):

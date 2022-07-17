@@ -178,7 +178,7 @@ def solver_mp(TrainableVarsLimits, const,
             # Run multiprocess map 
             _all_losses = pool.starmap_async(mp_opt, args).get()
 
-        except KeyboardInterrupt():
+        except KeyboardInterrupt:
             print('Keyboard Interrupt.')
             # Make sure to close pool so no more processes start
             pool.close()    
