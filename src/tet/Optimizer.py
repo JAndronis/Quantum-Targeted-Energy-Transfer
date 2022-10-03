@@ -18,25 +18,24 @@ assert sys.version_info >= (3,6)
 
 class Optimizer:
     """
-    A class where the policy of each optimizer is designed.
+    A class instance of a keras optimizer, along with relevant parameters.
     
     Args:
         * target_site: Refer to the argument target of the solver_params dictionary in constants.py
         * DataExist: A boolean variable verifying that an optimizer with given initial guesses runs for the first time
         * const: Refer to the constants dictionary in constants.py.
-        * Plot,Print:
+        * Print (Bool): Parameter defining the 
         * iterations: Refer to the argument iterations of the TensorflowParams dictionary in constants.py
         * lr: Refer to the argument lr of the TensorflowParams dictionary in constants.py
         * data_path: Path to save the directory of an optimizer with given initial guesses
     """
-    def __init__(self,
-                 target_site, 
-                 DataExist,
-                 const=None,
-                 Print=True,
-                 iterations=TensorflowParams['iterations'],
-                 lr=TensorflowParams['lr'], 
-                 data_path=os.path.join(os.getcwd(), 'data_optimizer')):
+    def __init__(
+        self, const: dict, target_site: int, 
+        DataExist=False, Print=True,
+        iterations=TensorflowParams['iterations'], 
+        opt=tf.keras.optimizers.Adam(),
+        data_path=os.path.join(os.getcwd(), 'data_optimizer')
+        ):
         
         #! Import the parameters of the problem
         if const is None: self.const = constants.loadConstants()
@@ -52,25 +51,29 @@ class Optimizer:
         self.DataExist = DataExist
         self.data_path = data_path
         self.iter = iterations
-        self.lr = lr
-        self.opt = tf.keras.optimizers.Adam()
+        self.opt = opt
+        self.lr = opt.learning_rate
         self.Print = Print
 
         self.vars = [None for _ in range(len(self.const['chis']))]
 
-        self.DTYPE = TensorflowParams['DTYPE']
+        self.DTYPE = tf.float64
         
-    def __call__(self, *args):
+    def __call__(self, *args, write_data=False) -> None:
         self.init_chis = list(args)
 
         if self.DataExist: pass
         else:
-            createDir(self.data_path, replace_query=True)
-            self._train()
+            if write_data:
+                createDir(self.data_path, replace_query=True)
+                self._train()
+            else:
+                self._train(write_data)
+                return self.results
     
     #! Compute the loss function
-    @tf.function
-    def compute_loss(self, lossClass):
+    @tf.function(jit_compile=False)
+    def compute_loss(self, lossClass: Loss):
         return lossClass(*self.vars, site=self.target_site)
 
     #! Get the gradients
@@ -83,7 +86,7 @@ class Optimizer:
         return grads, loss
 
      #! Apply the gradients
-    @tf.function
+    @tf.function(jit_compile=False)
     def apply_grads(self, grads):
         self.opt.apply_gradients(zip(grads, self.vars))
 
@@ -139,12 +142,12 @@ class Optimizer:
 
             # Set a repetition rate for displaying the progress 
             if self.Print:
-                if epoch%100 ==0: 
+                if epoch%50 ==0: 
                     print(f'Loss:{loss.numpy()}, ',*[f'x{j}: {self.vars[j].numpy()}, ' for j in range(len(self.vars))], f', epoch:{epoch}')
 
             # Reduce the learning rate when being close to TET
-            if loss.numpy() <= 0.5:
-                K.set_value(self.opt.learning_rate, self.lr/10)
+            if loss.numpy() <= 0.1:
+                K.set_value(self.opt.learning_rate, self.opt.learning_rate/10)
             
             # Save the new value of the loss function
             mylosses.append(loss.numpy())
@@ -189,7 +192,7 @@ class Optimizer:
                         if self.Print:
                             print(
                                 *[f"\nApproximate value of chi_{j}: {best_vars[j].numpy()}" for j in range(len(self.vars))],
-                                "\nLoss - min #bosons on donor:", best_loss,
+                                "\nLoss:", best_loss,
                                 "\nOptimizer Iterations:", self.opt.iterations.numpy(), 
                                 "\nTraining Time:", dt,
                                 "\n"+60*"-",
@@ -210,7 +213,7 @@ class Optimizer:
         if self.Print:
             print(
                 *[f"\nApproximate value of chi_{j}: {best_vars[j].numpy()}" for j in range(len(self.vars))],
-                "\nLoss - min #bosons on donor:", best_loss,
+                "\nLoss:", best_loss,
                 "\nOptimizer Iterations:", self.opt.iterations.numpy(), 
                 "\nTraining Time:", dt,
                 "\n"+60*"-",
@@ -225,35 +228,41 @@ class Optimizer:
         return mylosses, var_data, best_vars
     
     #! Run the optimizer for given initial guesses and save trajectories.
-    def _train(self):
+    def _train(self, write_data: bool) -> any:
         mylosses, var_data, best_vars = self.train(self.init_chis)
 
-        # Save the evolution of the values of the loss function
-        writeData(data=mylosses[1:], destination=self.data_path, name_of_file='losses.txt')
-        
-        # Save initial parameter data
-        writeData(data=self.init_chis, destination=self.data_path, name_of_file='init_chis.txt')
-        
-        # Save the optimal parameters
-        writeData(data=best_vars, destination=self.data_path, name_of_file='optimalvars.txt')
-        
-        for i in range(len(var_data)):
-            # Save the trajectories in a file
-            writeData(data=var_data[i], destination=self.data_path, name_of_file=f'x{i}trajectory.txt')
+        if write_data:
+            # Save the evolution of the values of the loss function
+            writeData(data=mylosses[1:], destination=self.data_path, name_of_file='losses.txt')
+            
+            # Save initial parameter data
+            writeData(data=self.init_chis, destination=self.data_path, name_of_file='init_chis.txt')
+            
+            # Save the optimal parameters
+            writeData(data=best_vars, destination=self.data_path, name_of_file='optimalvars.txt')
+            
+            for i in range(len(var_data)):
+                # Save the trajectories in a file
+                writeData(data=var_data[i], destination=self.data_path, name_of_file=f'x{i}trajectory.txt')
+        else:
+            self.results = {
+                'loss': mylosses[1:],
+                'var_data': var_data,
+                'best_vars': [i.numpy() for i in best_vars],
+            }
 
 # ----------------------------- Multiprocess Helper Function ----------------------------- #
 
-def mp_opt(i, combination, iteration_path, const, target_site, lr, iterations):
+def mp_opt(i:int , combination: list, iteration_path: str, const: dict, target_site: int, iterations: int) -> np.array:
     """
     A helper function used for multiprocess.
     
     Args:
-        * i: Index refering to optimizer with specific initial guesses
-        * combination: The initial guesses(referring to the trainable parameters) of the said optimizer
-        * const: Refer to the constants dictionary in constants.py.
+        * i (int): Index refering to optimizer with specific initial guesses
+        * combination (list): The initial guesses(referring to the trainable parameters) of the said optimizer
+        * const (Dictionary): Refer to the constants dictionary in constants.py.
         * target_site: Refer to the argument target of the solver_params dictionary in constants.py
-        * lr: Refer to the argument lr of the TensorflowParams dictionary in constants.py
-        * iterations: Maximum iteratiosn of the optimizer
+        * iterations: Maximum iterations of the optimizer
     """
 
     #! Import the parameters of the problem
@@ -261,39 +270,52 @@ def mp_opt(i, combination, iteration_path, const, target_site, lr, iterations):
     data_path = os.path.join(os.getcwd(), f'{iteration_path}/data_optimizer_{i}')
 
     #! Create the current optimizer
-    opt = Optimizer(target_site=target_site,
-                    DataExist=False,
-                    Print=False,
-                    data_path=data_path,
-                    const=const,
-                    lr=lr,
-                    iterations=iterations)
+    opt = Optimizer(
+        target_site=target_site,
+        DataExist=False,
+        Print=False,
+        data_path=data_path,
+        const=const,
+        opt=tf.keras.optimizers.Adam(learning_rate=0.5, beta_1=0.4, amsgrad=True),
+        iterations=iterations
+    )
 
     #! Call the optimizer with chis including the given initial guesses
     input_chis = const['chis']
-    # Update the list with the initial guesses of the optimizer.IT IS ESSENTIAL WHEN WE DON'T TRAIN ALL THE NON 
-    #LINEARITY PARAMETERS
+
+    # Update the list with the initial guesses of the optimizer. IT IS ESSENTIAL WHEN WE DON'T TRAIN ALL THE NON 
+    # LINEARITY PARAMETERS
     for index, case in zip(TensorflowParams['train_sites'], combination): input_chis[index] = case
 
-    opt(*input_chis)
+    results = opt(*input_chis)
 
     #! Load Data
-    loss_data = read_1D_data(destination=data_path, name_of_file='losses.txt')
-    best_vars = read_1D_data(destination=data_path, name_of_file='optimalvars.txt')
+    loss_data = results['loss']
+    best_vars = results['best_vars']
     print(f'Job {i}: Done')
 
     return np.array([*best_vars,np.min(loss_data)])
 
 if __name__=="__main__":
-    import constants
-    import time
-
-
-    constants.dumpConstants(constants.constants)
-    opt = Optimizer(constants.acceptor, DataExist=False, Print=True)
     
-    t0 = time.time()
-    opt(0, 0, 0)
-    t1 = time.time()
+    pass
+    # for n in range(2, 11):
+    #     constants.constants['max_N'] = n
+    #     chi = (constants.constants['omegas'][-1] - constants.constants['omegas'][0])/n
+    #     if constants.constants['omegas'][0] < 0: 
+    #         chi_a = -chi
+    #         chi_d = chi
+    #     else:
+    #         chi_a = chi
+    #         chi_d = -chi
 
-    print(t0-t1)
+    #     opt = Optimizer(
+    #         target_site=constants.acceptor,
+    #         DataExist=False, 
+    #         Print=True,
+    #         const=constants.constants,
+    #         lr=0.5,
+    #         data_path=os.path.join(os.getcwd(), f'data_optimizer_{n}')
+    #     )
+        
+    #     opt(chi_d, 0, chi_a)

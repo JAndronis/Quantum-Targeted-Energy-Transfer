@@ -7,7 +7,7 @@ from itertools import product
 import numpy as np
 from constants import TensorflowParams
 
-DTYPE = TensorflowParams['DTYPE']
+DTYPE = tf.float64
 
 class Loss:
     """
@@ -36,7 +36,7 @@ class Loss:
         self.derive()
         self.getHashArray()
 
-    def __call__(self, *args, site=int(), single_value=True):
+    def __call__(self, *args, site: int=0, single_value=True) -> tf.Tensor:
         self.chis = list(args)
         try:
             if type(site) != int: raise ValueError
@@ -153,7 +153,6 @@ class Loss:
                 h = h.write(n*self.dim+m, self.ConstructElement(n, m))
         h = h.stack()
         h = tf.reshape(h, shape=[self.dim, self.dim])
-        print('Done')
         return h
 
     #! Given a set of non linearity parameters, compute the coefficients needed according to PRL.
@@ -192,14 +191,14 @@ class Loss:
             sum_k = tf.reduce_sum(tf.math.conj(c)*tf.math.conj(b[j,:])*tf.exp(tf.complex(0.,1.)*e*_t)*sum_i)
             sum_j = sum_j.write(j, value=sum_k*self.states[j][self.targetState])
         sum_j = tf.reduce_sum(sum_j.stack())
-        return tf.math.real(sum_j)
+        return tf.cast(tf.math.real(sum_j), dtype=DTYPE)
 
     #! Computing the loss function given a Hamiltonian correspodning to one combination of non linearity parameters
     def loss(self, single_value=True):
         Data = tf.TensorArray(DTYPE, size=self.NpointsT)
         self.setCoeffs()
         t_span = np.linspace(0, self.max_t, self.NpointsT)
-        for indext,t in enumerate(t_span):
+        for indext, t in enumerate(t_span):
             #print('\r t = {}'.format(t),end="")
             x = self._computeAverageCalculation(t)
             Data = Data.write(indext, value=x)
@@ -211,28 +210,23 @@ class Loss:
                 return tf.reduce_min(Data)
         else: return Data
 
-def main(maxn, sites):
-    import constants as const
+@tf.function(jit_compile=False)
+def calc_loss(c):
+    tf.cast(c, dtype=tf.float64)
+    return l(*c, single_value=True, site=acceptor)
+
+if __name__=="__main__":
+    from constants import constants, acceptor
     import matplotlib.pyplot as plt
 
-    c = const.constants
-    c['max_N'] = maxn
-    c['sites'] = sites
-    c['omegas'] = [3 for _ in range(c['sites'])]
-    c['omegas'][0] = - c['omegas'][0]
-    chi = (c['omegas'][-1] - c['omegas'][0]) / c['max_N']
-    chi_m = -(chi) - 1
-    c['chis'] = [chi] + [chi_m for _ in range(c['sites']-2)] + [chi]
-    c['timesteps'] = 50
-    l = Loss(c)
-    h = l.createHamiltonian().numpy()
-    # h_bool = np.zeros(h.shape)
-    # for i in range(h.shape[0]):
-    #     for j in range(h.shape[1]):
-    #         if h[i,j] != 0:
-    #             h_bool[i,j] = 1
-    #         else:
-    #             h_bool[i,j] = 0
-    # plt.imshow(h_bool, cmap='gray_r')
+    l = Loss(constants)
+    # chis = np.linspace(-70, 70, 99)
+    # n = np.zeros(len(chis))
+    for constants['max_N'] in range(1, 10):
+        # print(chi, end='\r')
+        constants['chis'] = [1.5, -38, -1.5]
+        c = np.array(constants['chis'])
+        n = calc_loss(constants['chis']).numpy()
+        print(constants['max_N'], " -> ", n)
+    # plt.plot(chis, n)
     # plt.show()
-    # print(c['max_N'] - max(l(*c["chis"], site=const.constants['sites']-1, single_value=False).numpy()))
