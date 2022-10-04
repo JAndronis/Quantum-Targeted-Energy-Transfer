@@ -18,7 +18,7 @@ Documentation:
 constants = {'max_N': 2,
              'max_t': 25, 
              'omegas': [-3,3,3],
-             'chis': [3.5,0,-1.9],
+             'chis': [1.5,0,-1.5],
              'coupling': 1,
              'sites': 3,
              'timesteps': 30}
