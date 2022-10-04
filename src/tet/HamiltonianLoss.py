@@ -36,8 +36,8 @@ class Loss:
         self.derive()
         self.getHashArray()
 
-    def __call__(self, *args, site: int=0, single_value=True) -> tf.Tensor:
-        self.chis = list(args)
+    def __call__(self, chis, site=0, single_value=True) -> tf.Tensor:
+        self.chis = chis
         try:
             if type(site) != int: raise ValueError
             self.targetState = site
@@ -212,8 +212,8 @@ class Loss:
 
 @tf.function(jit_compile=False)
 def calc_loss(c):
-    tf.cast(c, dtype=tf.float64)
-    return l(*c, single_value=True, site=acceptor)
+    # tf.cast(c, dtype=tf.float64)
+    return l(c, single_value=True, site=acceptor)
 
 if __name__=="__main__":
     from constants import constants, acceptor
@@ -224,9 +224,10 @@ if __name__=="__main__":
     # n = np.zeros(len(chis))
     for constants['max_N'] in range(1, 10):
         # print(chi, end='\r')
-        constants['chis'] = [1.5, -38, -1.5]
-        c = np.array(constants['chis'])
-        n = calc_loss(constants['chis']).numpy()
+        xd = (constants['omegas'][-1] - constants['omegas'][0])/constants['max_N']
+        xa = -xd
+        constants['chis'] = [xd, 38.8, xa]
+        n = calc_loss(tf.convert_to_tensor(constants['chis'], dtype=tf.float64)).numpy()
         print(constants['max_N'], " -> ", n)
     # plt.plot(chis, n)
     # plt.show()
