@@ -12,15 +12,15 @@ params = {
     'amsgrad': False,
 }
 
-# optimized_params = nni.get_next_parameter()
-# params.update(optimized_params)
+optimized_params = nni.get_next_parameter()
+params.update(optimized_params)
 
 adam = tf.keras.optimizers.Nadam(
     learning_rate=params['lr'], beta_1=params['beta_1'], 
     beta_2=params['beta_2']
 )
 
-n = 4
+n = 3
 chi = (constants['omegas'][-1] - constants['omegas'][0])/n
 if constants['omegas'][0] < 0: 
     chi_a = -chi
@@ -38,4 +38,4 @@ opt = Optimizer(
 )
 
 results = opt(chi_d, 0, chi_a, write_data=False)
-# nni.report_final_result(results['loss'][-1])
+nni.report_final_result(results['loss'][-1])
