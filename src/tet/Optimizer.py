@@ -38,8 +38,7 @@ class Optimizer:
         ):
         
         #! Import the parameters of the problem
-        if const is None: self.const = constants.loadConstants()
-        else: self.const = const
+        self.const = const
 
         self.coupling = self.const['coupling']
         self.max_t = self.const['max_t']
@@ -72,21 +71,21 @@ class Optimizer:
                 return self.results
     
     #! Compute the loss function
-    @tf.function(jit_compile=False)
-    def compute_loss(self, lossClass: Loss):
-        return lossClass(*self.vars, site=self.target_site)
+    @tf.function(jit_compile=True)
+    def compute_loss(self):
+        return self.loss(self.vars, site=self.target_site)
 
     #! Get the gradients
-    def get_grads(self, lossClass):
+    def get_grads(self):
         with tf.GradientTape() as t:
             #t watches the trainable parameters only by default
-            loss = self.compute_loss(lossClass)
+            loss = self.compute_loss()
         grads = t.gradient(loss, self.vars)
         del t
         return grads, loss
 
      #! Apply the gradients
-    @tf.function(jit_compile=False)
+    @tf.function(jit_compile=True)
     def apply_grads(self, grads):
         self.opt.apply_gradients(zip(grads, self.vars))
 
@@ -100,7 +99,7 @@ class Optimizer:
 
         #* Define the object of the Loss class according to the current trainable parameters.
         #? ATTENTION
-        loss_ms = Loss(const=self.const)
+        self.loss = Loss(const=self.const)
 
         # Save the values of the loss function while proceeding 
         mylosses = []
@@ -138,7 +137,7 @@ class Optimizer:
             _vars = [self.vars[i].numpy() for i in range(len(self.vars))]
             
             # Compute the loss function and obtain the updated variables
-            grads, loss = self.get_grads(lossClass=loss_ms)
+            grads, loss = self.get_grads()
 
             # Set a repetition rate for displaying the progress 
             if self.Print:
@@ -298,24 +297,25 @@ def mp_opt(i:int , combination: list, iteration_path: str, const: dict, target_s
 
 if __name__=="__main__":
     
-    pass
-    # for n in range(2, 11):
-    #     constants.constants['max_N'] = n
-    #     chi = (constants.constants['omegas'][-1] - constants.constants['omegas'][0])/n
-    #     if constants.constants['omegas'][0] < 0: 
-    #         chi_a = -chi
-    #         chi_d = chi
-    #     else:
-    #         chi_a = chi
-    #         chi_d = -chi
+    # pass
+    for n in range(2, 6):
+        constants.constants['max_N'] = n
+        chi = (constants.constants['omegas'][-1] - constants.constants['omegas'][0])/n
+        if constants.constants['omegas'][0] < 0: 
+            chi_a = -chi
+            chi_d = chi
+        else:
+            chi_a = chi
+            chi_d = -chi
 
-    #     opt = Optimizer(
-    #         target_site=constants.acceptor,
-    #         DataExist=False, 
-    #         Print=True,
-    #         const=constants.constants,
-    #         lr=0.5,
-    #         data_path=os.path.join(os.getcwd(), f'data_optimizer_{n}')
-    #     )
-        
-    #     opt(chi_d, 0, chi_a)
+        opt = Optimizer(
+            target_site=constants.acceptor,
+            DataExist=False,
+            Print=True,
+            const=constants.constants,
+            opt=tf.keras.optimizers.Adam(learning_rate=0.8)
+        )
+
+        result = opt(chi_d, 0, chi_a, write_data=False)
+
+        # print(f"Max N: {n} - Loss: {result['loss'][0]}")
