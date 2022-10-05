@@ -1,4 +1,4 @@
-
+#%%
 import numpy as np
 import os
 import gc
@@ -75,7 +75,7 @@ def getCombinations(TrainableVarsLimits, method='bins', grid=2):
 def solver_mp(
     TrainableVarsLimits, const, grid=2, lr=TensorflowParams['lr'], method='bins',
     epochs_bins=solver_params['epochs_bins'], epochs_grid=solver_params['epochs_grid'], 
-    target_site=0, data_path=os.path.join(os.getcwd(),'data')
+    target_site=0, main_opt=False, return_values=False, data_path=os.path.join(os.getcwd(),'data')
     ):
 
     """
@@ -91,6 +91,8 @@ def solver_mp(
         * epochs_bins (int, optional): Epochs that the optimizer is going to run for using the bins method for initial guesses. Defaults to 1000.
         * epochs_grid (int, optional): Epochs that the optimizer is going to run for using the grid method for initial guesses. Defaults to 200.
         * target_site (str, optional): Target site for the optimizer to monitor. Defaults to 'x0' aka the 'donor' site.
+        * main_opt (bool, optional): If to further optimize with an optimizer with initial guesses provided by the best performing test optimizer.
+        * return_values(bool, optional): If to return the modified constants dictionary.
         * data_path (str, optional): Path to create the data directory. Defaults to cwd/data.
     """
 
@@ -102,7 +104,6 @@ def solver_mp(
 
     # Initialize helper parameters
     lims = list(TrainableVarsLimits.values())
-    grid = grid
 
     # _edge =  [0.1,0.5,1.5,2.5,3.0,3.5,4.0]  
     _edge =  [4.0,3.5,3.0,2.5,1.5,0.5,0.1]
@@ -121,13 +122,13 @@ def solver_mp(
                                                                                 # guesses will be done with the bin method
 
     t0 = time.time()
-    while not done and iteration < 2:
+    while not done and iteration < 1:
 
         # Create directory of current iteration
         data_path2 = os.path.join(data_path, f'iteration_{iteration}')
         createDir(destination=data_path2, replace_query=True)
         
-        Combinations = getCombinations(TrainableVarsLimits, method=method)
+        Combinations = getCombinations(TrainableVarsLimits, method=method, grid=grid)
         if method=='bins': iterations = epochs_bins
         else: iterations = epochs_grid
         #grid_choice = True
@@ -135,7 +136,7 @@ def solver_mp(
 
         t2 = time.time()
         # Initialize processing pool
-        pool = mp.Pool(max(mp.cpu_count()//2, 1))
+        pool = mp.Pool(mp.cpu_count()//2)
         # pool = mp.Pool(mp.cpu_count())
 
         # Set input arg list for mp_opt() function
@@ -144,14 +145,6 @@ def solver_mp(
         try:
             # Run multiprocess map 
             _all_losses = pool.starmap_async(mp_opt, args).get()
-
-        except KeyboardInterrupt:
-            print('Keyboard Interrupt.')
-            # Make sure to close pool so no more processes start
-            pool.close()    
-            pool.join()
-            gc.collect()
-            sys.exit(1)
 
         finally:
             # Make sure to close pool so no more processes start
@@ -200,44 +193,77 @@ def solver_mp(
 
     t1 = time.time()
 
-    data_path3 = os.path.join(data_path, f'main_opt')
-    _opt = Optimizer(
-        target_site=solver_params['target'], DataExist=False, 
-        const=const, Print=True, data_path=data_path3
-    )
-    _opt(*OptimalVars)
-
-    #! Load Data
-    loss_data = read_1D_data(
-        destination=data_path3, name_of_file='losses.txt'
-    )
-
-    OptimalVars = read_1D_data(
-        destination=data_path3, name_of_file='optimalvars.txt'
-    )
-
     const['chis'] = OptimalVars
-    const['min_n'] = min(loss_data)
+    const['min_n'] = min_loss
+
+    if main_opt:
+        data_path3 = os.path.join(data_path, f'main_opt')
+        _opt = Optimizer(
+            target_site=solver_params['target'], DataExist=False, 
+            const=const, Print=True, data_path=data_path3
+        )
+        _opt(*OptimalVars)
+
+        #! Load Data
+        loss_data = read_1D_data(
+            destination=data_path3, name_of_file='losses.txt'
+        )
+
+        OptimalVars = read_1D_data(
+            destination=data_path3, name_of_file='optimalvars.txt'
+        )
+
+        const['chis'] = OptimalVars
+        const['min_n'] = min(loss_data)
+    
     constants.dumpConstants(dict=const, path=data_path)
     
     print('Total solver run time: ', t1-t0)
 
+    if return_values:
+        return const.copy()
 
+#%%
 if __name__=="__main__":
 
+    import constants
+    import matplotlib.pyplot as plt
     #! Import the constants of the problem
     CONST = constants.constants
+    x = []
 
-    # create data directory with the naming convention data_{unix time}
-    data_dir_name = f'data_{time.time_ns()}'
-    data = os.path.join(os.getcwd(), data_dir_name)
+    for CONST['max_N'] in range(1, 9):
+        for CONST['omegas'][0] in range(1, 9):
+            CONST['omegas'][-1] = -CONST['omegas'][0]
+            CONST['omegas'][1] = CONST['omegas'][-1]
+            xd = (CONST['omegas'][-1] - CONST['omegas'][0])/CONST['max_N']
+            xa = -xd
+            CONST['chis'] = [xd, 0, xa]
 
-    CONST['max_N'] = 4
-    CONST['chis'] = [1.5, 0, -1.5]
-    #! Call the solver function that uses multiprocessing(pointer _mp)
-    solver_mp(
-        {'x1lims': [-40, 40]}, const=CONST, 
-        target_site=solver_params['target'], data_path=data
-    )
+            # create data directory with the naming convention data_{unix time}
+            data_dir_name = f'data_{time.time_ns()}'
+            data = os.path.join(os.getcwd(), data_dir_name)
 
-    exit(0)
+            #! Call the solver function that uses multiprocessing(pointer _mp)
+            results = solver_mp(
+                {'x1lims': [-40, 40]}, const=CONST, 
+                target_site=solver_params['target'], data_path=data,
+                grid=4, lr=0.6, return_values=True
+            )
+            results['omegas'] = results['omegas'][1]
+            results['chis'] = results['chis'][1]
+            x.append(results.copy())
+    
+    import pandas as pd
+
+    df = pd.DataFrame(x)
+
+    fig = plt.figure(figsize=(7,7))
+    ax = plt.axes(projection='3d')
+    sc = ax.scatter3D(df['max_N'], df['omegas'], df['chis'], c=df['min_n'])
+    ax.set_xlabel(r'max$\{N\}$', fontsize=14)
+    ax.set_ylabel(r'$|\omega_{M}|$', fontsize=14)
+    ax.set_zlabel(r'$|\chi_{M}|$', rotation=90, fontsize=14)
+    # fig.colorbar(sc, ax=ax)
+    plt.savefig("data_result.png")
+# %%
