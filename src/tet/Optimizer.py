@@ -71,7 +71,7 @@ class Optimizer:
                 return self.results
     
     #! Compute the loss function
-    @tf.function(jit_compile=True)
+    @tf.function(jit_compile=False)
     def compute_loss(self):
         return self.loss(self.vars, site=self.target_site)
 
@@ -85,7 +85,7 @@ class Optimizer:
         return grads, loss
 
      #! Apply the gradients
-    @tf.function(jit_compile=True)
+    @tf.function(jit_compile=False)
     def apply_grads(self, grads):
         self.opt.apply_gradients(zip(grads, self.vars))
 
@@ -112,10 +112,16 @@ class Optimizer:
             if self.vars[i] is None:
                 # Trainable ones
                 if i in TensorflowParams['train_sites']:
-                    self.vars[i] = tf.Variable(initial_value=initial_chis[i], dtype=self.DTYPE, name=f'chi{i}', trainable=True)
+                    self.vars[i] = tf.Variable(
+                        initial_value=initial_chis[i], dtype=self.DTYPE, 
+                        name=f'chi{i}', trainable=True
+                    )
                 # Non-trainable ones
                 else:
-                    self.vars[i] = tf.Variable(initial_value=initial_chis[i], dtype=self.DTYPE, name=f'chi{i}', trainable=False)
+                    self.vars[i] = tf.Variable(
+                        initial_value=initial_chis[i], dtype=self.DTYPE, 
+                        name=f'chi{i}', trainable=False
+                    )
         
         # Non linearity parameters that produce the lowest loss function
         best_vars = [tf.Variable(initial_value=0, dtype=self.DTYPE, trainable=False) for _ in range(len(self.vars))]
@@ -144,9 +150,13 @@ class Optimizer:
                 if epoch%50 ==0: 
                     print(f'Loss:{loss.numpy()}, ',*[f'x{j}: {self.vars[j].numpy()}, ' for j in range(len(self.vars))], f', epoch:{epoch}')
 
+            # Learning Rate Scheduling
+            # if epoch%200==0:
+            #     K.set_value(self.opt.learning_rate, self.opt.learning_rate/(0.01*epoch))
+
             # Reduce the learning rate when being close to TET
-            if loss.numpy() <= 0.1:
-                K.set_value(self.opt.learning_rate, self.opt.learning_rate/10)
+            if loss.numpy()<=0.1:
+                K.set_value(self.opt.learning_rate, 0.0001)
             
             # Save the new value of the loss function
             mylosses.append(loss.numpy())
@@ -252,7 +262,10 @@ class Optimizer:
 
 # ----------------------------- Multiprocess Helper Function ----------------------------- #
 
-def mp_opt(i:int , combination: list, iteration_path: str, const: dict, target_site: int, iterations: int) -> np.array:
+def mp_opt(
+    i:int , combination: list, iteration_path: str, 
+    const: dict, target_site: int, iterations: int
+) -> np.array:
     """
     A helper function used for multiprocess.
     
@@ -296,9 +309,11 @@ def mp_opt(i:int , combination: list, iteration_path: str, const: dict, target_s
     return np.array([*best_vars,np.min(loss_data)])
 
 if __name__=="__main__":
-    
+    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+
     # pass
-    for n in range(2, 6):
+    chis = np.array([[0, 0, 0]])
+    for n in range(1, 11):
         constants.constants['max_N'] = n
         chi = (constants.constants['omegas'][-1] - constants.constants['omegas'][0])/n
         if constants.constants['omegas'][0] < 0: 
@@ -318,4 +333,9 @@ if __name__=="__main__":
 
         result = opt(chi_d, 0, chi_a, write_data=False)
 
+        chis = np.concatenate((chis, np.array([result['best_vars']])), axis=0)
+        
         # print(f"Max N: {n} - Loss: {result['loss'][0]}")
+    
+    chis = np.delete(chis, 0, 0)
+    np.savetxt("chis.out", chis)

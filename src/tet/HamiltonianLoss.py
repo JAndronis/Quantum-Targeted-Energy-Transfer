@@ -54,7 +54,7 @@ class Loss:
     def derive(self):
 
         self.states = np.zeros((self.dim, self.sites))
-        self.states[0, 0] = self.max_N
+        self.states[0, 0] = tf.get_static_value(self.max_N)
 
         v = 0
         k = 0
@@ -164,7 +164,7 @@ class Loss:
         eigvecs = tf.cast(eigvecs, dtype=DTYPE)
 
         self.InitialState = np.zeros(self.sites)
-        self.InitialState[0] = self.max_N
+        self.InitialState[0] = tf.get_static_value(self.max_N)
         state_hash = self.getHash(self.InitialState)
         init_idx = np.searchsorted(self.T, state_hash, sorter=self.sorted_indeces)
         self.InitialState = np.identity(self.dim)[init_idx]
@@ -197,7 +197,7 @@ class Loss:
     def loss(self, single_value=True):
         Data = tf.TensorArray(DTYPE, size=self.NpointsT)
         self.setCoeffs()
-        t_span = np.linspace(0, self.max_t, self.NpointsT)
+        t_span = np.linspace(0, tf.get_static_value(self.max_t), self.NpointsT)
         for indext, t in enumerate(t_span):
             #print('\r t = {}'.format(t),end="")
             x = self._computeAverageCalculation(t)
@@ -210,24 +210,26 @@ class Loss:
                 return tf.reduce_min(Data)
         else: return Data
 
-@tf.function(jit_compile=False)
+# @tf.function(jit_compile=False)
 def calc_loss(c):
-    # tf.cast(c, dtype=tf.float64)
     return l(c, single_value=True, site=acceptor)
 
 if __name__=="__main__":
     from constants import constants, acceptor
     import matplotlib.pyplot as plt
 
-    l = Loss(constants)
-    # chis = np.linspace(-70, 70, 99)
-    # n = np.zeros(len(chis))
-    for constants['max_N'] in range(1, 10):
-        # print(chi, end='\r')
+    chis = np.array([[0, 0, 0]])
+    constants['max_N'] = 4
+    # for constants['omegas'][0] in range(1, 8):
+    for constants['max_N'] in range(1,8):
+        constants['omegas'] = [3,-3,-3]
+        # constants['omegas'][-1] = -constants['omegas'][0]
+        # constants['omegas'][1] = constants['omegas'][-1]
         xd = (constants['omegas'][-1] - constants['omegas'][0])/constants['max_N']
         xa = -xd
-        constants['chis'] = [xd, 38.8, xa]
+        constants['chis'] = [xd, -38.39, xa]
+        l = Loss(constants)
         n = calc_loss(tf.convert_to_tensor(constants['chis'], dtype=tf.float64)).numpy()
-        print(constants['max_N'], " -> ", n)
-    # plt.plot(chis, n)
-    # plt.show()
+        print(constants['omegas'], " -> ", n)
+        chis = np.concatenate((chis, np.array([constants['chis']])), axis=0)
+    chis = np.delete(chis, 0, 0)
