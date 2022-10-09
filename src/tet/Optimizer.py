@@ -283,7 +283,7 @@ def mp_opt(
     opt = Optimizer(
         target_site=target_site,
         DataExist=False,
-        Print=True,
+        Print=False,
         data_path=data_path,
         const=const,
         opt=tf.keras.optimizers.Adam(learning_rate=0.5, beta_1=0.4, amsgrad=True),
