@@ -79,7 +79,6 @@ if __name__=="__main__":
         # print(f'Rank {rank} working on parameters: {const_copy}.')
         _all_losses = []
         for i, (combination) in enumerate(Combinations):
-            print(f'rank {rank} working on combination {combination}')
             tmp = [i+rank, combination, data_path, const_copy, target_site, iterations]
             _all_losses.append(mp_opt(*tmp))
         all_losses = np.array(_all_losses)
