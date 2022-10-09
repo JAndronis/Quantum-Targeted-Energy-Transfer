@@ -2,7 +2,6 @@ import sys
 import os
 import time
 import numpy as np
-import matplotlib.pyplot as plt
 import tensorflow as tf
 import keras.backend as K
 import constants as constants
@@ -265,27 +264,26 @@ class Optimizer:
 def mp_opt(
     i:int , combination: list, iteration_path: str, 
     const: dict, target_site: int, iterations: int
-) -> np.array:
+) -> np.ndarray:
     """
     A helper function used for multiprocess.
     
     Args:
         * i (int): Index refering to optimizer with specific initial guesses
         * combination (list): The initial guesses(referring to the trainable parameters) of the said optimizer
-        * const (Dictionary): Refer to the constants dictionary in constants.py.
-        * target_site: Refer to the argument target of the solver_params dictionary in constants.py
-        * iterations: Maximum iterations of the optimizer
+        * const (dict): Refer to the constants dictionary in constants.py.
+        * target_site(int): Refer to the argument target of the solver_params dictionary in constants.py
+        * iterations(int): Maximum iterations of the optimizer
     """
 
     #! Import the parameters of the problem
-    const = const
     data_path = os.path.join(os.getcwd(), f'{iteration_path}/data_optimizer_{i}')
 
     #! Create the current optimizer
     opt = Optimizer(
         target_site=target_site,
         DataExist=False,
-        Print=False,
+        Print=True,
         data_path=data_path,
         const=const,
         opt=tf.keras.optimizers.Adam(learning_rate=0.5, beta_1=0.4, amsgrad=True),

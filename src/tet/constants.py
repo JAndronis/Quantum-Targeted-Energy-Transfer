@@ -83,8 +83,8 @@ def setConstant(dict, key, value):
 def getConstant(key):
     return constants[key]
 
-def dumpConstants(dict=constants, path=os.getcwd()):
-    _path = os.path.join(path, 'constants.json')
+def dumpConstants(dict=constants, path=os.getcwd(), name='constants'):
+    _path = os.path.join(path, name+'.json')
     with open(_path, 'w') as c:
         #converts the Python objects into appropriate json objects
         json.dump(dict, c, indent=1)

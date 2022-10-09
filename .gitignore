@@ -1,6 +1,6 @@
 # jupyter related files
 .ipynb_checkpoints 
-Untitled.ipynb
+*.ipynb
 
 # visual studio files
 .vs/
