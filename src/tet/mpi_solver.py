@@ -76,7 +76,7 @@ if __name__=="__main__":
         xd = (const_copy['omegas'][-1] - const_copy['omegas'][0])/const_copy['max_N']
         xa = -xd
         const_copy['chis'] = [xd, 0, xa]
-        # print(f'Rank {rank} working on parameters: {const_copy}.')
+        print(f'Rank {rank} working on parameters: {const_copy}.')
         _all_losses = []
         for i, (combination) in enumerate(Combinations):
             tmp = [i+rank, combination, data_path, const_copy, target_site, iterations]
