@@ -1,10 +1,12 @@
-#%%
+
 import numpy as np
 import os
 import gc
 import sys
 import time
-import multiprocessing as mp
+# import multiprocessing as mp
+from mpi4py import MPI
+from mpi4py.futures import MPIPoolExecutor
 from itertools import combinations, product
 import tensorflow as tf
 
@@ -65,7 +67,7 @@ def getCombinations(TrainableVarsLimits, method='bins', grid=2):
 
     elif method=='grid':
         # make a grid of uniformly distributed initial parameter guesses
-        TrainableSpans = [ np.linspace( TrainableVarsLimits[f'x{i}lims'][0], TrainableVarsLimits[f'x{i}lims'][1], solver_params['Npoints'])
+        TrainableSpans = [ np.linspace(TrainableVarsLimits[f'x{i}lims'][0], TrainableVarsLimits[f'x{i}lims'][1], solver_params['Npoints'])
             for i in TensorflowParams['train_sites'] ]
 
         Combinations = list(product(*TrainableSpans))
@@ -136,29 +138,20 @@ def solver_mp(
 
         t2 = time.time()
         # Initialize processing pool
-        pool = mp.Pool(mp.cpu_count()//2)
-        # pool = mp.Pool(mp.cpu_count())
+        with MPIPoolExecutor(max_workers=MPI.COMM_WORLD.Get_size(), root=0) as executor:
+            # Set input arg list for mp_opt() function
+            args = [(i, combination, data_path2, const, target_site, iterations) for i, (combination) in enumerate(Combinations)]
 
-        # Set input arg list for mp_opt() function
-        args = [(i, combination, data_path2, const, target_site, iterations) for i, (combination) in enumerate(Combinations)]
-
-        try:
-            # Run multiprocess map 
-            _all_losses = pool.starmap_async(mp_opt, args).get()
-
-        finally:
-            # Make sure to close pool so no more processes start
-            pool.close()    
-            pool.join()
-            # Garbage collector
-            gc.collect()    
+            # Run multiprocess map
+            _all_losses = executor.starmap(mp_opt, args)
 
         t3 = time.time()
+
         # Collect code run time for optimization
         dt = t3-t2  
 
         # Gather results
-        all_losses = np.array(_all_losses)
+        all_losses = np.fromiter(_all_losses, float)
         OptimalVars = [float(all_losses[np.argmin(all_losses[:,const['sites']]), i]) for i in range(const['sites'])]
         min_loss = float(all_losses[np.argmin(all_losses[:,const['sites']]), const['sites']])
         
@@ -223,17 +216,15 @@ def solver_mp(
     if return_values:
         return const.copy()
 
-#%%
 if __name__=="__main__":
 
     import constants
     import matplotlib.pyplot as plt
     #! Import the constants of the problem
     CONST = constants.constants
-    x = []
 
-    for CONST['max_N'] in range(1, 9):
-        for CONST['omegas'][0] in range(1, 9):
+    for CONST['max_N'] in range(1, 2):
+        for CONST['omegas'][0] in range(1, 2):
             CONST['omegas'][-1] = -CONST['omegas'][0]
             CONST['omegas'][1] = CONST['omegas'][-1]
             xd = (CONST['omegas'][-1] - CONST['omegas'][0])/CONST['max_N']
@@ -245,25 +236,8 @@ if __name__=="__main__":
             data = os.path.join(os.getcwd(), data_dir_name)
 
             #! Call the solver function that uses multiprocessing(pointer _mp)
-            results = solver_mp(
+            solver_mp(
                 {'x1lims': [-40, 40]}, const=CONST, 
                 target_site=solver_params['target'], data_path=data,
-                grid=4, lr=0.6, return_values=True
+                grid=4, lr=0.6
             )
-            results['omegas'] = results['omegas'][1]
-            results['chis'] = results['chis'][1]
-            x.append(results.copy())
-    
-    import pandas as pd
-
-    df = pd.DataFrame(x)
-
-    fig = plt.figure(figsize=(7,7))
-    ax = plt.axes(projection='3d')
-    sc = ax.scatter3D(df['max_N'], df['omegas'], df['chis'], c=df['min_n'])
-    ax.set_xlabel(r'max$\{N\}$', fontsize=14)
-    ax.set_ylabel(r'$|\omega_{M}|$', fontsize=14)
-    ax.set_zlabel(r'$|\chi_{M}|$', rotation=90, fontsize=14)
-    # fig.colorbar(sc, ax=ax)
-    plt.savefig("data_result.png")
-# %%
