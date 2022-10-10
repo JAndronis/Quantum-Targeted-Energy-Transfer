@@ -18,10 +18,10 @@ Documentation:
 constants = {'max_N': 3,
              'max_t': 25, 
              'omegas': [-3,3,3],
-             'chis': [1.5,1,-1.5],
+             'chis': [1.5,0,-1.5],
              'coupling': 1,
              'sites': 3,
-             'timesteps': 100}
+             'timesteps': 30}
 
 # -------------------------------------------------------------------#
 
@@ -38,7 +38,7 @@ TensorflowParams = {'DTYPE': tf.float32,
                     'lr': 0.1, 
                     'iterations': 1000,
                     'tol':1e-8,
-                    'train_sites': [0, 1, 2]}
+                    'train_sites': [1]}
 
 # Define the acceptor and the donor site
 acceptor = 'x{}'.format(constants['sites']-1)
@@ -60,7 +60,7 @@ Documentation:
 """
 solver_params = {'methods': ['grid', 'bins'],
                 'target': acceptor,
-                'Npoints': 12,
+                'Npoints': 4,
                 'epochs_grid':500,
                 'epochs_bins':1000}
 
@@ -83,8 +83,8 @@ def setConstant(dict, key, value):
 def getConstant(key):
     return constants[key]
 
-def dumpConstants(dict=constants, path=os.getcwd()):
-    _path = os.path.join(path, 'constants.json')
+def dumpConstants(dict=constants, path=os.getcwd(), name='constants'):
+    _path = os.path.join(path, name+'.json')
     with open(_path, 'w') as c:
         #converts the Python objects into appropriate json objects
         json.dump(dict, c, indent=1)
