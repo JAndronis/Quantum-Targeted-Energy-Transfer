@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+title: Quantum-Targeted-Energy-Transfer-Optimization
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Jason
+    family-names: Andronis
+    email: jandronis.physics@gmail.com
+    affiliation: 'Department of Physics, University of Crete'
+  - given-names: George
+    family-names: Arapantonis
+    email: garapantonisprojects@gmail.com
+    affiliation: >-
+      Departments of Physics & Astronomy, Johns
+      Hopkins University
