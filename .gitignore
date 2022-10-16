@@ -44,3 +44,6 @@ tests/__pycache__/
 src/tet/.DS_Store
 tests/.DS_Store
 .DS_Store
+
+# slurm
+sbatch_output

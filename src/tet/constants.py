@@ -15,7 +15,7 @@ Documentation:
     * the non trainable parameters and enter random values for the trainable ones.
     * sites: The number of the oscillators of the system. Usually denoted by f.
 """
-constants = {'max_N': 2,
+constants = {'max_N': 3,
              'max_t': 25, 
              'omegas': [-3,3,3],
              'chis': [1.5,0,-1.5],
