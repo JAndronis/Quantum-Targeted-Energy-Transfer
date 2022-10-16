@@ -63,8 +63,9 @@ class Optimizer:
         if self.DataExist: pass
         else:
             if write_data:
-                createDir(self.data_path, replace_query=True)
-                self._train()
+                opt_path = os.path.join(self.data_path, 'data_optimizer')
+                createDir(opt_path, replace_query=True)
+                self._train(write_data=True)
             else:
                 self._train(write_data)
                 return self.results
@@ -246,9 +247,6 @@ class Optimizer:
             # Save initial parameter data
             writeData(data=self.init_chis, destination=self.data_path, name_of_file='init_chis.txt')
             
-            # Save the optimal parameters
-            writeData(data=best_vars, destination=self.data_path, name_of_file='optimalvars.txt')
-            
             for i in range(len(var_data)):
                 # Save the trajectories in a file
                 writeData(data=var_data[i], destination=self.data_path, name_of_file=f'x{i}trajectory.txt')
@@ -329,7 +327,7 @@ if __name__=="__main__":
             opt=tf.keras.optimizers.Adam(learning_rate=0.8)
         )
 
-        result = opt(chi_d, 0, chi_a, write_data=False)
+        result = opt(chi_d, 0, chi_a, write_data=True)
 
         chis = np.concatenate((chis, np.array([result['best_vars']])), axis=0)
         
