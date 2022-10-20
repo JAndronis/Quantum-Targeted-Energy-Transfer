@@ -4,11 +4,10 @@ import time
 import numpy as np
 import tensorflow as tf
 import keras.backend as K
-import constants as constants
 
-from data_process import createDir, writeData, read_1D_data
-from HamiltonianLoss import Loss
-from constants import TensorflowParams
+from .data_process import createDir, writeData, read_1D_data
+from .HamiltonianLoss import Loss
+from .constants import TensorflowParams
 
 assert tf.__version__ >= "2.0"
 assert sys.version_info >= (3,6)
@@ -305,14 +304,15 @@ def mp_opt(
     return np.array([*best_vars,np.min(loss_data)])
 
 if __name__=="__main__":
+    from . import constants
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
     # pass
     chis = np.array([[0, 0, 0]])
     for n in range(1, 11):
-        constants.constants['max_N'] = n
-        chi = (constants.constants['omegas'][-1] - constants.constants['omegas'][0])/n
-        if constants.constants['omegas'][0] < 0: 
+        constants.system_constants['max_N'] = n
+        chi = (constants.system_constants['omegas'][-1] - constants.system_constants['omegas'][0])/n
+        if constants.system_constants['omegas'][0] < 0: 
             chi_a = -chi
             chi_d = chi
         else:
@@ -323,7 +323,7 @@ if __name__=="__main__":
             target_site=constants.acceptor,
             DataExist=False,
             Print=True,
-            const=constants.constants,
+            const=constants.system_constants,
             opt=tf.keras.optimizers.Adam(learning_rate=0.8)
         )
 

@@ -4,11 +4,12 @@ import shutil
 import sys
 import glob
 from os.path import exists
-#import matplotlib.pyplot as plt
-#from saveFig import saveFig
-import constants
+import matplotlib.pyplot as plt
 from math import sqrt
 import warnings
+
+from . import constants
+from .saveFig import saveFig
 
 # -------------------------------------------------------------------
 
@@ -359,6 +360,7 @@ class PlotResults:
 # MAIN ------------------------------------------------------------------------------- #
 
 if __name__=="__main__":
+    import constants
 
     data_paths = glob.glob(os.path.join(os.getcwd(), 'data_*'))
     data_params = [constants.loadConstants(path=os.path.join(path, 'constants.json')) for i, path in enumerate(data_paths)]
