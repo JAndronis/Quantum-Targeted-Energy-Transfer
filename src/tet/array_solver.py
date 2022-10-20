@@ -16,7 +16,7 @@ from solver_mp import getCombinations
 if __name__=="__main__":
 
     parser = argparse.ArgumentParser(description="python3 array_solver.py")
-    parser.add_argument('--path', nargs='?', type=pathlib.Path, required=True)
+    parser.add_argument('-p','--path', nargs='?', type=pathlib.Path, required=True)
     parser.add_argument('--id', type=int, required=True)
     parser.add_argument('--array-size', type=int, required=True)
 
