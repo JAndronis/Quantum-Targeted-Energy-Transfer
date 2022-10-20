@@ -3,16 +3,18 @@ import tensorflow as tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 assert tf.__version__ >= "2.0"
 from math import factorial
-from itertools import product
 import numpy as np
 
 DTYPE = tf.float64
 
+# -------------------------------------------------------------------#
+"""
+    Class Loss: A class designed for computing the loss function
+"""
 class Loss:
     """
-    Class Loss: A class designed for computing the loss function
     Documentation:
-        * const:  Refer to the constants dictionary in constants.py.
+        * const:  Refer to the system_constants dictionary in constants.py.
     """
     def __init__(self, const):
         #! Import the parameters of the problem
@@ -24,7 +26,7 @@ class Loss:
         self.sites = const['sites']
         self.omegas = tf.constant(const['omegas'], dtype=DTYPE)
 
-        # default values for chis and target site, will be replaced by __call__()
+        # Default values for chis and target site, will be replaced by __call__()
         self.chis = const['chis']
         self.targetState = const['sites'] - 1
         
@@ -50,13 +52,17 @@ class Loss:
     def getCombinations(self):
         return self.CombinationsBosons
 
+    """
+    derive: A function that generates all the possible configurations of distributing N indistinguishable bosons 
+    in f distinguishable sites.
+    """
     def derive(self):
 
         self.states = np.zeros((self.dim, self.sites))
+        # Initially, all the bosons belong to the donor site.
         self.states[0, 0] = tf.get_static_value(self.max_N)
 
-        v = 0
-        k = 0
+        v,k = 0,0
         while v < self.dim - 1:
 
             for i in range(k): self.states[v+1, i] = self.states[v, i]
