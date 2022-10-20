@@ -36,7 +36,7 @@ if __name__=="__main__":
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
     # Initialize helper parameters
-    const = constants.constants.copy()
+    const = constants.system_constants.copy()
     TrainableVarsLimits = {'x1lims': [-40, 40]}
     lims = list(TrainableVarsLimits.values())
     method = 'bins'
