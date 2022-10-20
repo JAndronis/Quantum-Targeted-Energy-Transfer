@@ -1,7 +1,6 @@
 import os
 import json
-import tensorflow as tf
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
+from tensorflow import float32
 
 # -------------------------------------------------------------------#
 
@@ -34,7 +33,7 @@ Documentation:
     * tol : The tolerance of each optimizer concerning the changes in the non-linearity parameters.
     * train_sites: A list including the non-linearity parameters to be optimized. Begin counting from 0
 """
-TensorflowParams = {'DTYPE': tf.float32, 
+TensorflowParams = {'DTYPE': float32, 
                     'lr': 0.1, 
                     'iterations': 1000,
                     'tol':1e-8,
@@ -74,27 +73,33 @@ plotting_params = {'plotting_resolution': 100}
 # -------------------------------------------------------------------#
 
 """
-Helper functions: You may ignore
+Helper functions
 """
 
-def setConstant(dict, key, value):
-    dict[key] = value
-    
-def getConstant(key):
-    return system_constants[key]
-
 def dumpConstants(dict=system_constants, path=os.getcwd(), name='constants'):
+    """Function that generates a json file from the dictionary provided.
+
+    Args:
+        dict (dict, optional): Dictionary to save. Defaults to system_constants.
+        path (str, optional): Path to save json file to. Defaults to os.getcwd().
+        name (str, optional): Name of file. Defaults to 'constants'.
+    """
     _path = os.path.join(path, name+'.json')
     with open(_path, 'w') as c:
-        #converts the Python objects into appropriate json objects
         json.dump(dict, c, indent=1)
         
 def loadConstants(path='system_constants.json'):
+    """Function that loads a json that was created with the dumpConstants function and writes the
+    contents to a dictionary. 
+
+    Args:
+        path (str, optional): Path of the file to load. Defaults to 'system_constants.json'.
+
+    Returns:
+        dict: Dictionary containing the constants of the json file.
+    """
     with open(path, 'r') as c:
         system_constants = json.load(c)
     return system_constants
 
 # -------------------------------------------------------------------#
-
-
-
