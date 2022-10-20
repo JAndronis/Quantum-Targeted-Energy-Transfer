@@ -5,7 +5,6 @@ assert tf.__version__ >= "2.0"
 from math import factorial
 from itertools import product
 import numpy as np
-from constants import TensorflowParams
 
 DTYPE = tf.float64
 
@@ -210,21 +209,18 @@ class Loss:
                 return tf.reduce_min(Data)
         else: return Data
 
-# @tf.function(jit_compile=False)
-def calc_loss(c):
-    return l(c, single_value=True, site=acceptor)
-
 if __name__=="__main__":
     from constants import constants, acceptor
     import matplotlib.pyplot as plt
 
+    # @tf.function(jit_compile=False)
+    def calc_loss(c):
+        return l(c, single_value=True, site=acceptor)
+
     chis = np.array([[0, 0, 0]])
     constants['max_N'] = 4
-    # for constants['omegas'][0] in range(1, 8):
     for constants['max_N'] in range(1,8):
         constants['omegas'] = [3,-3,-3]
-        # constants['omegas'][-1] = -constants['omegas'][0]
-        # constants['omegas'][1] = constants['omegas'][-1]
         xd = (constants['omegas'][-1] - constants['omegas'][0])/constants['max_N']
         xa = -xd
         constants['chis'] = [xd, -38.39, xa]
@@ -233,3 +229,4 @@ if __name__=="__main__":
         print(constants['omegas'], " -> ", n)
         chis = np.concatenate((chis, np.array([constants['chis']])), axis=0)
     chis = np.delete(chis, 0, 0)
+    sys.exit(0)
