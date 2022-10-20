@@ -15,7 +15,7 @@ Documentation:
     * the non trainable parameters and enter random values for the trainable ones.
     * sites: The number of the oscillators of the system. Usually denoted by f.
 """
-constants = {'max_N': 3,
+system_constants = {'max_N': 3,
              'max_t': 25, 
              'omegas': [-3,3,3],
              'chis': [1.5,0,-1.5],
@@ -41,7 +41,7 @@ TensorflowParams = {'DTYPE': tf.float32,
                     'train_sites': [1]}
 
 # Define the acceptor and the donor site
-acceptor = 'x{}'.format(constants['sites']-1)
+acceptor = 'x{}'.format(system_constants['sites']-1)
 donor = 'x0'
 
 # -------------------------------------------------------------------#
@@ -81,18 +81,18 @@ def setConstant(dict, key, value):
     dict[key] = value
     
 def getConstant(key):
-    return constants[key]
+    return system_constants[key]
 
-def dumpConstants(dict=constants, path=os.getcwd(), name='constants'):
+def dumpConstants(dict=system_constants, path=os.getcwd(), name='constants'):
     _path = os.path.join(path, name+'.json')
     with open(_path, 'w') as c:
         #converts the Python objects into appropriate json objects
         json.dump(dict, c, indent=1)
         
-def loadConstants(path='constants.json'):
+def loadConstants(path='system_constants.json'):
     with open(path, 'r') as c:
-        constants = json.load(c)
-    return constants
+        system_constants = json.load(c)
+    return system_constants
 
 # -------------------------------------------------------------------#
 
