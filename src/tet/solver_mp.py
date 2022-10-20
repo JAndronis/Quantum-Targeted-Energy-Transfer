@@ -4,16 +4,13 @@ import os
 import gc
 import sys
 import time
-# import multiprocessing as mp
-from mpi4py import MPI
-from mpi4py.futures import MPIPoolExecutor
+import multiprocessing as mp
 from itertools import combinations, product
 import tensorflow as tf
 
-import constants
-from Optimizer import mp_opt, Optimizer
-from data_process import createDir, read_1D_data
-from constants import solver_params,TensorflowParams
+from .Optimizer import mp_opt, Optimizer
+from .data_process import createDir, read_1D_data
+from .constants import solver_params,TensorflowParams
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
@@ -138,12 +135,21 @@ def solver_mp(
 
         t2 = time.time()
         # Initialize processing pool
-        with MPIPoolExecutor(max_workers=MPI.COMM_WORLD.Get_size(), root=0) as executor:
-            # Set input arg list for mp_opt() function
-            args = [(i, combination, data_path2, const, target_site, iterations) for i, (combination) in enumerate(Combinations)]
+        pool = mp.Pool(mp.cpu_count()//2)
+        # pool = mp.Pool(mp.cpu_count())
 
-            # Run multiprocess map
-            _all_losses = executor.starmap(mp_opt, args)
+        # Set input arg list for mp_opt() function
+        args = [(i, combination, data_path2, const, target_site, iterations) for i, (combination) in enumerate(Combinations)]
+
+        try:
+            # Run multiprocess map 
+            _all_losses = pool.starmap_async(mp_opt, args).get()
+        finally:
+            # Make sure to close pool so no more processes start
+            pool.close()    
+            pool.join()
+            # Garbage collector
+            gc.collect()
 
         t3 = time.time()
 
@@ -151,7 +157,7 @@ def solver_mp(
         dt = t3-t2  
 
         # Gather results
-        all_losses = np.fromiter(_all_losses, float)
+        all_losses = np.array(_all_losses)
         OptimalVars = [float(all_losses[np.argmin(all_losses[:,const['sites']]), i]) for i in range(const['sites'])]
         min_loss = float(all_losses[np.argmin(all_losses[:,const['sites']]), const['sites']])
         
@@ -217,7 +223,6 @@ def solver_mp(
         return const.copy()
 
 if __name__=="__main__":
-
     import constants
     import matplotlib.pyplot as plt
     #! Import the constants of the problem
