@@ -210,23 +210,24 @@ class Loss:
         else: return Data
 
 if __name__=="__main__":
-    from constants import constants, acceptor
+    from constants import system_constants, acceptor
     import matplotlib.pyplot as plt
-
+    import sys
+    
     # @tf.function(jit_compile=False)
     def calc_loss(c):
         return l(c, single_value=True, site=acceptor)
 
     chis = np.array([[0, 0, 0]])
-    constants['max_N'] = 4
-    for constants['max_N'] in range(1,8):
-        constants['omegas'] = [3,-3,-3]
-        xd = (constants['omegas'][-1] - constants['omegas'][0])/constants['max_N']
+    system_constants['max_N'] = 4
+    for system_constants['max_N'] in range(1,8):
+        system_constants['omegas'] = [3,-3,-3]
+        xd = (system_constants['omegas'][-1] - system_constants['omegas'][0])/system_constants['max_N']
         xa = -xd
-        constants['chis'] = [xd, -38.39, xa]
-        l = Loss(constants)
-        n = calc_loss(tf.convert_to_tensor(constants['chis'], dtype=tf.float64)).numpy()
-        print(constants['omegas'], " -> ", n)
-        chis = np.concatenate((chis, np.array([constants['chis']])), axis=0)
+        system_constants['chis'] = [xd, -38.39, xa]
+        l = Loss(system_constants)
+        n = calc_loss(tf.convert_to_tensor(system_constants['chis'], dtype=tf.float64)).numpy()
+        print(system_constants['omegas'], " -> ", n)
+        chis = np.concatenate((chis, np.array([system_constants['chis']])), axis=0)
     chis = np.delete(chis, 0, 0)
     sys.exit(0)
