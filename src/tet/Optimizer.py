@@ -19,13 +19,13 @@ class Optimizer:
     A class instance of a keras optimizer, along with relevant parameters.
     
     Args:
-        * target_site: Refer to the argument target of the solver_params dictionary in constants.py
-        * DataExist: A boolean variable verifying that an optimizer with given initial guesses runs for the first time
-        * const: Refer to the constants dictionary in constants.py.
-        * Print (Bool): Parameter defining the 
-        * iterations: Refer to the argument iterations of the TensorflowParams dictionary in constants.py
-        * lr: Refer to the argument lr of the TensorflowParams dictionary in constants.py
-        * data_path: Path to save the directory of an optimizer with given initial guesses
+        const (dict): Refer to the system_constants dictionary in constants.py.
+        target_site (int): Refer to the argument target of the solver_params dictionary in constants.py
+        DataExist (bool, optional): A boolean variable verifying that an optimizer with given initial guesses runs for the first time. Defaults to False.
+        Print (bool, optional): Parameter defining if to print results of optimization on the console. Defaults to True.
+        iterations (int, optional): Refer to the argument iterations of the TensorflowParams dictionary in constants.py. Defaults to the value from constants.py.
+        opt (tf.keras.optimizers, optional): A tensorflow optimizer which is going to be used for the minimization of the HamiltonianLoss. Defaults to tf.keras.optimizers.Adam().
+        data_path (str, optional): Path to save the directory of an optimizer with given initial guesses. Defaults to os.path.join(os.getcwd(), 'data_optimizer').
     """
     def __init__(
         self, const: dict, target_site: int, 
@@ -266,11 +266,12 @@ def mp_opt(
     A helper function used for multiprocess.
     
     Args:
-        * i (int): Index refering to optimizer with specific initial guesses
-        * combination (list): The initial guesses(referring to the trainable parameters) of the said optimizer
-        * const (dict): Refer to the constants dictionary in constants.py.
-        * target_site(int): Refer to the argument target of the solver_params dictionary in constants.py
-        * iterations(int): Maximum iterations of the optimizer
+        i (int): Index refering to optimizer with specific initial guesses
+        combination (list): The initial guesses(referring to the trainable parameters) of the said optimizer
+        iteration_path (str): Path of the iteration directory.
+        const (dict): Refer to the constants dictionary in constants.py.
+        target_site(int): Refer to the argument target of the solver_params dictionary in constants.py
+        iterations(int): Maximum iterations of the optimizer
     """
 
     #! Import the parameters of the problem
@@ -304,7 +305,7 @@ def mp_opt(
     return np.array([*best_vars,np.min(loss_data)])
 
 if __name__=="__main__":
-    from . import constants
+    import constants
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
     # pass

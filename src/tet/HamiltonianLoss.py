@@ -8,13 +8,13 @@ import numpy as np
 DTYPE = tf.float64
 
 # -------------------------------------------------------------------#
-"""
-    Class Loss: A class designed for computing the loss function
-"""
+
 class Loss:
     """
-    Documentation:
-        * const:  Refer to the system_constants dictionary in constants.py.
+    A class designed for computing the loss function
+
+    Args:
+        const (dict):  Refer to the system_constants dictionary in constants.py.
     """
     def __init__(self, const):
         #! Import the parameters of the problem
@@ -52,11 +52,10 @@ class Loss:
     def getCombinations(self):
         return self.CombinationsBosons
 
-    """
-    derive: A function that generates all the possible configurations of distributing N indistinguishable bosons 
-    in f distinguishable sites.
-    """
     def derive(self):
+        """
+        A function that generates all the possible configurations of distributing N indistinguishable bosons in f distinguishable sites.
+        """
 
         self.states = np.zeros((self.dim, self.sites))
         # Initially, all the bosons belong to the donor site.

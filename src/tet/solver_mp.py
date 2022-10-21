@@ -14,20 +14,18 @@ from .constants import solver_params,TensorflowParams
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
-#!Creates a list of initial guess pairs to be fed to an optimizer call
 def getCombinations(TrainableVarsLimits, method='bins', grid=2):
     """
     Creates a list of initial guess pairs to be fed to an optimizer call
 
     Args:
-        * TrainableVarsLimits (dict): The keys are the nonlinearity parameters of each site and the values 
-        * include a list with the limits of the said variable.
-        * const (dict): Dictionary of problem parameters.
-        * method (str, optional): Method to use for creating Combinations list. Defaults to 'bins'.
-        * grid (int, optional): Number of times to split the parameter space. Defaults to 2.
+        TrainableVarsLimits (dict): The keys are the nonlinearity parameters of each site and the values include a list with the limits of the said variable.
+        const (dict): Dictionary of problem parameters.
+        method (str, optional): Method to use for creating Combinations list. Defaults to 'bins'.
+        grid (int, optional): Number of times to split the parameter space. Defaults to 2.
 
     Returns:
-        * list: A list of tuples, of all the initial guesses to try.
+        list: A list of tuples, of all the initial guesses to try.
     """
     
     method_list = solver_params['methods']
@@ -82,17 +80,17 @@ def solver_mp(
     It uses the Optimizer class to write trajectory data to multiple files so it can be parsed later if needed.
 
     Args:
-        * TrainableVarsLimits (Dictionary): The keys are the nonlinearity parameters of each site and the values 
-        * include a list with the limits of the said variable.
-        * const (dict): Dictionary of system parameters that follows the convention used by the tet.constants() module.
-        * grid (int, optional): Integer representing the number of times to split the parameter space. Defaults to 2.
-        * lr (float, optional): Learning rate of the optimizer. Defaults to 0.1.
-        * epochs_bins (int, optional): Epochs that the optimizer is going to run for using the bins method for initial guesses. Defaults to 1000.
-        * epochs_grid (int, optional): Epochs that the optimizer is going to run for using the grid method for initial guesses. Defaults to 200.
-        * target_site (str, optional): Target site for the optimizer to monitor. Defaults to 'x0' aka the 'donor' site.
-        * main_opt (bool, optional): If to further optimize with an optimizer with initial guesses provided by the best performing test optimizer.
-        * return_values(bool, optional): If to return the modified constants dictionary.
-        * data_path (str, optional): Path to create the data directory. Defaults to cwd/data.
+        TrainableVarsLimits (Dictionary): The keys are the nonlinearity parameters of each site and the values include a list with the limits of the said variable.
+        const (dict): Dictionary of system parameters that follows the convention used by the tet.constants() module.
+        grid (int, optional): Integer representing the number of times to split the parameter space. Defaults to 2.
+        lr (float, optional): Learning rate of the optimizer. Defaults to 0.1.
+        method (str, optional): Defines the method of optimization to be used. Defaults to 'bins'.
+        epochs_bins (int, optional): Epochs that the optimizer is going to run for using the bins method for initial guesses. Defaults to 1000.
+        epochs_grid (int, optional): Epochs that the optimizer is going to run for using the grid method for initial guesses. Defaults to 200.
+        target_site (str, optional): Target site for the optimizer to monitor. Defaults to 'x0' aka the 'donor' site.
+        main_opt (bool, optional): If to further optimize with an optimizer with initial guesses provided by the best performing test optimizer.
+        return_values(bool, optional): If to return the modified constants dictionary.
+        data_path (str, optional): Path to create the data directory. Defaults to cwd/data.
     """
 
     #! Use cpu since we are doing parallelization on the cpu
