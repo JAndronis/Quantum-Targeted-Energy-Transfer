@@ -11,17 +11,16 @@ import warnings
 from . import constants
 from .saveFig import saveFig
 
-# -------------------------------------------------------------------
+# -------------------------------------------------------------------#
 
-"""
-writeData: A function used for saving data in files
-"""
 def writeData(data, destination, name_of_file):
     """
-    Documentation:
-        * data: List/Array of data
-        * destination: Path to save the file
-        * name_of_file: Desired name of the file. Include the type of the file too.
+    A function used for saving data in files
+
+    Args:
+        data: List/Array of data
+        destination: Path to save the file
+        name_of_file: Desired name of the file. Include the type of the file too.
     """
     data = np.array(data)
     _destination = os.path.join(destination, name_of_file)
@@ -40,14 +39,15 @@ def writeData(data, destination, name_of_file):
 # -------------------------------------------------------------------
 
 def write_min_N(xA, xD, min_n, destination, name_of_file):
-    """_summary_
+    """
+    Function that is used to save data for plotting.
 
     Args:
-        * xA (_type_): _description_
-        * xD (_type_): _description_
-        * min_n (_type_): _description_
-        * destination (_type_): _description_
-        * name_of_file (_type_): _description_
+        xA (np.ndarray): 2D array of xA parameters produced from np.meshgrid.
+        xD (np.ndarray): 2D array of xD parameters produced from np.meshgrid.
+        min_n (np.ndarray): 2D array of min_N bosons for every combination of xAs, xDs.
+        destination (str): Where to save the file.
+        name_of_file (str): How to name the file.
     """
     
     z = min_n.flatten(order='C')
@@ -64,16 +64,15 @@ def write_min_N(xA, xD, min_n, destination, name_of_file):
     temp_arr = np.array(k)
     writeData(data=temp_arr, destination=destination, name_of_file=name_of_file)
 
-# -------------------------------------------------------------------
+# -------------------------------------------------------------------#
 
-"""
-read_1D_data: Suppose you have a file with a float number per line.This function returns an array with that data.
-"""
 def read_1D_data(destination, name_of_file):
     """
-    Documentation:
-        * destination: The path of the existing file
-        * name_of_file: The name of the file
+    Suppose you have a file with a float number per line.This function returns an array with that data.
+
+    Args:
+        destination (str): The path to save the file.
+        name_of_file (str): The name of the file.
     """
     _destination = os.path.join(destination, name_of_file)
     data = []
@@ -82,16 +81,15 @@ def read_1D_data(destination, name_of_file):
         data.append(float(lines[0]))
     return data
 
-# -------------------------------------------------------------------
+# -------------------------------------------------------------------#
 
-"""
-createDir: A function that creates a directory given the path
-"""
 def createDir(destination, replace_query=True):
     """
-    Documentation:
-        * destination: The path to create the directory
-        * replace_query: If true, permission is asked to overwrite the folder. If false, the directory gets replaced 
+    A function that creates a directory given the path
+
+    Args:
+        destination (str): The path to create the directory
+        replace_query (bool, optional): If true, permission is asked to overwrite the folder. If false, the directory gets replaced 
     """
     if replace_query:    
         try:
@@ -118,8 +116,8 @@ class PlotResults:
     A class for plotting results
 
     Args:
-        * const (dict): Dictionary of the problem parameters of like the constants.constants var
-        * data_path (str):  Path to data directory
+        const (dict): Dictionary of the problem parameters of like the constants.constants var
+        data_path (str):  Path to data directory
     """
     def __init__(self, const, data_path):
         self.const = const
