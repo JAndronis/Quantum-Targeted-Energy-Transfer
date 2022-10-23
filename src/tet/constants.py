@@ -75,6 +75,7 @@ solver_params = {'methods': ['grid', 'bins'],
 # -------------------------------------------------------------------#
 """
 Create a dictionary with the limits of each trainable nonlinearity parameter.
+Default limits: -10,10
 """
 keys = [f'x{i}lims' for i in TensorflowParams['train_sites']] 
 lims = [[-10,10]]*len(keys)
