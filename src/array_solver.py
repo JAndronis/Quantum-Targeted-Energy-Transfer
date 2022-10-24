@@ -2,21 +2,19 @@
 
 import numpy as np
 import time
-import sys
 import argparse
 import pathlib
 import os
 
 from tet import constants
-from tet.Optimizer import mp_opt, Optimizer
-from tet.data_process import createDir, read_1D_data
-from tet.constants import solver_params, TensorflowParams
+from tet.Optimizer import mp_opt
+from tet.data_process import createDir
 from tet.solver_mp import getCombinations
 
 if __name__=="__main__":
 
     parser = argparse.ArgumentParser(description="python3 array_solver.py")
-    parser.add_argument('-p','--path', nargs='?', type=pathlib.Path, required=True)
+    parser.add_argument('-p', '--path', nargs='?', type=pathlib.Path, required=True)
     parser.add_argument('--id', type=int, required=True)
     parser.add_argument('--array-size', type=int, required=True)
 
