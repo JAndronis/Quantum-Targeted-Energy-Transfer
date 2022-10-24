@@ -5,6 +5,7 @@ import time
 import argparse
 import pathlib
 import os
+from itertools import product
 
 from tet import constants
 from tet.Optimizer import mp_opt
@@ -52,13 +53,13 @@ if __name__=="__main__":
     if method=='bins': iterations = epochs_bins
     else: iterations = epochs_grid
     
-    step = 9*9 // cmd_args.array_size
+    param_space = list(product(range(1,9), range(1,9)))
+    step = len(param_space) // cmd_args.array_size
     for ij in range(cmd_args.id*step, (cmd_args.id+1)*step):
-        if ij//9==0 or ij%9==0: continue
         const_copy = const.copy()
-        const_copy['max_N'] = ij // 9
-        const_copy['omegas'][0] = ij % 9
-        const_copy['omegas'][1] = const_copy['omegas'][0]
+        const_copy['max_N'] = param_space[ij][0]
+        const_copy['omegas'][0] = param_space[ij][1]
+        const_copy['omegas'][1] = const_copy['omegas'][0] + 1
         const_copy['omegas'][-1] = -const_copy['omegas'][0]
         xd = (const_copy['omegas'][-1] - const_copy['omegas'][0])/const_copy['max_N']
         xa = -xd

@@ -239,7 +239,6 @@ if __name__ == "__main__":
     method = 'bins'
     grid = 4
     epochs_bins = 1000
-    target_site = acceptor
 
     # Control how many times loss is lower than the threshold having changed the limits
     iteration = 0
@@ -268,7 +267,7 @@ if __name__ == "__main__":
     opt = MPI_Optimizer(
         rank=rank,
         size=size,
-        target_site=target_site,
+        target_site=acceptor,
         DataExist=False,
         Print=True,
         data_path=data_path,
