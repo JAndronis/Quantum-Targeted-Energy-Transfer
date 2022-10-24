@@ -47,3 +47,4 @@ tests/.DS_Store
 
 # slurm
 sbatch_output
+*.sbatch
