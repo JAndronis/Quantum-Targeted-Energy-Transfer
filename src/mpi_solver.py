@@ -241,7 +241,7 @@ if __name__ == "__main__":
     # Initialize helper parameters
     if cmd_args.constants != None:
         try:
-            if os.path.exists(cmd_arg.constants):
+            if os.path.exists(cmd_args.constants):
                 const = loadConstants(cmd_args.constants)
             else:
                 raise OSError()
