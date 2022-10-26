@@ -19,12 +19,13 @@ Elements:
     
 """
 system_constants = {'max_N': 3,
-             'sites': 3,
+             'sites': None,
              'max_t': 25, 
              'omegas': [-3,3,3],
              'chis': [1.5,0,-1.5],
              'coupling': 1,
              'timesteps': 30}
+system_constants['sites'] = len(system_constants['omegas'])
 
 # -------------------------------------------------------------------#
 
