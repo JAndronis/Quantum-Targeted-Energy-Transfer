@@ -12,7 +12,7 @@ import tensorflow as tf
 from mpi4py import MPI
 
 from tet.constants import (TensorflowParams, acceptor, dumpConstants,
-                           solver_params, system_constants)
+                           loadConstants, solver_params, system_constants)
 from tet.data_process import createDir
 from tet.HamiltonianLoss import Loss
 from tet.Optimizer import Optimizer, mp_opt
@@ -210,7 +210,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="python3 array_solver.py")
     parser.add_argument(
         '-p', '--path', nargs='?',
-        type=pathlib.Path, required=True
+        type=pathlib.Path, required=True,
+        help='Path to the directory to save the data.'
+    )
+    parser.add_argument(
+        '-c', '--constants', nargs='?',
+        type=pathlib.Path, required=False,
+        help='Path to the constants json file.'
     )
 
     cmd_args = parser.parse_args()
@@ -233,11 +239,22 @@ if __name__ == "__main__":
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
     # Initialize helper parameters
-    const = system_constants.copy()
-    TrainableVarsLimits = {'x1lims': [-40, 40]}
+    if cmd_args.constants != None:
+        try:
+            if os.path.exists(cmd_arg.constants):
+                const = loadConstants(cmd_args.constants)
+            else:
+                raise OSError()
+        except OSError:
+            print('Input path for constants json does not exist, loading defaults.')
+            const = system_constants.copy()
+    else:
+        const = system_constants.copy()
+
+    TrainableVarsLimits = {'x1lims': [-40, 40], 'x2lims': [-40, 40]}
     lims = list(TrainableVarsLimits.values())
     method = 'bins'
-    grid = 4
+    grid = size
     epochs_bins = 1000
 
     # Control how many times loss is lower than the threshold having changed the limits
@@ -256,7 +273,7 @@ if __name__ == "__main__":
     xd = (const['omegas'][-1] -
           const['omegas'][0]) / const['max_N']
     xa = -xd
-    const['chis'] = [xd, 0, xa]
+    const['chis'] = [xd, 0, 0, xa]
     combination = Combinations[rank]
 
     # Update the list with the initial guesses of the optimizer. IT IS ESSENTIAL WHEN WE DON'T TRAIN ALL THE NON
