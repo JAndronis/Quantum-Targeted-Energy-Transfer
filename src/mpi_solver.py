@@ -91,8 +91,9 @@ class MPI_Optimizer(Optimizer):
         t0 = time.time()
 
         epoch = 0
-        done = False
-        while epoch < self.iter and done is False:
+        send_buffer = np.zeros(1, dtype=bool)
+        recv_buffer = np.zeros(1, dtype=bool)
+        while epoch < self.iter:
 
             # Help list with the variables before applying gradients
             _vars = [self.vars[i].numpy() for i in range(len(self.vars))]
@@ -141,13 +142,13 @@ class MPI_Optimizer(Optimizer):
                 for k in range(len(self.vars)):
                     var_data[k].append(self.vars[k].numpy())
 
-            answer = False
             # Interrupt in case of TET
             if loss.numpy() < self.threshold:
                 print(f'Worker {self.rank} - found TET stopping all workers!')
-                answer = comm.bcast(True, root=self.rank)
+                send_buffer = np.ones(1, dtype=bool)
+            comm.Allreduce([send_buffer,  MPI.BOOL],[recv_buffer, MPI.BOOL], MPI.LOR) 
+            if recv_buffer[0]:
                 break
-            done = answer
 
             # Interrupt in case of non-progress
             for j in range(len(self.vars)):
@@ -202,6 +203,7 @@ class MPI_Optimizer(Optimizer):
 
 
 if __name__ == "__main__":
+    from datetime import datetime
 
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
@@ -221,19 +223,9 @@ if __name__ == "__main__":
 
     cmd_args = parser.parse_args()
 
-    try:
-        data_path = os.path.join(
-            cmd_args.path, f'data_{time.time_ns()}_{rank}'
-        )
-        if os.path.exists(cmd_args.path):
-            createDir(destination=data_path, replace_query=True)
-        else:
-            print(
-                f"Input data path {cmd_args.path} does not exist! Creating it."
-            )
-            raise OSError()
-    except OSError:
-        os.makedirs(data_path)
+    data_path = os.path.join(
+        cmd_args.path, f'data_{datetime.today().strftime("%Y-%m-%d-%H:%M:%S")}_rank-{rank}'
+    )
 
     # Use cpu since we are doing parallelization on the cpu
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
@@ -251,11 +243,12 @@ if __name__ == "__main__":
     else:
         const = system_constants.copy()
 
-    TrainableVarsLimits = {'x1lims': [-40, 40], 'x2lims': [-40, 40]}
+    TrainableVarsLimits = {'x1lims': [-40, 40]}
     lims = list(TrainableVarsLimits.values())
     method = 'bins'
     grid = size
     epochs_bins = 1000
+    threshold = 0.18
 
     # Control how many times loss is lower than the threshold having changed the limits
     iteration = 0
@@ -273,11 +266,12 @@ if __name__ == "__main__":
     xd = (const['omegas'][-1] -
           const['omegas'][0]) / const['max_N']
     xa = -xd
-    const['chis'] = [xd, 0, 0, xa]
+    const['chis'] = [xd] + [0]*(const['sites']-2) + [xa]
     combination = Combinations[rank]
 
     # Update the list with the initial guesses of the optimizer. IT IS ESSENTIAL WHEN WE DON'T TRAIN ALL THE NON
     # LINEARITY PARAMETERS
+    TensorflowParams['train_sites'] = [1]
     for index, case in zip(TensorflowParams['train_sites'], combination):
         const['chis'][index] = case
 
@@ -293,15 +287,29 @@ if __name__ == "__main__":
             learning_rate=0.5, beta_1=0.4, amsgrad=True
         ),
         iterations=iterations,
-        threshold=0.15
+        threshold=threshold
     )
 
     results = opt(*const['chis'])
-
     const['chis'] = results['best_vars']
     const['min_n'] = min(results['loss'])
-    dumpConstants(
-        dict=const, path=data_path,
-        name=f'constants_{rank}'
-    )
+
+    if const['min_n'] < threshold:
+
+        try:
+            if os.path.exists(cmd_args.path):
+                createDir(destination=data_path, replace_query=True)
+            else:
+                print(
+                    f"Input data path {cmd_args.path} does not exist! Creating it."
+                )
+                raise OSError()
+        except OSError:
+            os.makedirs(data_path)
+
+        dumpConstants(
+            dict=const, path=data_path,
+            name=f'constants_{rank}'
+        )
+
     sys.exit(0)
