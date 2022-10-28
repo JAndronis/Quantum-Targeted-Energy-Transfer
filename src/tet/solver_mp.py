@@ -57,8 +57,9 @@ def getCombinations(TrainableVarsLimits, method='bins', grid=2):
                 if item[1]==bin:
                     test_item.append(item[0])
             # choose initial conditions and append them to the combination list
-            choice = np.random.choice(list(range(len(test_item))))
-            Combinations.append(test_item[choice])
+            if len(test_item) != 0:
+                choice = np.random.choice(list(range(len(test_item))))
+                Combinations.append(test_item[choice])
 
     elif method=='grid':
         # make a grid of uniformly distributed initial parameter guesses

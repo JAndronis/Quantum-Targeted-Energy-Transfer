@@ -206,13 +206,15 @@ if __name__ == "__main__":
     from datetime import datetime
 
     comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    size = comm.Get_size()
+    # rank = comm.Get_rank()
+    # size = comm.Get_size()
+    rank = 3
+    size = 16
 
     parser = argparse.ArgumentParser(description="python3 array_solver.py")
     parser.add_argument(
         '-p', '--path', nargs='?',
-        type=pathlib.Path, required=True,
+        type=pathlib.Path, required=False,
         help='Path to the directory to save the data.'
     )
     parser.add_argument(
@@ -246,7 +248,6 @@ if __name__ == "__main__":
     TrainableVarsLimits = {'x1lims': [-40, 40]}
     lims = list(TrainableVarsLimits.values())
     method = 'bins'
-    grid = size
     epochs_bins = 1000
     threshold = 0.18
 
@@ -256,12 +257,14 @@ if __name__ == "__main__":
     # An array to save the optimal parameters
     OptimalVars, min_loss = np.zeros(len(TrainableVarsLimits)), const['max_N']
 
-    Combinations = getCombinations(
-        TrainableVarsLimits, method=method, grid=grid)
     if method == 'bins':
         iterations = epochs_bins
+        solver_params['Npoints'] = size
     else:
         iterations = epochs_grid
+    Combinations = getCombinations(
+        TrainableVarsLimits, method=method, grid=size
+    )
 
     xd = (const['omegas'][-1] -
           const['omegas'][0]) / const['max_N']
@@ -275,41 +278,47 @@ if __name__ == "__main__":
     for index, case in zip(TensorflowParams['train_sites'], combination):
         const['chis'][index] = case
 
-    opt = MPI_Optimizer(
-        rank=rank,
-        size=size,
-        target_site=acceptor,
-        DataExist=False,
-        Print=True,
-        data_path=data_path,
-        const=const,
-        opt=tf.keras.optimizers.Adam(
-            learning_rate=0.5, beta_1=0.4, amsgrad=True
-        ),
-        iterations=iterations,
-        threshold=threshold
-    )
+    print("combination", combination)
+    print("Combinations", Combinations)
+    print("rank", rank)
+    print("size", size)
+    print("chis", const['chis'])
 
-    results = opt(*const['chis'])
-    const['chis'] = results['best_vars']
-    const['min_n'] = min(results['loss'])
+    # opt = MPI_Optimizer(
+    #     rank=rank,
+    #     size=size,
+    #     target_site=acceptor,
+    #     DataExist=False,
+    #     Print=True,
+    #     data_path=data_path,
+    #     const=const,
+    #     opt=tf.keras.optimizers.Adam(
+    #         learning_rate=0.5, beta_1=0.4, amsgrad=True
+    #     ),
+    #     iterations=iterations,
+    #     threshold=threshold
+    # )
 
-    if const['min_n'] < threshold:
+    # results = opt(*const['chis'])
+    # const['chis'] = results['best_vars']
+    # const['min_n'] = min(results['loss'])
 
-        try:
-            if os.path.exists(cmd_args.path):
-                createDir(destination=data_path, replace_query=True)
-            else:
-                print(
-                    f"Input data path {cmd_args.path} does not exist! Creating it."
-                )
-                raise OSError()
-        except OSError:
-            os.makedirs(data_path)
+    # if const['min_n'] < threshold:
 
-        dumpConstants(
-            dict=const, path=data_path,
-            name=f'constants_{rank}'
-        )
+    #     try:
+    #         if os.path.exists(cmd_args.path):
+    #             createDir(destination=data_path, replace_query=True)
+    #         else:
+    #             print(
+    #                 f"Input data path {cmd_args.path} does not exist! Creating it."
+    #             )
+    #             raise OSError()
+    #     except OSError:
+    #         os.makedirs(data_path)
+
+    #     dumpConstants(
+    #         dict=const, path=data_path,
+    #         name=f'constants_{rank}'
+    #     )
 
     sys.exit(0)
