@@ -98,7 +98,7 @@ def solver_mp(
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
     # Create data directory to save results
-    createDir(destination=data_path, replace_query=True)
+    createDir(destination=data_path, replace_query=False)
 
     # Initialize helper parameters
     lims = list(TrainableVarsLimits.values())
