@@ -10,7 +10,7 @@ import tensorflow as tf
 
 from .Optimizer import mp_opt, Optimizer
 from .data_process import createDir, read_1D_data
-from .constants import solver_params,TensorflowParams
+from .constants import solver_params,TensorflowParams, dumpConstants
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
@@ -214,7 +214,7 @@ def solver_mp(
         const['chis'] = OptimalVars
         const['min_n'] = min(loss_data)
     
-    constants.dumpConstants(dict=const, path=data_path)
+    dumpConstants(dict=const, path=data_path)
     
     print('Total solver run time: ', t1-t0)
 
