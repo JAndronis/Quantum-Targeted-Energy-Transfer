@@ -65,6 +65,7 @@ class Optimizer:
                 opt_path = os.path.join(self.data_path, 'data_optimizer')
                 createDir(opt_path, replace_query=False)
                 self._train(write_data=True)
+                return self.results
             else:
                 self._train(write_data)
                 return self.results
@@ -249,12 +250,12 @@ class Optimizer:
             for i in range(len(var_data)):
                 # Save the trajectories in a file
                 writeData(data=var_data[i], destination=self.data_path, name_of_file=f'x{i}trajectory.txt')
-        else:
-            self.results = {
-                'loss': mylosses[1:],
-                'var_data': var_data,
-                'best_vars': [i.numpy() for i in best_vars],
-            }
+
+        self.results = {
+            'loss': mylosses[1:],
+            'var_data': var_data,
+            'best_vars': [i.numpy() for i in best_vars],
+        }
 
 # ----------------------------- Multiprocess Helper Function ----------------------------- #
 
