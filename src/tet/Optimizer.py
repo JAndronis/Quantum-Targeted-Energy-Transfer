@@ -63,7 +63,7 @@ class Optimizer:
         else:
             if write_data:
                 opt_path = os.path.join(self.data_path, 'data_optimizer')
-                createDir(opt_path, replace_query=True)
+                createDir(opt_path, replace_query=False)
                 self._train(write_data=True)
             else:
                 self._train(write_data)

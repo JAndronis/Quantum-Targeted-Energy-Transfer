@@ -124,7 +124,7 @@ def solver_mp(
 
         # Create directory of current iteration
         data_path2 = os.path.join(data_path, f'iteration_{iteration}')
-        createDir(destination=data_path2, replace_query=True)
+        createDir(destination=data_path2, replace_query=False)
         
         Combinations = getCombinations(TrainableVarsLimits, method=method, grid=grid)
         if method=='bins': iterations = epochs_bins
