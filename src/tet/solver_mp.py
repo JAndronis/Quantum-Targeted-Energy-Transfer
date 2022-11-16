@@ -71,7 +71,7 @@ def getCombinations(TrainableVarsLimits, method='bins', grid=2):
     return Combinations
 
 def solver_mp(
-    TrainableVarsLimits, const, grid=2, lr=TensorflowParams['lr'], method='bins',
+    TrainableVarsLimits, const, grid=2, lr=0.1, beta_1=0.9, amsgrad=False, method='bins',
     epochs_bins=solver_params['epochs_bins'], epochs_grid=solver_params['epochs_grid'], 
     target_site=0, main_opt=False, return_values=False, data_path=os.path.join(os.getcwd(),'data')
     ):
@@ -84,7 +84,7 @@ def solver_mp(
         TrainableVarsLimits (Dictionary): The keys are the nonlinearity parameters of each site and the values include a list with the limits of the said variable.
         const (dict): Dictionary of system parameters that follows the convention used by the tet.constants() module.
         grid (int, optional): Integer representing the number of times to split the parameter space. Defaults to 2.
-        lr (float, optional): Learning rate of the optimizer. Defaults to 0.1.
+        opt (tensorflow.keras.optmizers, optional): Optimizer object of type tf.keras.optimizers. Defaults to Adam(lr=0.1).
         method (str, optional): Defines the method of optimization to be used. Defaults to 'bins'.
         epochs_bins (int, optional): Epochs that the optimizer is going to run for using the bins method for initial guesses. Defaults to 1000.
         epochs_grid (int, optional): Epochs that the optimizer is going to run for using the grid method for initial guesses. Defaults to 200.
@@ -138,7 +138,7 @@ def solver_mp(
         # pool = mp.Pool(mp.cpu_count())
 
         # Set input arg list for mp_opt() function
-        args = [(i, combination, data_path2, const, target_site, iterations) for i, (combination) in enumerate(Combinations)]
+        args = [(i, combination, data_path2, const, target_site, iterations, lr, beta_1, amsgrad) for i, (combination) in enumerate(Combinations)]
 
         try:
             # Run multiprocess map 

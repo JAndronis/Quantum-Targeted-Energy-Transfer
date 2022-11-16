@@ -261,7 +261,8 @@ class Optimizer:
 
 def mp_opt(
     i:int , combination: list, iteration_path: str, 
-    const: dict, target_site: int, iterations: int
+    const: dict, target_site: int, iterations: int,
+    lr: float, beta_1:float, amsgrad_bool: bool
 ) -> np.ndarray:
     """
     A helper function used for multiprocess.
@@ -285,7 +286,7 @@ def mp_opt(
         Print=False,
         data_path=data_path,
         const=const,
-        opt=tf.keras.optimizers.Adam(learning_rate=0.5, beta_1=0.4, amsgrad=True),
+        opt=tf.keras.optimizers.Adam(learning_rate=lr, beta_1=beta_1, amsgrad=amsgrad_bool),
         iterations=iterations
     )
 
