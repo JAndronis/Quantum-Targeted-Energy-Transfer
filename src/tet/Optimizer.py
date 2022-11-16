@@ -62,8 +62,8 @@ class Optimizer:
         if self.DataExist: pass
         else:
             if write_data:
-                opt_path = os.path.join(self.data_path, 'data_optimizer')
-                createDir(opt_path, replace_query=False)
+                # opt_path = os.path.join(self.data_path, 'data_optimizer')
+                createDir(self.data_path, replace_query=False)
                 self._train(write_data=True)
                 return self.results
             else:
@@ -276,7 +276,7 @@ def mp_opt(
     """
 
     #! Import the parameters of the problem
-    data_path = os.path.join(os.getcwd(), f'{iteration_path}/data_optimizer_{i}')
+    data_path = os.path.join(iteration_path, f'data_optimizer_{i}')
 
     #! Create the current optimizer
     opt = Optimizer(
