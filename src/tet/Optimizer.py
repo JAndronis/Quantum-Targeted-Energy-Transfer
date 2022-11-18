@@ -275,9 +275,7 @@ def mp_opt(
         target_site(int): Refer to the argument target of the solver_params dictionary in constants.py
         iterations(int): Maximum iterations of the optimizer
     """
-
-    const_copy = const.copy()
-
+    
     #! Import the parameters of the problem
     data_path = os.path.join(iteration_path, f'data_optimizer_{i}')
 
@@ -287,13 +285,13 @@ def mp_opt(
         DataExist=False,
         Print=False,
         data_path=data_path,
-        const=const_copy,
+        const=const,
         opt=tf.keras.optimizers.Adam(learning_rate=lr, beta_1=beta_1, amsgrad=amsgrad_bool),
         iterations=iterations
     )
 
     #! Call the optimizer with chis including the given initial guesses
-    input_chis = [None]*len(const_copy['chis'])
+    input_chis = [None]*len(const['chis'])
 
     # Update the list with the initial guesses of the optimizer. IT IS ESSENTIAL WHEN WE DON'T TRAIN ALL THE NON 
     # LINEARITY PARAMETERS
