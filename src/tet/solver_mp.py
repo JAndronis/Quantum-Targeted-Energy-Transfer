@@ -102,6 +102,8 @@ def solver_mp(
         dict: If return_values is True, return a dictionary of the resulting parameters of the optimization process.
     """
 
+    const_copy = constants.copy()
+
     #! Use cpu since we are doing parallelization on the cpu
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
@@ -118,12 +120,12 @@ def solver_mp(
     iteration = 0
 
     # Count attempts based on the limits 
-    counter = 0
+    lim_changes = 0
     done = False
     bin_choice = False
 
     # An array to save the optimal parameters
-    OptimalVars, min_loss = np.zeros(len(TrainableVarsLimits)), const['max_N']
+    OptimalVars, min_loss = np.zeros(len(TrainableVarsLimits)), const_copy['max_N']
     # initializing min_loss to the maximum number
     # ensures that the initial combinations of initial
     # guesses will be done with the bin method
@@ -151,7 +153,7 @@ def solver_mp(
 
         # Set input arg list for mp_opt() function
         args = [
-            (i, combination, data_path2, const, target_site, 
+            (i, combination, data_path2, const_copy, target_site, 
             epochs, lr, beta_1, amsgrad, write_data)
             for i, (combination) in enumerate(Combinations)
         ]
@@ -173,28 +175,27 @@ def solver_mp(
 
         # Gather results
         all_losses = np.array(_all_losses)
-        OptimalVars = [float(all_losses[np.argmin(all_losses[:,const['sites']]), i]) for i in range(const['sites'])]
-        min_loss = float(all_losses[np.argmin(all_losses[:,const['sites']]), const['sites']])
+        OptimalVars = [float(all_losses[np.argmin(all_losses[:,const_copy['sites']]), i]) for i in range(const_copy['sites'])]
+        min_loss = float(all_losses[np.argmin(all_losses[:,const_copy['sites']]), const_copy['sites']])
         
         # Print results of run
         print(f"Best parameters of tries: loss={min_loss}, OptimalVars = {OptimalVars}")
         print("Code run time: ", dt, " s")
 
-        if min_loss<=const["max_N"]/2:
-            counter += 1
+        if min_loss<=const_copy["max_N"]/2:
+            lim_changes += 1
             edge = _edge[iteration]
             #grid += 2
             lims = [[OptimalVars[i]-edge, OptimalVars[i]+edge] for i in range(len(TrainableVarsLimits))]
 
         else:
-            solver_params['Npoints'] += 1
             lr += 0.1
 
         # advance iteration
         iteration += 1
 
         # if loss has not been reduced for more than 5 iterations stop
-        if counter>=5 and min_loss>=CONST['max_N']/2:
+        if lim_changes>=5 and min_loss>=const_copy['max_N']/2:
             print("Couldn't find TET")
             break
         
@@ -207,14 +208,14 @@ def solver_mp(
 
     t1 = time.time()
 
-    const['chis'] = OptimalVars
-    const['min_n'] = min_loss
+    const_copy['chis'] = OptimalVars
+    const_copy['min_n'] = min_loss
 
     if main_opt:
         data_path3 = os.path.join(data_path, f'main_opt')
         _opt = Optimizer(
             target_site=solver_params['target'], DataExist=False, 
-            const=const, Print=True, data_path=data_path3
+            const=const_copy, Print=True, data_path=data_path3
         )
         _opt(*OptimalVars)
 
@@ -227,12 +228,12 @@ def solver_mp(
             destination=data_path3, name_of_file='optimalvars.txt'
         )
 
-        const['chis'] = OptimalVars
-        const['min_n'] = min(loss_data)
+        const_copy['chis'] = OptimalVars
+        const_copy['min_n'] = min(loss_data)
     
-    dumpConstants(dict=const, path=data_path)
+    dumpConstants(dict=const_copy, path=data_path)
     
     print('Total solver run time: ', t1-t0)
 
     if return_values:
-        return const.copy()
+        return const_copy
