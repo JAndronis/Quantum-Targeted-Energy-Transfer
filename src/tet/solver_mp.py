@@ -14,7 +14,10 @@ from .constants import solver_params,TensorflowParams, dumpConstants
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
-def getCombinations(TrainableVarsLimits, method='bins', grid=solver_params['Npoints']):
+def getCombinations(
+    TrainableVarsLimits, train_sites=TensorflowParams['train_sites'], 
+    method='bins', grid=solver_params['Npoints']
+):
     """
     Creates a list of initial guess pairs to be fed to an optimizer call
 
@@ -35,12 +38,12 @@ def getCombinations(TrainableVarsLimits, method='bins', grid=solver_params['Npoi
 
     # Works only in the dimer case
     if method=='bins':
-        TrainableSpans = [ np.linspace( TrainableVarsLimits[f'x{i}lims'][0], TrainableVarsLimits[f'x{i}lims'][1], grid) for i in TensorflowParams['train_sites'] ]
+        TrainableSpans = [ np.linspace( TrainableVarsLimits[f'x{i}lims'][0], TrainableVarsLimits[f'x{i}lims'][1], grid) for i in train_sites ]
         data = np.array(list(product(*TrainableSpans)))
         data_list = [data[:, i] for i in range(data.shape[1])]
         
         # Extent of bins needs to be a bit smaller than parameter range
-        extents = [ ( TrainableVarsLimits[f'x{i}lims'][0]-0.1, TrainableVarsLimits[f'x{i}lims'][1]+0.1 ) for i in TensorflowParams['train_sites'] ]
+        extents = [ ( TrainableVarsLimits[f'x{i}lims'][0]-0.1, TrainableVarsLimits[f'x{i}lims'][1]+0.1 ) for i in train_sites ]
         
         # Produce bin edges.Default returning: H,xedges,yedges.
         _, *edges = np.histogramdd(data_list, bins=grid, range=extents)
@@ -49,7 +52,7 @@ def getCombinations(TrainableVarsLimits, method='bins', grid=solver_params['Npoi
         hit = [np.digitize(data_list[i], edges[0][i]) for i,_ in enumerate(data_list)]
         hitbins = list(zip(*hit))
         data_and_bins = list(zip(data, hitbins))
-        it = [ range(1, grid+1) for _ in range(len(TensorflowParams['train_sites'])) ]
+        it = [ range(1, grid+1) for _ in train_sites ]
         Combinations = []
         for bin in list(product(*it)):
             test_item = []
@@ -64,7 +67,7 @@ def getCombinations(TrainableVarsLimits, method='bins', grid=solver_params['Npoi
     elif method=='grid':
         # make a grid of uniformly distributed initial parameter guesses
         TrainableSpans = [ np.linspace(TrainableVarsLimits[f'x{i}lims'][0], TrainableVarsLimits[f'x{i}lims'][1], grid)
-            for i in TensorflowParams['train_sites'] ]
+            for i in train_sites ]
 
         Combinations = list(product(*TrainableSpans))
 
@@ -128,6 +131,9 @@ def solver_mp(
     # ensures that the initial combinations of initial
     # guesses will be done with the bin method
 
+    # get train_sites from limits of trainable parameters by parsing elements in strings
+    train_sites = [int(list(TrainableVarsLimits.keys())[i][1]) for i in range(len(TrainableVarsLimits))]
+
     t0 = time.time()
     while not done and iteration < iterations:
 
@@ -135,7 +141,7 @@ def solver_mp(
         data_path2 = os.path.join(data_path, f'iteration_{iteration}')
         createDir(destination=data_path2, replace_query=False)
         
-        Combinations = getCombinations(TrainableVarsLimits, method=method, grid=grid)
+        Combinations = getCombinations(TrainableVarsLimits, train_sites=train_sites, method=method, grid=grid)
         if method=='bins': epochs = epochs_bins
         else: epochs = epochs_grid
         #grid_choice = True
@@ -152,7 +158,7 @@ def solver_mp(
         # Set input arg list for mp_opt() function
         args = [
             (i, combination, data_path2, const, target_site, 
-            epochs, lr, beta_1, amsgrad, write_data)
+            epochs, lr, beta_1, amsgrad, write_data, train_sites)
             for i, (combination) in enumerate(Combinations)
         ]
 

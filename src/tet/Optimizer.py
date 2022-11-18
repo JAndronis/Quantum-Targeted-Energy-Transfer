@@ -31,6 +31,7 @@ class Optimizer:
         self, const: dict, target_site: int, 
         DataExist=False, Print=True,
         iterations=TensorflowParams['iterations'], 
+        train_sites = TensorflowParams['train_sites'],
         opt=tf.keras.optimizers.Adam(),
         data_path=os.path.join(os.getcwd(), 'data_optimizer')
         ):
@@ -44,6 +45,7 @@ class Optimizer:
         self.omegas = self.const['omegas']
         self.sites = self.const['sites']
 
+        self.train_sites = train_sites
         self.target_site = target_site
         self.DataExist = DataExist
         self.data_path = data_path
@@ -111,7 +113,7 @@ class Optimizer:
         for i in range(len(self.const['chis'])):
             if self.vars[i] is None:
                 # Trainable ones
-                if i in TensorflowParams['train_sites']:
+                if i in self.train_sites:
                     self.vars[i] = tf.Variable(
                         initial_value=initial_chis[i], dtype=self.DTYPE, 
                         name=f'chi{i}', trainable=True
@@ -191,7 +193,7 @@ class Optimizer:
             # Interrupt in case of non-progress
             for j in range(len(self.vars)):
                 # Non trainable parameters change slightly
-                if var_error[j] < self.tol and j in TensorflowParams['train_sites']:
+                if var_error[j] < self.tol and j in self.train_sites:
                     var_error_count[j] += 1
                     if var_error_count[j] > 2:
                         if self.Print:
@@ -262,7 +264,8 @@ class Optimizer:
 def mp_opt(
     i:int , combination: list, iteration_path: str, 
     const: dict, target_site: int, iterations: int,
-    lr: float, beta_1:float, amsgrad_bool: bool, write_data: bool
+    lr: float, beta_1:float, amsgrad_bool: bool, 
+    write_data: bool, train_sites: list
 ) -> np.ndarray:
     """
     A helper function used for multiprocess.
@@ -275,7 +278,7 @@ def mp_opt(
         target_site(int): Refer to the argument target of the solver_params dictionary in constants.py
         iterations(int): Maximum iterations of the optimizer
     """
-    
+
     #! Import the parameters of the problem
     data_path = os.path.join(iteration_path, f'data_optimizer_{i}')
 
@@ -285,17 +288,19 @@ def mp_opt(
         DataExist=False,
         Print=False,
         data_path=data_path,
+        train_sites=train_sites,
         const=const,
         opt=tf.keras.optimizers.Adam(learning_rate=lr, beta_1=beta_1, amsgrad=amsgrad_bool),
         iterations=iterations
     )
 
     #! Call the optimizer with chis including the given initial guesses
-    input_chis = [None]*len(const['chis'])
+    input_chis = [0]*len(const['chis'])
 
     # Update the list with the initial guesses of the optimizer. IT IS ESSENTIAL WHEN WE DON'T TRAIN ALL THE NON 
     # LINEARITY PARAMETERS
-    for index, case in zip(TensorflowParams['train_sites'], combination): input_chis[index] = case
+    for index, case in zip(train_sites, combination): 
+        input_chis[index] = case
 
     results = opt(*input_chis, write_data=write_data)
 
