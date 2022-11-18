@@ -297,7 +297,6 @@ def mp_opt(
     # LINEARITY PARAMETERS
     for index, case in zip(TensorflowParams['train_sites'], combination): input_chis[index] = case
 
-    print(input_chis)
     results = opt(*input_chis, write_data=write_data)
 
     #! Load Data
