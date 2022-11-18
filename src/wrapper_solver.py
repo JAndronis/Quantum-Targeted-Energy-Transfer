@@ -1,7 +1,7 @@
 
 if __name__=="__main__":
 
-    import numpy as np
+    from numpy.random import randint
     import os
     import shutil
     import sys
@@ -10,7 +10,9 @@ if __name__=="__main__":
     import matplotlib.pyplot as plt
     from math import sqrt
     import warnings
+    from datetime import datetime
     import tensorflow as tf
+    import argparse
 
     from tet.Optimizer import Optimizer
     import tet.constants
@@ -18,42 +20,47 @@ if __name__=="__main__":
     from tet.data_process import createDir
     import tet.saveFig as saveFig
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+    parser = argparse.ArgumentParser(description="python3 array_solver.py")
+    parser.add_argument('-p', '--path', nargs='?', type=pathlib.Path, required=True)
+    parser.add_argument('--id', type=int, required=True)
+    parser.add_argument('--array-size', type=int, required=True)
 
-    data_path_cwd = '/home/ph4783/data/data_figure_3_n4_last'
-    createDir(data_path_cwd, replace_query=False)
+    cmd_args = parser.parse_args()
 
-    for i in [4]:
+    try:
+        data_path = os.path.join(cmd_args.path, f'data_{datetime.now()}_{cmd_args.id}')
+        if os.path.exists(cmd_args.path):
+            createDir(destination=data_path, replace_query=False)
+        else:
+            print(f"Input data path {cmd_args.path} does not exist! Creating it.")
+            raise OSError()
+    except OSError:
+        os.makedirs(data_path)
 
-        print(f'\nComputing results for N = {i}\n')
+    const = {
+        "max_N": 1,
+        "max_t": 25,
+        "omegas": [
+            -3,
+            3
+        ],
+        "chis": [
+            0,
+            0
+        ],
+        "coupling": 0.1,
+        "sites": 2,
+        "timesteps": 30,
+        "min_n": 1
+    }
 
-        const = {
-            "max_N": i,
-            "max_t": 25,
-            "omegas": [
-                -3,
-                3
-            ],
-            "chis": [
-                -6.0,
-                6.0
-            ],
-            "coupling": 0.1,
-            "sites": 2,
-            "timesteps": 30,
-            "min_n": 1
-        }
+    tet.constants.TensorflowParams['train_sites'] = [0, 1]
+    keys = [f'x{k}lims' for k in tet.constante.TensorflowParams['train_sites']] 
+    lims = [[randint(-10,0), randint(0,10)], [randint(-10,0), randint(0,10)]]
+    TrainableVarsLimits = dict(zip(keys,lims))
 
-        tet.constants.TensorflowParams['train_sites'] = [0, 1]
-        keys = [f'x{i}lims' for i in tet.constants.TensorflowParams['train_sites']] 
-        lims = [[-10,10]]*len(keys)
-        TrainableVarsLimits = dict(zip(keys,lims))
-
-        tet.constants.solver_params['Npoints'] = 15
-
-        data_path_N = os.path.join(data_path_cwd, f'data_N{i}')
-
-        opt = solver_mp(
-            TrainableVarsLimits=TrainableVarsLimits, const=const, 
-            data_path=data_path_N, method='grid', lr=0.1, beta_1=0.9, amsgrad=False
-        )
+    solver_mp(
+        const=const_iter, TrainableVarsLimits=TrainableVarsLimits, lr=0.1, beta_1=0.4, amsgrad=True,
+        data_path=data_path, method='bins', return_values=True, write_data=True
+    )
+    
