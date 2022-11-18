@@ -71,10 +71,11 @@ def getCombinations(TrainableVarsLimits, method='bins', grid=2):
     return Combinations
 
 def solver_mp(
-    TrainableVarsLimits, const, grid=2, lr=0.1, beta_1=0.9, amsgrad=False, method='bins',
-    epochs_bins=solver_params['epochs_bins'], epochs_grid=solver_params['epochs_grid'], 
-    target_site=0, main_opt=False, return_values=False, data_path=os.path.join(os.getcwd(),'data')
-    ):
+    TrainableVarsLimits: list, const: dict, grid=2, lr=0.1, beta_1=0.9, amsgrad=False, 
+    write_data=False, iterations=1, method='bins', epochs_bins=solver_params['epochs_bins'], 
+    epochs_grid=solver_params['epochs_grid'], target_site=0, main_opt=False, 
+    return_values=False, data_path=os.path.join(os.getcwd(),'data'), cpu_count=None
+) -> dict:
 
     """
     Function that utilizes multiple workers on the cpu to optimize the non linearity parameters for TET.
@@ -84,7 +85,11 @@ def solver_mp(
         TrainableVarsLimits (Dictionary): The keys are the nonlinearity parameters of each site and the values include a list with the limits of the said variable.
         const (dict): Dictionary of system parameters that follows the convention used by the tet.constants() module.
         grid (int, optional): Integer representing the number of times to split the parameter space. Defaults to 2.
-        opt (tensorflow.keras.optmizers, optional): Optimizer object of type tf.keras.optimizers. Defaults to Adam(lr=0.1).
+        lr (float, optional): Learning rate of the optimizer. Defaults to 0.1.
+        beta_1 (float, optional): beta_1 parameter of ADAM. Defaults to 0.9.
+        amsgrad (bool, optional): Whether to use the amsgrad version of ADAM. Defaults to False.
+        write_data (bool, optional): Whether to write trajectory and loss data of the optimizers in files. Defaults to False.
+        iterations (int, optional): Number of parallel iterations of optimizers. Defaults to 1.
         method (str, optional): Defines the method of optimization to be used. Defaults to 'bins'.
         epochs_bins (int, optional): Epochs that the optimizer is going to run for using the bins method for initial guesses. Defaults to 1000.
         epochs_grid (int, optional): Epochs that the optimizer is going to run for using the grid method for initial guesses. Defaults to 200.
@@ -92,6 +97,9 @@ def solver_mp(
         main_opt (bool, optional): If to further optimize with an optimizer with initial guesses provided by the best performing test optimizer.
         return_values(bool, optional): If to return the modified constants dictionary.
         data_path (str, optional): Path to create the data directory. Defaults to cwd/data.
+    
+    Returns:
+        dict: If return_values is True, return a dictionary of the resulting parameters of the optimization process.
     """
 
     #! Use cpu since we are doing parallelization on the cpu
@@ -114,31 +122,39 @@ def solver_mp(
     done = False
     bin_choice = False
 
-    #* An array to save the optimal parameters
-    OptimalVars, min_loss = np.zeros(len(TrainableVarsLimits)), const['max_N']  # initializing min_loss to the maximum number
-                                                                                # ensures that the initial combinations of initial
-                                                                                # guesses will be done with the bin method
+    # An array to save the optimal parameters
+    OptimalVars, min_loss = np.zeros(len(TrainableVarsLimits)), const['max_N']
+    # initializing min_loss to the maximum number
+    # ensures that the initial combinations of initial
+    # guesses will be done with the bin method
 
     t0 = time.time()
-    while not done and iteration < 1:
+    while not done and iteration < iterations:
 
         # Create directory of current iteration
         data_path2 = os.path.join(data_path, f'iteration_{iteration}')
         createDir(destination=data_path2, replace_query=False)
         
         Combinations = getCombinations(TrainableVarsLimits, method=method, grid=grid)
-        if method=='bins': iterations = epochs_bins
-        else: iterations = epochs_grid
+        if method=='bins': epochs = epochs_bins
+        else: epochs = epochs_grid
         #grid_choice = True
         print(10*'-',f'Iteration: {iteration}, Method: {method}, Jobs: {len(Combinations)}, lims: {lims}', 10*'-')
 
         t2 = time.time()
         # Initialize processing pool
-        pool = mp.Pool(mp.cpu_count()//2)
+        if cpu_count is None:
+            pool = mp.Pool(mp.cpu_count()//2)
+        else:
+            pool = mp.Pool(cpu_count)
         # pool = mp.Pool(mp.cpu_count())
 
         # Set input arg list for mp_opt() function
-        args = [(i, combination, data_path2, const, target_site, iterations, lr, beta_1, amsgrad) for i, (combination) in enumerate(Combinations)]
+        args = [
+            (i, combination, data_path2, const, target_site, 
+            epochs, lr, beta_1, amsgrad, write_data)
+            for i, (combination) in enumerate(Combinations)
+        ]
 
         try:
             # Run multiprocess map 
@@ -220,28 +236,3 @@ def solver_mp(
 
     if return_values:
         return const.copy()
-
-if __name__=="__main__":
-    import constants
-    import matplotlib.pyplot as plt
-    #! Import the constants of the problem
-    CONST = constants.constants
-
-    for CONST['max_N'] in range(1, 2):
-        for CONST['omegas'][0] in range(1, 2):
-            CONST['omegas'][-1] = -CONST['omegas'][0]
-            CONST['omegas'][1] = CONST['omegas'][-1]
-            xd = (CONST['omegas'][-1] - CONST['omegas'][0])/CONST['max_N']
-            xa = -xd
-            CONST['chis'] = [xd, 0, xa]
-
-            # create data directory with the naming convention data_{unix time}
-            data_dir_name = f'data_{time.time_ns()}'
-            data = os.path.join(os.getcwd(), data_dir_name)
-
-            #! Call the solver function that uses multiprocessing(pointer _mp)
-            solver_mp(
-                {'x1lims': [-40, 40]}, const=CONST, 
-                target_site=solver_params['target'], data_path=data,
-                grid=4, lr=0.6
-            )
