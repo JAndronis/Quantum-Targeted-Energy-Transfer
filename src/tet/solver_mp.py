@@ -14,7 +14,7 @@ from .constants import solver_params,TensorflowParams, dumpConstants
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
-def getCombinations(TrainableVarsLimits, method='bins', grid=2):
+def getCombinations(TrainableVarsLimits, method='bins', grid=solver_params['Npoints']):
     """
     Creates a list of initial guess pairs to be fed to an optimizer call
 
@@ -35,7 +35,7 @@ def getCombinations(TrainableVarsLimits, method='bins', grid=2):
 
     # Works only in the dimer case
     if method=='bins':
-        TrainableSpans = [ np.linspace( TrainableVarsLimits[f'x{i}lims'][0], TrainableVarsLimits[f'x{i}lims'][1], solver_params['Npoints']) for i in TensorflowParams['train_sites'] ]
+        TrainableSpans = [ np.linspace( TrainableVarsLimits[f'x{i}lims'][0], TrainableVarsLimits[f'x{i}lims'][1], grid) for i in TensorflowParams['train_sites'] ]
         data = np.array(list(product(*TrainableSpans)))
         data_list = [data[:, i] for i in range(data.shape[1])]
         
@@ -63,7 +63,7 @@ def getCombinations(TrainableVarsLimits, method='bins', grid=2):
 
     elif method=='grid':
         # make a grid of uniformly distributed initial parameter guesses
-        TrainableSpans = [ np.linspace(TrainableVarsLimits[f'x{i}lims'][0], TrainableVarsLimits[f'x{i}lims'][1], solver_params['Npoints'])
+        TrainableSpans = [ np.linspace(TrainableVarsLimits[f'x{i}lims'][0], TrainableVarsLimits[f'x{i}lims'][1], grid)
             for i in TensorflowParams['train_sites'] ]
 
         Combinations = list(product(*TrainableSpans))
