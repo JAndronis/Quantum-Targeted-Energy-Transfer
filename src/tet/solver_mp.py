@@ -1,11 +1,11 @@
 
+from typing import Any
 import numpy as np
 import os
 import gc
-import sys
 import time
 import multiprocessing as mp
-from itertools import combinations, product
+from itertools import product
 import tensorflow as tf
 
 from .Optimizer import mp_opt, Optimizer
@@ -64,6 +64,8 @@ def getCombinations(
                 choice = np.random.choice(list(range(len(test_item))))
                 Combinations.append(test_item[choice])
 
+        return Combinations
+
     elif method=='grid':
         # make a grid of uniformly distributed initial parameter guesses
         TrainableSpans = [ np.linspace(TrainableVarsLimits[f'x{i}lims'][0], TrainableVarsLimits[f'x{i}lims'][1], grid)
@@ -71,14 +73,14 @@ def getCombinations(
 
         Combinations = list(product(*TrainableSpans))
 
-    return Combinations
+        return Combinations
 
 def solver_mp(
-    TrainableVarsLimits: list, const: dict, grid=2, lr=0.1, beta_1=0.9, amsgrad=False, 
+    TrainableVarsLimits: dict, const: dict, grid=2, lr=0.1, beta_1=0.9, amsgrad=False, 
     write_data=False, iterations=1, method='bins', epochs_bins=solver_params['epochs_bins'], 
     epochs_grid=solver_params['epochs_grid'], target_site=0, main_opt=False, 
-    return_values=False, data_path=os.path.join(os.getcwd(),'data'), cpu_count=None
-) -> dict:
+    return_values=False, data_path=os.path.join(os.getcwd(),'data'), cpu_count=mp.cpu_count()//2
+) -> dict[float, Any]:
 
     """
     Function that utilizes multiple workers on the cpu to optimize the non linearity parameters for TET.
@@ -123,7 +125,6 @@ def solver_mp(
     # Count attempts based on the limits 
     lim_changes = 0
     done = False
-    bin_choice = False
 
     # An array to save the optimal parameters
     OptimalVars, min_loss = np.zeros(len(TrainableVarsLimits)), const['max_N']
@@ -149,10 +150,7 @@ def solver_mp(
 
         t2 = time.time()
         # Initialize processing pool
-        if cpu_count is None:
-            pool = mp.Pool(mp.cpu_count()//2)
-        else:
-            pool = mp.Pool(cpu_count)
+        pool = mp.Pool(cpu_count)
         # pool = mp.Pool(mp.cpu_count())
 
         # Set input arg list for mp_opt() function

@@ -49,9 +49,6 @@ class Loss:
                 raise ValueError("Invalid type for site variable. Must be int.")
         return self.loss(single_value)
 
-    def getCombinations(self):
-        return self.CombinationsBosons
-
     def derive(self):
         """
         A function that generates all the possible configurations of distributing N indistinguishable bosons in f distinguishable sites.
@@ -214,25 +211,3 @@ class Loss:
                 return tf.reduce_min(Data)
         else: return Data
 
-if __name__=="__main__":
-    from constants import system_constants, acceptor
-    import matplotlib.pyplot as plt
-    import sys
-    
-    # @tf.function(jit_compile=False)
-    def calc_loss(c):
-        return l(c, single_value=True, site=acceptor)
-
-    chis = np.array([[0, 0, 0]])
-    system_constants['max_N'] = 4
-    for system_constants['max_N'] in range(1,8):
-        system_constants['omegas'] = [3,-3,-3]
-        xd = (system_constants['omegas'][-1] - system_constants['omegas'][0])/system_constants['max_N']
-        xa = -xd
-        system_constants['chis'] = [xd, -38.39, xa]
-        l = Loss(system_constants)
-        n = calc_loss(tf.convert_to_tensor(system_constants['chis'], dtype=tf.float64)).numpy()
-        print(system_constants['omegas'], " -> ", n)
-        chis = np.concatenate((chis, np.array([system_constants['chis']])), axis=0)
-    chis = np.delete(chis, 0, 0)
-    sys.exit(0)
