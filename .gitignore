@@ -36,11 +36,16 @@ constants.json
 images
 
 # pycache
-__pycache__/*
-src/tet/__pycache__/*
-tests/__pycache__/
+__pycache__
+src/tet/__pycache__
+tests/__pycache__
 
 # mac ds_store
 src/tet/.DS_Store
 tests/.DS_Store
 .DS_Store
+
+# slurm
+sbatch_output
+*.sbatch
+*sbatch

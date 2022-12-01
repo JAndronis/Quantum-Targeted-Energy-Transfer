@@ -1,36 +1,34 @@
 
+from typing import Any
 import numpy as np
 import os
 import gc
-import sys
 import time
-# import multiprocessing as mp
-from mpi4py import MPI
-from mpi4py.futures import MPIPoolExecutor
-from itertools import combinations, product
+import multiprocessing as mp
+from itertools import product
 import tensorflow as tf
 
-import constants
-from Optimizer import mp_opt, Optimizer
-from data_process import createDir, read_1D_data
-from constants import solver_params,TensorflowParams
+from .Optimizer import mp_opt, Optimizer
+from .data_process import createDir, read_1D_data
+from .constants import solver_params,TensorflowParams, dumpConstants
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
-#!Creates a list of initial guess pairs to be fed to an optimizer call
-def getCombinations(TrainableVarsLimits, method='bins', grid=2):
+def getCombinations(
+    TrainableVarsLimits, train_sites=TensorflowParams['train_sites'], 
+    method='bins', grid=solver_params['Npoints']
+):
     """
     Creates a list of initial guess pairs to be fed to an optimizer call
 
     Args:
-        * TrainableVarsLimits (dict): The keys are the nonlinearity parameters of each site and the values 
-        * include a list with the limits of the said variable.
-        * const (dict): Dictionary of problem parameters.
-        * method (str, optional): Method to use for creating Combinations list. Defaults to 'bins'.
-        * grid (int, optional): Number of times to split the parameter space. Defaults to 2.
+        TrainableVarsLimits (dict): The keys are the nonlinearity parameters of each site and the values include a list with the limits of the said variable.
+        const (dict): Dictionary of problem parameters.
+        method (str, optional): Method to use for creating Combinations list. Defaults to 'bins'.
+        grid (int, optional): Number of times to split the parameter space. Defaults to 2.
 
     Returns:
-        * list: A list of tuples, of all the initial guesses to try.
+        list: A list of tuples, of all the initial guesses to try.
     """
     
     method_list = solver_params['methods']
@@ -40,12 +38,12 @@ def getCombinations(TrainableVarsLimits, method='bins', grid=2):
 
     # Works only in the dimer case
     if method=='bins':
-        TrainableSpans = [ np.linspace( TrainableVarsLimits[f'x{i}lims'][0], TrainableVarsLimits[f'x{i}lims'][1], solver_params['Npoints']) for i in TensorflowParams['train_sites'] ]
+        TrainableSpans = [ np.linspace( TrainableVarsLimits[f'x{i}lims'][0], TrainableVarsLimits[f'x{i}lims'][1], grid) for i in train_sites ]
         data = np.array(list(product(*TrainableSpans)))
         data_list = [data[:, i] for i in range(data.shape[1])]
         
         # Extent of bins needs to be a bit smaller than parameter range
-        extents = [ ( TrainableVarsLimits[f'x{i}lims'][0]-0.1, TrainableVarsLimits[f'x{i}lims'][1]+0.1 ) for i in TensorflowParams['train_sites'] ]
+        extents = [ ( TrainableVarsLimits[f'x{i}lims'][0]-0.1, TrainableVarsLimits[f'x{i}lims'][1]+0.1 ) for i in train_sites ]
         
         # Produce bin edges.Default returning: H,xedges,yedges.
         _, *edges = np.histogramdd(data_list, bins=grid, range=extents)
@@ -54,7 +52,7 @@ def getCombinations(TrainableVarsLimits, method='bins', grid=2):
         hit = [np.digitize(data_list[i], edges[0][i]) for i,_ in enumerate(data_list)]
         hitbins = list(zip(*hit))
         data_and_bins = list(zip(data, hitbins))
-        it = [ range(1, grid+1) for _ in range(len(TensorflowParams['train_sites'])) ]
+        it = [ range(1, grid+1) for _ in train_sites ]
         Combinations = []
         for bin in list(product(*it)):
             test_item = []
@@ -62,47 +60,58 @@ def getCombinations(TrainableVarsLimits, method='bins', grid=2):
                 if item[1]==bin:
                     test_item.append(item[0])
             # choose initial conditions and append them to the combination list
-            choice = np.random.choice(list(range(len(test_item))))
-            Combinations.append(test_item[choice])
+            if len(test_item) != 0:
+                choice = np.random.choice(list(range(len(test_item))))
+                Combinations.append(test_item[choice])
+
+        return Combinations
 
     elif method=='grid':
         # make a grid of uniformly distributed initial parameter guesses
-        TrainableSpans = [ np.linspace(TrainableVarsLimits[f'x{i}lims'][0], TrainableVarsLimits[f'x{i}lims'][1], solver_params['Npoints'])
-            for i in TensorflowParams['train_sites'] ]
+        TrainableSpans = [ np.linspace(TrainableVarsLimits[f'x{i}lims'][0], TrainableVarsLimits[f'x{i}lims'][1], grid)
+            for i in train_sites ]
 
         Combinations = list(product(*TrainableSpans))
 
-    return Combinations
+        return Combinations
 
 def solver_mp(
-    TrainableVarsLimits, const, grid=2, lr=TensorflowParams['lr'], method='bins',
-    epochs_bins=solver_params['epochs_bins'], epochs_grid=solver_params['epochs_grid'], 
-    target_site=0, main_opt=False, return_values=False, data_path=os.path.join(os.getcwd(),'data')
-    ):
+    TrainableVarsLimits: dict, const: dict, grid=2, lr=0.1, beta_1=0.9, amsgrad=False, 
+    write_data=False, iterations=1, method='bins', epochs_bins=solver_params['epochs_bins'], 
+    epochs_grid=solver_params['epochs_grid'], target_site=0, main_opt=False, 
+    return_values=False, data_path=os.path.join(os.getcwd(),'data'), cpu_count=mp.cpu_count()//2
+) -> dict[float, Any]:
 
     """
     Function that utilizes multiple workers on the cpu to optimize the non linearity parameters for TET.
     It uses the Optimizer class to write trajectory data to multiple files so it can be parsed later if needed.
 
     Args:
-        * TrainableVarsLimits (Dictionary): The keys are the nonlinearity parameters of each site and the values 
-        * include a list with the limits of the said variable.
-        * const (dict): Dictionary of system parameters that follows the convention used by the tet.constants() module.
-        * grid (int, optional): Integer representing the number of times to split the parameter space. Defaults to 2.
-        * lr (float, optional): Learning rate of the optimizer. Defaults to 0.1.
-        * epochs_bins (int, optional): Epochs that the optimizer is going to run for using the bins method for initial guesses. Defaults to 1000.
-        * epochs_grid (int, optional): Epochs that the optimizer is going to run for using the grid method for initial guesses. Defaults to 200.
-        * target_site (str, optional): Target site for the optimizer to monitor. Defaults to 'x0' aka the 'donor' site.
-        * main_opt (bool, optional): If to further optimize with an optimizer with initial guesses provided by the best performing test optimizer.
-        * return_values(bool, optional): If to return the modified constants dictionary.
-        * data_path (str, optional): Path to create the data directory. Defaults to cwd/data.
+        TrainableVarsLimits (Dictionary): The keys are the nonlinearity parameters of each site and the values include a list with the limits of the said variable.
+        const (dict): Dictionary of system parameters that follows the convention used by the tet.constants() module.
+        grid (int, optional): Integer representing the number of times to split the parameter space. Defaults to 2.
+        lr (float, optional): Learning rate of the optimizer. Defaults to 0.1.
+        beta_1 (float, optional): beta_1 parameter of ADAM. Defaults to 0.9.
+        amsgrad (bool, optional): Whether to use the amsgrad version of ADAM. Defaults to False.
+        write_data (bool, optional): Whether to write trajectory and loss data of the optimizers in files. Defaults to False.
+        iterations (int, optional): Number of parallel iterations of optimizers. Defaults to 1.
+        method (str, optional): Defines the method of optimization to be used. Defaults to 'bins'.
+        epochs_bins (int, optional): Epochs that the optimizer is going to run for using the bins method for initial guesses. Defaults to 1000.
+        epochs_grid (int, optional): Epochs that the optimizer is going to run for using the grid method for initial guesses. Defaults to 200.
+        target_site (str, optional): Target site for the optimizer to monitor. Defaults to 'x0' aka the 'donor' site.
+        main_opt (bool, optional): If to further optimize with an optimizer with initial guesses provided by the best performing test optimizer.
+        return_values(bool, optional): If to return the modified constants dictionary.
+        data_path (str, optional): Path to create the data directory. Defaults to cwd/data.
+    
+    Returns:
+        dict: If return_values is True, return a dictionary of the resulting parameters of the optimization process.
     """
 
     #! Use cpu since we are doing parallelization on the cpu
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
     # Create data directory to save results
-    createDir(destination=data_path, replace_query=True)
+    createDir(destination=data_path, replace_query=False)
 
     # Initialize helper parameters
     lims = list(TrainableVarsLimits.values())
@@ -114,36 +123,52 @@ def solver_mp(
     iteration = 0
 
     # Count attempts based on the limits 
-    counter = 0
+    lim_changes = 0
     done = False
-    bin_choice = False
 
-    #* An array to save the optimal parameters
-    OptimalVars, min_loss = np.zeros(len(TrainableVarsLimits)), const['max_N']  # initializing min_loss to the maximum number
-                                                                                # ensures that the initial combinations of initial
-                                                                                # guesses will be done with the bin method
+    # An array to save the optimal parameters
+    OptimalVars, min_loss = np.zeros(len(TrainableVarsLimits)), const['max_N']
+    # initializing min_loss to the maximum number
+    # ensures that the initial combinations of initial
+    # guesses will be done with the bin method
+
+    # get train_sites from limits of trainable parameters by parsing elements in strings
+    train_sites = [int(list(TrainableVarsLimits.keys())[i][1]) for i in range(len(TrainableVarsLimits))]
 
     t0 = time.time()
-    while not done and iteration < 1:
+    while not done and iteration < iterations:
 
         # Create directory of current iteration
         data_path2 = os.path.join(data_path, f'iteration_{iteration}')
-        createDir(destination=data_path2, replace_query=True)
+        createDir(destination=data_path2, replace_query=False)
         
-        Combinations = getCombinations(TrainableVarsLimits, method=method, grid=grid)
-        if method=='bins': iterations = epochs_bins
-        else: iterations = epochs_grid
+        Combinations = getCombinations(TrainableVarsLimits, train_sites=train_sites, method=method, grid=grid)
+        if method=='bins': epochs = epochs_bins
+        else: epochs = epochs_grid
         #grid_choice = True
         print(10*'-',f'Iteration: {iteration}, Method: {method}, Jobs: {len(Combinations)}, lims: {lims}', 10*'-')
 
         t2 = time.time()
         # Initialize processing pool
-        with MPIPoolExecutor(max_workers=MPI.COMM_WORLD.Get_size(), root=0) as executor:
-            # Set input arg list for mp_opt() function
-            args = [(i, combination, data_path2, const, target_site, iterations) for i, (combination) in enumerate(Combinations)]
+        pool = mp.Pool(cpu_count)
+        # pool = mp.Pool(mp.cpu_count())
 
-            # Run multiprocess map
-            _all_losses = executor.starmap(mp_opt, args)
+        # Set input arg list for mp_opt() function
+        args = [
+            (i, combination, data_path2, const, target_site, 
+            epochs, lr, beta_1, amsgrad, write_data, train_sites)
+            for i, (combination) in enumerate(Combinations)
+        ]
+
+        try:
+            # Run multiprocess map 
+            _all_losses = pool.starmap_async(mp_opt, args).get()
+        finally:
+            # Make sure to close pool so no more processes start
+            pool.close()    
+            pool.join()
+            # Garbage collector
+            gc.collect()
 
         t3 = time.time()
 
@@ -151,7 +176,7 @@ def solver_mp(
         dt = t3-t2  
 
         # Gather results
-        all_losses = np.fromiter(_all_losses, float)
+        all_losses = np.array(_all_losses)
         OptimalVars = [float(all_losses[np.argmin(all_losses[:,const['sites']]), i]) for i in range(const['sites'])]
         min_loss = float(all_losses[np.argmin(all_losses[:,const['sites']]), const['sites']])
         
@@ -160,20 +185,19 @@ def solver_mp(
         print("Code run time: ", dt, " s")
 
         if min_loss<=const["max_N"]/2:
-            counter += 1
+            lim_changes += 1
             edge = _edge[iteration]
             #grid += 2
             lims = [[OptimalVars[i]-edge, OptimalVars[i]+edge] for i in range(len(TrainableVarsLimits))]
 
         else:
-            solver_params['Npoints'] += 1
             lr += 0.1
 
         # advance iteration
         iteration += 1
 
         # if loss has not been reduced for more than 5 iterations stop
-        if counter>=5 and min_loss>=CONST['max_N']/2:
+        if lim_changes>=5 and min_loss>=const['max_N']/2:
             print("Couldn't find TET")
             break
         
@@ -209,35 +233,9 @@ def solver_mp(
         const['chis'] = OptimalVars
         const['min_n'] = min(loss_data)
     
-    constants.dumpConstants(dict=const, path=data_path)
+    dumpConstants(dict=const, path=data_path)
     
     print('Total solver run time: ', t1-t0)
 
     if return_values:
-        return const.copy()
-
-if __name__=="__main__":
-
-    import constants
-    import matplotlib.pyplot as plt
-    #! Import the constants of the problem
-    CONST = constants.constants
-
-    for CONST['max_N'] in range(1, 2):
-        for CONST['omegas'][0] in range(1, 2):
-            CONST['omegas'][-1] = -CONST['omegas'][0]
-            CONST['omegas'][1] = CONST['omegas'][-1]
-            xd = (CONST['omegas'][-1] - CONST['omegas'][0])/CONST['max_N']
-            xa = -xd
-            CONST['chis'] = [xd, 0, xa]
-
-            # create data directory with the naming convention data_{unix time}
-            data_dir_name = f'data_{time.time_ns()}'
-            data = os.path.join(os.getcwd(), data_dir_name)
-
-            #! Call the solver function that uses multiprocessing(pointer _mp)
-            solver_mp(
-                {'x1lims': [-40, 40]}, const=CONST, 
-                target_site=solver_params['target'], data_path=data,
-                grid=4, lr=0.6
-            )
+        return const

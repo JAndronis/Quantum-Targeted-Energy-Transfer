@@ -3,17 +3,18 @@ import tensorflow as tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 assert tf.__version__ >= "2.0"
 from math import factorial
-from itertools import product
 import numpy as np
-from constants import TensorflowParams
 
 DTYPE = tf.float64
 
+# -------------------------------------------------------------------#
+
 class Loss:
     """
-    Class Loss: A class designed for computing the loss function
-    Documentation:
-        * const:  Refer to the constants dictionary in constants.py.
+    A class designed for computing the loss function
+
+    Args:
+        const (dict):  Refer to the system_constants dictionary in constants.py.
     """
     def __init__(self, const):
         #! Import the parameters of the problem
@@ -25,7 +26,7 @@ class Loss:
         self.sites = const['sites']
         self.omegas = tf.constant(const['omegas'], dtype=DTYPE)
 
-        # default values for chis and target site, will be replaced by __call__()
+        # Default values for chis and target site, will be replaced by __call__()
         self.chis = const['chis']
         self.targetState = const['sites'] - 1
         
@@ -48,16 +49,16 @@ class Loss:
                 raise ValueError("Invalid type for site variable. Must be int.")
         return self.loss(single_value)
 
-    def getCombinations(self):
-        return self.CombinationsBosons
-
     def derive(self):
+        """
+        A function that generates all the possible configurations of distributing N indistinguishable bosons in f distinguishable sites.
+        """
 
         self.states = np.zeros((self.dim, self.sites))
+        # Initially, all the bosons belong to the donor site.
         self.states[0, 0] = tf.get_static_value(self.max_N)
 
-        v = 0
-        k = 0
+        v,k = 0,0
         while v < self.dim - 1:
 
             for i in range(k): self.states[v+1, i] = self.states[v, i]
@@ -210,26 +211,3 @@ class Loss:
                 return tf.reduce_min(Data)
         else: return Data
 
-# @tf.function(jit_compile=False)
-def calc_loss(c):
-    return l(c, single_value=True, site=acceptor)
-
-if __name__=="__main__":
-    from constants import constants, acceptor
-    import matplotlib.pyplot as plt
-
-    chis = np.array([[0, 0, 0]])
-    constants['max_N'] = 4
-    # for constants['omegas'][0] in range(1, 8):
-    for constants['max_N'] in range(1,8):
-        constants['omegas'] = [3,-3,-3]
-        # constants['omegas'][-1] = -constants['omegas'][0]
-        # constants['omegas'][1] = constants['omegas'][-1]
-        xd = (constants['omegas'][-1] - constants['omegas'][0])/constants['max_N']
-        xa = -xd
-        constants['chis'] = [xd, -38.39, xa]
-        l = Loss(constants)
-        n = calc_loss(tf.convert_to_tensor(constants['chis'], dtype=tf.float64)).numpy()
-        print(constants['omegas'], " -> ", n)
-        chis = np.concatenate((chis, np.array([constants['chis']])), axis=0)
-    chis = np.delete(chis, 0, 0)

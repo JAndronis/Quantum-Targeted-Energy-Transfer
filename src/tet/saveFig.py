@@ -2,7 +2,8 @@ import os
 import matplotlib.pyplot as plt
 
 def saveFig(fig_id, destination, tight_layout=True, fig_extension="jpg", resolution=300, silent=False):
-    """Function to save a figure in a specified directory.
+    """
+    Function to save a figure in a specified directory.
 
     Args:
         fig_id (string): id to save figure under
