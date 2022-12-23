@@ -16,6 +16,9 @@ settings.json
 # Built Visual Studio Code Extensions
 *.vsix
 
+# idea
+.idea
+
 # code generated files and dirs
 data*
 data_*

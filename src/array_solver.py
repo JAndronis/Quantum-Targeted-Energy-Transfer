@@ -12,7 +12,7 @@ from tet.Optimizer import mp_opt
 from tet.data_process import createDir
 from tet.solver_mp import getCombinations
 
-if __name__=="__main__":
+if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="python3 array_solver.py")
     parser.add_argument('-p', '--path', nargs='?', type=pathlib.Path, required=True)
@@ -21,15 +21,12 @@ if __name__=="__main__":
 
     cmd_args = parser.parse_args()
 
-    try:
-        data_path = os.path.join(cmd_args.path, f'data_{time.time_ns()}_{cmd_args.id}')
-        if os.path.exists(cmd_args.path):
-            createDir(destination=data_path, replace_query=True)
-        else:
-            print(f"Input data path {cmd_args.path} does not exist! Creating it.")
-            raise OSError()
-    except OSError:
-        os.makedirs(data_path)
+    data_path = os.path.join(cmd_args.path, f'data_{time.time_ns()}_{cmd_args.id}')
+    if os.path.exists(cmd_args.path):
+        createDir(destination=data_path, replace_query=True)
+    else:
+        print(f"Input data path {cmd_args.path} does not exist!")
+        raise OSError()
 
     # Use cpu since we are doing parallelization on the cpu
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
@@ -41,6 +38,7 @@ if __name__=="__main__":
     method = 'bins'
     grid = 4
     epochs_bins = 1000
+    epochs_grid = 1000
     target_site = constants.acceptor
 
     # Control how many times loss is lower than the threshold having changed the limits
@@ -50,10 +48,12 @@ if __name__=="__main__":
     OptimalVars, min_loss = np.zeros(len(TrainableVarsLimits)), const['max_N']
 
     Combinations = getCombinations(TrainableVarsLimits, method=method, grid=grid)
-    if method=='bins': iterations = epochs_bins
-    else: iterations = epochs_grid
+    if method == 'bins':
+        iterations = epochs_bins
+    else:
+        iterations = epochs_grid
     
-    param_space = list(product(range(1,9), range(1,9)))
+    param_space = list(product(range(1, 9), range(1, 9)))
     step = len(param_space) // cmd_args.array_size
     for ij in range(cmd_args.id*step, (cmd_args.id+1)*step):
         const_copy = const.copy()
@@ -71,16 +71,15 @@ if __name__=="__main__":
             # break
         all_losses = np.array(_all_losses)
         OptimalVars = [
-            float(all_losses[np.argmin(all_losses[:,const['sites']]), i]) \
+            float(all_losses[np.argmin(all_losses[:, const['sites']]), i])
             for i in range(const['sites'])
         ]
-        min_loss = float(all_losses[np.argmin(all_losses[:,const['sites']]), const['sites']])
+        min_loss = float(all_losses[np.argmin(all_losses[:, const['sites']]), const['sites']])
         # Print results of run
         print(f"Best parameters of tries: loss={min_loss}, OptimalVars = {OptimalVars}")
         const_copy['chis'] = OptimalVars
         const_copy['min_n'] = min_loss
         constants.dumpConstants(
-            dict=const_copy, path=data_path, 
+            dict_name=const_copy, path=data_path,
             name=f'constants_n={const_copy["max_N"]}_o={const_copy["omegas"][1]}'
         )
-        # break

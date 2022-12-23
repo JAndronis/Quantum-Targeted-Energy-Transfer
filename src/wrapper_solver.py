@@ -1,24 +1,16 @@
+#!/usr/bin/env python3
 
-if __name__=="__main__":
+from numpy.random import randint
+import pathlib
+import os
+from datetime import datetime
+import argparse
 
-    from numpy.random import randint
-    import os
-    import shutil
-    import sys
-    import glob
-    from os.path import exists
-    import matplotlib.pyplot as plt
-    from math import sqrt
-    import warnings
-    from datetime import datetime
-    import tensorflow as tf
-    import argparse
+import tet.constants
+from tet.solver_mp import solver_mp
+from tet.data_process import createDir
 
-    from tet.Optimizer import Optimizer
-    import tet.constants
-    from tet.solver_mp import solver_mp
-    from tet.data_process import createDir
-    import tet.saveFig as saveFig
+if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="python3 array_solver.py")
     parser.add_argument('-p', '--path', nargs='?', type=pathlib.Path, required=True)
@@ -26,9 +18,9 @@ if __name__=="__main__":
     # parser.add_argument('--array-size', type=int)
 
     cmd_args = parser.parse_args()
+    data_path = os.path.join(cmd_args.path, f'data_{datetime.now()}')
 
     try:
-        data_path = os.path.join(cmd_args.path, f'data_{datetime.now()}_{cmd_args.id}')
         if os.path.exists(cmd_args.path):
             createDir(destination=data_path, replace_query=False)
         else:
@@ -55,12 +47,12 @@ if __name__=="__main__":
     }
 
     tet.constants.TensorflowParams['train_sites'] = [0, 1]
-    keys = [f'x{k}lims' for k in tet.constante.TensorflowParams['train_sites']] 
-    lims = [[randint(-10,0), randint(0,10)], [randint(-10,0), randint(0,10)]]
-    TrainableVarsLimits = dict(zip(keys,lims))
+    keys = [f'x{k}lims' for k in tet.constants.TensorflowParams['train_sites']]
+    lims = [[randint(-10, 0), randint(0, 10)], [randint(-10, 0), randint(0, 10)]]
+    trainable_vars_lims = dict(zip(keys, lims))
 
     solver_mp(
-        const=const_iter, TrainableVarsLimits=TrainableVarsLimits, lr=0.1, beta_1=0.4, amsgrad=True,
+        const=const, trainable_vars_limits=trainable_vars_lims, lr=0.1, beta_1=0.4, amsgrad=True,
         data_path=data_path, method='bins', return_values=True, write_data=True
     )
     
