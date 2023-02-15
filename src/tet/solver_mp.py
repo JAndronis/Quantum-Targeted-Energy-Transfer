@@ -88,8 +88,8 @@ def getCombinations(
 def solver_mp(
         trainable_vars_limits: dict, const: dict, grid=2, lr=0.1, beta_1=0.9, amsgrad=False,
         write_data=False, iterations=1, method='bins', epochs_bins=solver_params['epochs_bins'],
-        epochs_grid=solver_params['epochs_grid'], target_site=0, main_opt=False,
-        return_values=False, data_path=os.path.join(os.getcwd(), 'data'), cpu_count=mp.cpu_count() // 2
+        epochs_grid=solver_params['epochs_grid'], target_site=0, main_opt=False, 
+        data_path=os.path.join(os.getcwd(), 'data'), cpu_count=mp.cpu_count() // 2
 ) -> dict[float, Any]:
     """
     Function that utilizes multiple workers on the cpu to optimize the nonlinearity parameters for TET.
@@ -114,7 +114,6 @@ def solver_mp(
         target_site (str, optional): Target site for the optimizer to monitor. Defaults to 'x0' aka the 'donor' site.
         main_opt (bool, optional): If to further optimize with an optimizer with initial guesses provided by the best
         performing test optimizer.
-        return_values(bool, optional): If to return the modified constants dictionary.
         data_path (str, optional): Path to create the data directory. Defaults to cwd/data.
         cpu_count (int, optional): Number of cpu cores to use for multiprocessing
     
@@ -142,9 +141,6 @@ def solver_mp(
 
     # An array to save the optimal parameters
     optimal_vars, min_loss = np.zeros(len(trainable_vars_limits)), const['max_N']
-    # initializing min_loss to the maximum number
-    # ensures that the initial combinations of initial
-    # guesses will be done with the bin method
 
     # get train_sites from limits of trainable parameters by parsing elements in strings
     train_sites = [int(list(trainable_vars_limits.keys())[i][1]) for i in range(len(trainable_vars_limits))]
@@ -161,13 +157,11 @@ def solver_mp(
             epochs = epochs_bins
         else:
             epochs = epochs_grid
-        # grid_choice = True
         print(10 * '-', f'Iteration: {iteration}, Method: {method}, Jobs: {len(combinations)}, lims: {lims}', 10 * '-')
 
         t2 = time.time()
         # Initialize processing pool
         pool = mp.Pool(cpu_count)
-        # pool = mp.Pool(mp.cpu_count())
 
         # Set input arg list for mp_opt() function
         args = [
@@ -252,5 +246,4 @@ def solver_mp(
 
     print('Total solver run time: ', t1 - t0)
 
-    if return_values:
-        return const
+    return const
