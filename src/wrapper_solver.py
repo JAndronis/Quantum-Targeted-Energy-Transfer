@@ -32,22 +32,33 @@ if __name__ == "__main__":
 
     if cmd_args.constants != None:
         if not os.path.exists(cmd_args.constants):
-            raise OSError('Provided constants path does not exist.')
+            raise OSError('Provided path does not exist.')
         else:
-            const = tet.constants.loadConstants(cmd_args.constants)
+            parameter_dict = tet.constants.loadConstants(cmd_args.constants)
     else:
-        print('\n*No json file was provided, using default constants.*\n')
-        const = tet.constants.system_constants
+        print('\n* No json file was provided, using default parameters. *\n')
+        parameter_dict = {'constants': tet.constants.system_constants, 'tensorflow_params': tet.constants.TensorflowParams}
+
+    const = {**tet.constants.system_constants, **parameter_dict['constants']}
+    tet.constants.TensorflowParams = {**tet.constants.TensorflowParams, **parameter_dict['tensorflow_params']}
+    tet.constants.solver_params['target'] = const['sites'] - 1
 
     # Set sites to optimize
-    tet.constants.TensorflowParams['train_sites'] = [0, 1]
     keys = [f'x{k}lims' for k in tet.constants.TensorflowParams['train_sites']]
-    lims = [[randint(-10, 0), randint(0, 10)], [randint(-10, 0), randint(0, 10)]]
+    lims = parameter_dict['limits']
     trainable_vars_lims = dict(zip(keys, lims))
 
     result = solver_mp(
-        const=const, trainable_vars_limits=trainable_vars_lims, lr=0.1, beta_1=0.4, amsgrad=True,
-        data_path=data_path, method='bins', write_data=True, cpu_count=cmd_args.ncpus
+        const=const, 
+        trainable_vars_limits=trainable_vars_lims, 
+        lr=tet.constants.TensorflowParams['lr'], 
+        beta_1=tet.constants.TensorflowParams['beta_1'], 
+        amsgrad=tet.constants.TensorflowParams['amsgrad'],
+        target_site=tet.constants.solver_params['target'],
+        data_path=data_path, 
+        method='bins', 
+        write_data=True, 
+        cpu_count=cmd_args.ncpus
     )
 
     print(result)
