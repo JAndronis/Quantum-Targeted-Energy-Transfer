@@ -23,8 +23,7 @@ def getCombinations(
 
     Args:
         train_sites (list): Sites of nonlinearity parameters to train.
-        trainable_vars_limits (dict): The keys are the nonlinearity parameters of each site and the values include
-        a list with the limits of the said variable.
+        trainable_vars_limits (dict): The keys are the nonlinearity parameters of each site and the values include a list with the limits of the said variable.
         method (str, optional): Method to use for creating Combinations list. Defaults to 'bins'.
         grid (int, optional): Number of times to split the parameter space. Defaults to 2.
 
@@ -88,7 +87,7 @@ def getCombinations(
 def solver_mp(
         trainable_vars_limits: dict, const: dict, grid=2, lr=0.1, beta_1=0.9, amsgrad=False,
         write_data=False, iterations=1, method='bins', epochs_bins=solver_params['epochs_bins'],
-        epochs_grid=solver_params['epochs_grid'], target_site=0, main_opt=False, 
+        epochs_grid=solver_params['epochs_grid'], target_site=solver_params['target'], main_opt=False, 
         data_path=os.path.join(os.getcwd(), 'data'), cpu_count=mp.cpu_count() // 2
 ) -> dict[float, Any]:
     """
@@ -96,24 +95,19 @@ def solver_mp(
     It uses the Optimizer class to write trajectory data to multiple files, so it can be parsed later if needed.
 
     Args:
-        trainable_vars_limits (Dictionary): The keys are the nonlinearity parameters of each site and the values include
-        a list with the limits of the said variable.
+        trainable_vars_limits (Dictionary): The keys are the nonlinearity parameters of each site and the values include a list with the limits of the said variable.
         const (dict): Dictionary of system parameters that follows the convention used by the tet.constants() module.
         grid (int, optional): Integer representing the number of times to split the parameter space. Defaults to 2.
         lr (float, optional): Learning rate of the optimizer. Defaults to 0.1.
         beta_1 (float, optional): beta_1 parameter of ADAM. Defaults to 0.9.
         amsgrad (bool, optional): Whether to use the amsgrad version of ADAM. Defaults to False.
-        write_data (bool, optional): Whether to write trajectory and loss data of the optimizers in files. Defaults to
-        False.
-        iterations (int, optional): Number of parallel iterations of optimizers. Defaults to 1.
+        write_data (bool, optional): Whether to write trajectory and loss data of the optimizers in files. Defaults to False.
+        iterations (int, optional): Number of iterations of solver. Defaults to 1.
         method (str, optional): Defines the method of optimization to be used. Defaults to 'bins'.
-        epochs_bins (int, optional): Epochs that the optimizer is going to run for using the bins method
-        for initial guesses. Defaults to 1000.
-        epochs_grid (int, optional): Epochs that the optimizer is going to run for using the grid method
-        for initial guesses. Defaults to 200.
+        epochs_bins (int, optional): Epochs that the optimizer is going to run for using the bins method for initial guesses. Defaults to 1000.
+        epochs_grid (int, optional): Epochs that the optimizer is going to run for using the grid method for initial guesses. Defaults to 200.
         target_site (str, optional): Target site for the optimizer to monitor. Defaults to 'x0' aka the 'donor' site.
-        main_opt (bool, optional): If to further optimize with an optimizer with initial guesses provided by the best
-        performing test optimizer.
+        main_opt (bool, optional): If to further optimize with an optimizer with initial guesses provided by the best performing test optimizer.
         data_path (str, optional): Path to create the data directory. Defaults to cwd/data.
         cpu_count (int, optional): Number of cpu cores to use for multiprocessing
     
@@ -130,10 +124,9 @@ def solver_mp(
     # Initialize helper parameters
     lims = list(trainable_vars_limits.values())
 
-    # _edge =  [0.1,0.5,1.5,2.5,3.0,3.5,4.0]  
     _edge = [4.0, 3.5, 3.0, 2.5, 1.5, 0.5, 0.1]
 
-    # Control how many times loss is lower than the threshold having changed the limits
+    # Control how many times to change the limits of the search space
     iteration = 0
 
     # Count attempts based on the limits 

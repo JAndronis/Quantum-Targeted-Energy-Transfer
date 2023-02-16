@@ -21,8 +21,8 @@ Elements:
 system_constants = {'max_N': 3,
                     'sites': None,
                     'max_t': 25,
-                    'omegas': [-3, 3, 3],
-                    'chis': [1.5, 0, -1.5],
+                    'omegas': [-3, 3],
+                    'chis': [0, 0],
                     'coupling': 1,
                     'timesteps': 30}
 system_constants['sites'] = len(system_constants['omegas'])
@@ -41,6 +41,8 @@ Elements:
 """
 TensorflowParams = {'DTYPE': float32,
                     'lr': 0.1,
+                    'beta_1': 0.9,
+                    'amsgrad': True,
                     'iterations': 1000,
                     'tol': 1e-8,
                     'train_sites': [1]}
