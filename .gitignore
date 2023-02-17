@@ -38,6 +38,12 @@ constants.json
 */constants.json
 images
 
+# ignore custom scripts
+scripts
+
+# venv
+*venv
+
 # pycache
 __pycache__
 src/tet/__pycache__
