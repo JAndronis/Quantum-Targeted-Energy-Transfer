@@ -18,10 +18,4 @@ make
 
 ## Running QTET Application
 
-We have implemented a recommended use-case of the package we developed into an application called `qtet.py` in the `src` directory. The application can be simply run, after running the installation commands, like so:
-
-```sh
-make run
-```
-
-assuming the user is in the directory of the repository.
+We have implemented a recommended use-case of the package we developed into an application called `qtet.py` in the `src` directory.

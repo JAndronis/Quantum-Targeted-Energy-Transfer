@@ -15,7 +15,4 @@ clean:
 	rm -rf $(VENV)
 	find . -type f -name '*.pyc' -delete
 
-run: venv
-	./$(VENV)/bin/python3 src/qtet.py -p data
-
-.PHONY: all run venv clean
+.PHONY: all venv clean
