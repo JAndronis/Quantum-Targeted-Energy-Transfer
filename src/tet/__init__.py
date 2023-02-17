@@ -1,5 +1,4 @@
 __all__ = [
-    'saveFig', 
     'HamiltonianLoss', 
     'data_process', 
     'constants',
@@ -11,4 +10,3 @@ from .constants import system_constants, TensorflowParams, solver_params
 from .HamiltonianLoss import Loss
 from .Optimizer import Optimizer
 from .solver_mp import solver_mp
-from .saveFig import saveFig

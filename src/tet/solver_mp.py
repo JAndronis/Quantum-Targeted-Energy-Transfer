@@ -85,7 +85,7 @@ def getCombinations(
 
 
 def solver_mp(
-        trainable_vars_limits: dict, const: dict, grid=2, lr=0.1, beta_1=0.9, amsgrad=False,
+        trainable_vars_limits: dict, const: dict, grid=solver_params['Npoints'], lr=0.1, beta_1=0.9, amsgrad=False,
         write_data=False, iterations=1, method='bins', epochs_bins=solver_params['epochs_bins'],
         epochs_grid=solver_params['epochs_grid'], target_site=solver_params['target'], main_opt=False, 
         data_path=os.path.join(os.getcwd(), 'data'), cpu_count=mp.cpu_count() // 2
@@ -234,8 +234,6 @@ def solver_mp(
 
         const['chis'] = optimal_vars
         const['min_n'] = min(loss_data)
-
-    dumpConstants(dict_name=const, path=data_path)
 
     print('Total solver run time: ', t1 - t0)
 

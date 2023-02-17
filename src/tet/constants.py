@@ -42,14 +42,14 @@ Elements:
 TensorflowParams = {'DTYPE': float32,
                     'lr': 0.1,
                     'beta_1': 0.9,
-                    'amsgrad': True,
+                    'amsgrad': False,
                     'iterations': 1000,
                     'tol': 1e-8,
-                    'train_sites': [1]}
+                    'train_sites': [0, 1]}
 
 # Define the acceptor and the donor site
-acceptor = 'x{}'.format(system_constants['sites'] - 1)
-donor = 'x0'
+acceptor = system_constants['sites'] - 1
+donor = 0
 
 # -------------------------------------------------------------------#
 
@@ -68,7 +68,7 @@ Elements:
 """
 solver_params = {'methods': ['grid', 'bins'],
                  'target': acceptor,
-                 'Npoints': 4,
+                 'Npoints': 2,
                  'epochs_grid': 500,
                  'epochs_bins': 1000}
 
@@ -90,18 +90,18 @@ plotting_params = {'plotting_resolution': 100}
 
 # -------------------------------------------------------------------#
 
-def dumpConstants(dict_name: dict, path=os.getcwd(), name='constants'):
+def dumpConstants(dictionary: dict, path=os.getcwd(), name='constants'):
     """
     Function that generates a json file from the dictionary provided.
 
     Args:
-        dict_name (dict): Dictionary to save.
+        dictionary (dict): Dictionary to save.
         path (str, optional): Path to save json file to. Defaults to os.getcwd().
         name (str, optional): Name of file. Defaults to 'constants'.
     """
     _path = os.path.join(path, name + '.json')
     with open(_path, 'w') as c:
-        json.dump(dict_name, c, indent=1)
+        json.dump(dictionary, c, indent=1)
 
 
 # -------------------------------------------------------------------#
