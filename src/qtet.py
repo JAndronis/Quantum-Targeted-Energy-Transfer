@@ -10,13 +10,13 @@ import tet.constants
 from tet.solver_mp import solver_mp
 from tet.data_process import createDir
 
-if __name__ == "__main__":
+def run():
 
     parser = argparse.ArgumentParser(description="python3 array_solver.py")
     parser.add_argument('-p', '--data_path', type=pathlib.Path,
                         required=True, help='Path to create data dir.')
     parser.add_argument('-c', '--constants', type=pathlib.Path,
-                        required=False, help='Path to constants json file.')
+                        required=False, help='Path to constants json file. If not provided then the application will use the default parameters provided by the tet package.')
     parser.add_argument('-n', '--ncpus', default=mp.cpu_count(), type=int, required=False,
                         help='Number of cpus to use in the process pool. Default option is to use all available cpus.')
     parser.add_argument('-m', '--method', default='bins', choices=tet.constants.solver_params['methods'], type=str,
@@ -98,3 +98,6 @@ if __name__ == "__main__":
     tet.constants.dumpConstants(
         dictionary=final_parameters, path=data_path, name='parameters'
     )
+
+if __name__=="__main__":
+    run()

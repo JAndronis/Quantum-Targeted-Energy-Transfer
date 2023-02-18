@@ -49,6 +49,12 @@ __pycache__
 src/tet/__pycache__
 tests/__pycache__
 
+# poetry
+poetry.lock
+
+# dist
+*dist
+
 # mac ds_store
 src/tet/.DS_Store
 tests/.DS_Store

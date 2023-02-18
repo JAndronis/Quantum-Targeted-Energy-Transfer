@@ -3,10 +3,10 @@ import tensorflow as tf
 from math import factorial
 import numpy as np
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
-assert tf.__version__ >= "2.0"
+from .constants import TensorflowParams
 
-DTYPE = tf.float64
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
+DTYPE = TensorflowParams['DTYPE']
 
 
 class Loss:

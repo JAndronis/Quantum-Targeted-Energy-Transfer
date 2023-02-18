@@ -1,6 +1,6 @@
 import os
 import json
-from tensorflow import float32
+from tensorflow import float64
 
 # -------------------------------------------------------------------#
 
@@ -39,7 +39,7 @@ Elements:
     tol: The tolerance of each optimizer concerning the changes in the nonlinearity parameters
     train_sites: A list including the nonlinearity parameters to be optimized. Counting ranges from 0 to f-1.
 """
-TensorflowParams = {'DTYPE': float32,
+TensorflowParams = {'DTYPE': float64,
                     'lr': 0.1,
                     'beta_1': 0.9,
                     'amsgrad': False,

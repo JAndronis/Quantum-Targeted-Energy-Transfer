@@ -1,18 +1,19 @@
+VENV_NAME := .venv
+PYTHON := $(VENV_NAME)/bin/python3
+POETRY := $(VENV_NAME)/bin/poetry
 
-VENV:=qtet_venv
+.PHONY: venv
+venv:
+	python3 -m venv $(VENV_NAME)
+	$(PYTHON) -m ensurepip
+	$(PYTHON) -m pip install poetry
 
-all: venv
+.PHONY: install
+install: venv
+	$(POETRY) config virtualenvs.in-project true
+	$(POETRY) install
+	$(POETRY) run python3 setup.py
 
-$(VENV)/bin/activate: requirements.txt
-	python3 -m venv $(VENV)
-	./$(VENV)/bin/pip install -r requirements.txt
-	./$(VENV)/bin/python3 setup.py
-
-
-venv: $(VENV)/bin/activate
-
+.PHONY: clean
 clean:
-	rm -rf $(VENV)
-	find . -type f -name '*.pyc' -delete
-
-.PHONY: all venv clean
+	rm -rf $(VENV_NAME)
