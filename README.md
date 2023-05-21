@@ -22,7 +22,7 @@ cd Quantum-Targeted-Energy-Transfer
 make install
 ```
 
-It is important to note that a python version with venv is needed for the installation. The `make` command will create a virtual environment directory called `.venv` which will contain all the necessary packages to run our code.
+It is important to note that a python version `>=3.8` with venv is needed for the installation. The `make` command will create a virtual environment directory called `.venv` which will contain all the necessary packages to run our code.
 
 ## Running QTET Application
 
