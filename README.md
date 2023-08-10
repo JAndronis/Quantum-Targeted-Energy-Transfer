@@ -1,6 +1,6 @@
 # Quantum Targeted Energy Transfer Optimization
 
-This repository contains code that was used for producing the results found in the relevant paper "Quantum Targeted Energy Transfer through Machine Learning Tools" ([arXiv:2212.00556](https://arxiv.org/abs/2212.00556)).
+This repository contains code that was used for producing the results found in the relevant paper "Quantum Targeted Energy Transfer through Machine Learning Tools" (https://doi.org/10.1103/PhysRevE.107.065301).
 
 ## Cite
 
