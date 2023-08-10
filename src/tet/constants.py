@@ -1,6 +1,6 @@
 import os
 import json
-from tensorflow import float32
+from tensorflow import float64
 
 # -------------------------------------------------------------------#
 
@@ -19,12 +19,12 @@ Elements:
     
 """
 system_constants = {'max_N': 3,
-             'sites': None,
-             'max_t': 25, 
-             'omegas': [-3,3,3],
-             'chis': [1.5,0,-1.5],
-             'coupling': 1,
-             'timesteps': 30}
+                    'sites': None,
+                    'max_t': 25,
+                    'omegas': [-3, 3],
+                    'chis': [0, 0],
+                    'coupling': 1,
+                    'timesteps': 30}
 system_constants['sites'] = len(system_constants['omegas'])
 
 # -------------------------------------------------------------------#
@@ -39,15 +39,17 @@ Elements:
     tol: The tolerance of each optimizer concerning the changes in the nonlinearity parameters
     train_sites: A list including the nonlinearity parameters to be optimized. Counting ranges from 0 to f-1.
 """
-TensorflowParams = {'DTYPE': float32, 
-                    'lr': 0.1, 
+TensorflowParams = {'DTYPE': float64,
+                    'lr': 0.1,
+                    'beta_1': 0.9,
+                    'amsgrad': False,
                     'iterations': 1000,
-                    'tol':1e-8,
-                    'train_sites': [1]}
+                    'tol': 1e-8,
+                    'train_sites': [0, 1]}
 
 # Define the acceptor and the donor site
-acceptor = 'x{}'.format(system_constants['sites']-1)
-donor = 'x0'
+acceptor = system_constants['sites'] - 1
+donor = 0
 
 # -------------------------------------------------------------------#
 
@@ -65,22 +67,19 @@ Elements:
 
 """
 solver_params = {'methods': ['grid', 'bins'],
-                'target': acceptor,
-                'Npoints': 4,
-                'epochs_grid':500,
-                'epochs_bins':1000}
-
-
+                 'target': acceptor,
+                 'Npoints': 2,
+                 'epochs_grid': 500,
+                 'epochs_bins': 1000}
 
 # -------------------------------------------------------------------#
 """
 Create a dictionary with the limits of each trainable nonlinearity parameter.
 Default limits: -10,10
 """
-keys = [f'x{i}lims' for i in TensorflowParams['train_sites']] 
-lims = [[-10,10]]*len(keys)
-TrainableVarsLimits = dict(zip(keys,lims))
-
+keys = [f'x{i}lims' for i in TensorflowParams['train_sites']]
+lims = [[-10, 10]] * len(keys)
+TrainableVarsLimits = dict(zip(keys, lims))
 
 # -------------------------------------------------------------------#
 """
@@ -91,18 +90,19 @@ plotting_params = {'plotting_resolution': 100}
 
 # -------------------------------------------------------------------#
 
-def dumpConstants(dict: dict, path=os.getcwd(), name='constants'):
+def dumpConstants(dictionary: dict, path=os.getcwd(), name='constants'):
     """
     Function that generates a json file from the dictionary provided.
 
     Args:
-        dict (dict): Dictionary to save.
+        dictionary (dict): Dictionary to save.
         path (str, optional): Path to save json file to. Defaults to os.getcwd().
         name (str, optional): Name of file. Defaults to 'constants'.
     """
-    _path = os.path.join(path, name+'.json')
+    _path = os.path.join(path, name + '.json')
     with open(_path, 'w') as c:
-        json.dump(dict, c, indent=1)
+        json.dump(dictionary, c, indent=1)
+
 
 # -------------------------------------------------------------------#
 
@@ -118,7 +118,7 @@ contents to a dictionary.
         dict: Dictionary containing the constants of the json file.
     """
     with open(path, 'r') as c:
-        system_constants = json.load(c)
-    return system_constants
+        c = json.load(c)
+    return c
 
 # -------------------------------------------------------------------#

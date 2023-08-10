@@ -1,6 +1,32 @@
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "tet"
+version = "0.0.20"
+readme = "README.md"
+description = "Code for the paper 'Quantum Targeted Energy Transfer through Machine Learning Tools' by Iason Andronis and George Arapantonis "
+license = "LICENSE"
+authors = [
+  "Iason Andronis <jandronis.physics@gmail.com>", 
+  "Giorgos Arapantonis <garapan1@jh.edu>"
 ]
-build-backend = "setuptools.build_meta"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+]
+packages = [{include = "tet", from = "src"}]
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.12"
+numpy = ">=1.23"
+tensorflow = ">=2.9"
+
+[tool.poetry.scripts]
+qtet = "qtet:run"
+
+[tool.poetry.urls]
+"Home Page" = "https://github.com/JAndronis/Quantum-Targeted-Energy-Transfer"
+"Bug Tracker" = "https://github.com/JAndronis/Quantum-Targeted-Energy-Transfer/issues"

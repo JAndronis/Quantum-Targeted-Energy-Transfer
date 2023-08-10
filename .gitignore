@@ -16,6 +16,9 @@ settings.json
 # Built Visual Studio Code Extensions
 *.vsix
 
+# idea
+.idea
+
 # code generated files and dirs
 data*
 data_*
@@ -35,10 +38,22 @@ constants.json
 */constants.json
 images
 
+# ignore custom scripts
+scripts
+
+# venv
+*venv
+
 # pycache
 __pycache__
 src/tet/__pycache__
 tests/__pycache__
+
+# poetry
+poetry.lock
+
+# dist
+*dist
 
 # mac ds_store
 src/tet/.DS_Store
